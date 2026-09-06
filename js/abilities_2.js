@@ -95,7 +95,7 @@
         const lines = [];
         Fx.removeAt(g, first.r, first.c, {});
         lines.push('First arc strikes ' + sn(first.r, first.c) + '.');
-        const neigh = en(g, s).filter(q => Math.abs(q.r - first.r) <= 1 && Math.abs(q.c - first.c) <= 1);
+        const neigh = en(g, s).filter(q => q.cell.t !== 'k' && Math.abs(q.r - first.r) <= 1 && Math.abs(q.c - first.c) <= 1);
         const second = Fx.rand(neigh);
         if (second) { Fx.removeAt(g, second.r, second.c, {}); lines.push('The arc leaps to ' + sn(second.r, second.c) + '!'); }
         return lines;

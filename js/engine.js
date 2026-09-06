@@ -76,6 +76,7 @@
       over: false, result: null, reason: null, winner: null,
       silence: { w: false, b: false }, warded: { w: false, b: false },
       skipTurn: { w: false, b: false }, lowHand: { w: false, b: false },
+      moveOnly: { w: false, b: false }, echo: { w: null, b: null },
       fxevents: []
     };
   }

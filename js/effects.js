@@ -431,7 +431,7 @@
       const nr = r + dr, nc = c + dc;
       if (!onBoard(nr, nc) || (!dr && !dc)) continue;
       const cell = g.board[nr][nc];
-      if (!cell) continue;
+      if (!cell || cell.t === 'k') continue; // blasts never take the king
       if (opts.only && cell.c !== opts.only) continue;
       removeAt(g, nr, nc, {});
       lines.push('Boom! ' + sideName(cell.c) + ' ' + pname(cell.t) + ' destroyed.');

@@ -272,7 +272,10 @@
       // simpler: flee 1 step (trampling squares behind)
       const rr = r + back;
       if (rr < 0 || rr > 7) continue;
-      if (g.board[rr][c]) { Fx.removeAt(g, rr, c, {}); destroyed++; }
+      if (g.board[rr][c]) {
+        if (g.board[rr][c].c !== O(s) || g.board[rr][c].t === 'k') continue;
+        Fx.removeAt(g, rr, c, {}); destroyed++;
+      }
       Fx.relocate(g, r, c, rr, c, {});
       moved++;
     }

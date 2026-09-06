@@ -156,7 +156,7 @@
       flavor: 'The center cannot hold.',
       target: 'auto',
       run: (g, s) => {
-        const hit = en(g, s).filter(q => q.c === 3 || q.c === 4);
+        const hit = en(g, s).filter(q => q.cell.t !== 'k' && (q.c === 3 || q.c === 4));
         for (const q of hit) Fx.removeAt(g, q.r, q.c, {});
         return hit.length ? ['The center files collapse, swallowing the enemy.'] : [];
       } },
@@ -166,7 +166,7 @@
       flavor: 'The earth splits beneath the center.',
       target: 'auto',
       run: (g, s) => {
-        const pool = en(g, s).filter(q => q.c === 3 || q.c === 4);
+        const pool = en(g, s).filter(q => q.cell.t !== 'k' && (q.c === 3 || q.c === 4));
         const t = Fx.rand(pool);
         if (!t) return [];
         Fx.removeAt(g, t.r, t.c, {});
@@ -242,15 +242,22 @@
       } },
 
     { id: 170, name: 'Landmine', icon: '💥', rarity: 2, cat: 'Attack',
-      desc: 'Destroy a random enemy piece and all enemy pieces around it.',
+      desc: 'Destroy a random enemy piece and all enemy pieces around it (never the king).',
       flavor: 'One step. Then silence.',
       target: 'auto',
       run: (g, s) => {
         const t = Fx.rand(en(g, s).filter(q => q.cell.t !== 'k'));
         if (!t) return [];
-        const lines = Fx.bomb(g, t.r, t.c, 1, { diag: true, only: O(s) });
+        let gone = 0;
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const r = t.r + dr, c = t.c + dc;
+          const cell = g.board[r] && g.board[r][c];
+          if (cell && cell.c === O(s) && cell.t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
+        }
         Fx.removeAt(g, t.r, t.c, {});
-        lines.push('The blast erases the epicenter.');
+        const lines = ['The blast erases the epicenter.'];
+        if (gone) lines.unshift('The shockwave takes ' + gone + ' more enemy unit' + (gone > 1 ? 's' : '') + '!');
         return lines;
       } },
 
@@ -569,9 +576,9 @@
       target: 'auto',
       run: (g, s) => {
         const counts = [0, 0, 0, 0, 0, 0, 0, 0];
-        for (const q of en(g, s)) counts[q.c]++;
+        for (const q of en(g, s)) if (q.cell.t !== 'k') counts[q.c]++;
         let best = 0; for (let c = 1; c < 8; c++) if (counts[c] > counts[best]) best = c;
-        const t = Fx.rand(en(g, s).filter(q => q.c === best));
+        const t = Fx.rand(en(g, s).filter(q => q.cell.t !== 'k' && q.c === best));
         if (!t) return [];
         Fx.removeAt(g, t.r, t.c, {});
         return ['An arrow finds the enemy ' + MD.pieceName(t.cell.t) + ' in the thick of their line.'];

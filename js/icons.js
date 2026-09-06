@@ -126,7 +126,8 @@
   const CAT_DEFAULT = {
     Attack: 'sword', Curse: 'skull', Buff: 'shieldup', Summon: 'portal',
     Transform: 'rune', Chaos: 'chaos', Status: 'eye', Time: 'clock',
-    Kingship: 'crown', Economy: 'coin', Luck: 'dice'
+    Kingship: 'crown', Economy: 'coin', Luck: 'dice',
+    Wild: 'leaf', Void: 'void', SciFi: 'boltring', Show: 'star', Myth: 'rune'
   };
   const KEYWORD = [
     [/fire|flame|burn|dragon'?s?|inciner|meteor|ragnarok|cannon|sunburst/i, 'fire'],

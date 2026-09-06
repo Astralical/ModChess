@@ -232,7 +232,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = dest.r + dr, c = dest.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c] !== t) { Fx.removeAt(g, r, c, {}); gone++; }
+      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c] !== t && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
     }
     return ['The ' + MD.pieceName(t.cell.t) + ' crash-lands at ' + sn(dest.r, dest.c) + (gone ? ', crushing ' + gone + ' allies!' : '.')];
   });

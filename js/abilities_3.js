@@ -60,12 +60,19 @@
       } },
 
     { id: 105, name: 'Black Hole', icon: '🕳️', rarity: 4, cat: 'Attack',
-      desc: 'Choose a square — it collapses, destroying every piece in the surrounding ring.',
+      desc: 'Choose an empty square — it collapses, destroying every enemy piece in the surrounding ring (kings are never swallowed).',
       flavor: 'Even light does not escape.',
       target: 'emptyAny',
       run: (g, s, sq) => {
         const q = pick(g, s, sq, 'emptyAny');
-        return q ? Fx.bomb(g, q.r, q.c, 2, { diag: true, only: null }) : [];
+        if (!q) return [];
+        const gone = [];
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+          const cell = g.board[r][c];
+          if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
+          if (Math.max(Math.abs(r - q.r), Math.abs(c - q.c)) === 2) { Fx.removeAt(g, r, c, {}); gone.push(cell); }
+        }
+        return gone.length ? ['The black hole swallows ' + gone.length + ' enemy piece' + (gone.length > 1 ? 's' : '') + '!'] : ['The ring is empty.'];
       } },
 
     { id: 106, name: 'Implosion', icon: '🧨', rarity: 3, cat: 'Attack',
@@ -79,7 +86,7 @@
           const key = m.r0 * 8 + m.c0;
           fromCount[key] = (fromCount[key] || 0) + 1;
         }
-        const scored = en(g, s).map(q => ({ q, n: fromCount[q.r * 8 + q.c] || 0 }))
+        const scored = en(g, s).filter(q => q.cell.t !== 'k').map(q => ({ q, n: fromCount[q.r * 8 + q.c] || 0 }))
           .sort((a, b) => a.n - b.n);
         if (!scored.length) return [];
         Fx.removeAt(g, scored[0].q.r, scored[0].q.c, {});
@@ -321,7 +328,8 @@
         while (r >= 0 && r < 8) {
           const cell = g.board[r][k.c];
           if (cell) {
-            if (cell.c === O(s)) { Fx.removeAt(g, r, k.c, {}); return ['A beam of light annihilates the piece at ' + sn(r, k.c) + '.']; }
+            // the beam cannot touch the enemy king — regicide is not a spell
+            if (cell.c === O(s) && cell.t !== 'k') { Fx.removeAt(g, r, k.c, {}); return ['A beam of light annihilates the piece at ' + sn(r, k.c) + '.']; }
             break;
           }
           r += dir;
@@ -365,7 +373,7 @@
         const counts = [0, 0, 0, 0, 0, 0, 0, 0];
         for (const q of own(g, s)) counts[q.c]++;
         let best = 0; for (let c = 1; c < 8; c++) if (counts[c] > counts[best]) best = c;
-        const hit = en(g, s).filter(q => q.c === best);
+        const hit = en(g, s).filter(q => q.cell.t !== 'k' && q.c === best);
         for (const q of hit) Fx.removeAt(g, q.r, q.c, {});
         return hit.length ? ['Overwhelming force erases file ' + 'abcdefgh'[best] + '.'] : [];
       } },

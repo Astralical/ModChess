@@ -45,11 +45,13 @@
     const diff = MD.Settings.diff || 2;
     document.querySelectorAll('#diffRow .chip').forEach(c => c.classList.toggle('selected', +c.dataset.diff === diff));
     if (UI.setColorRow) UI.setColorRow();
+    if (UI.setModeRow) UI.setModeRow();
     $('#diffRow').style.display = '';
     $('#colorRow').style.display = '';
+    $('#smodeRow').style.display = '';
   };
 
-  Game.start = function (mode, diff, color) {
+  Game.start = function (mode, diff, color, spellMode) {
     Game.g = E.newGame();
     Game.g.battleLog = [];
     Game.g.logSeq = 0;
@@ -57,6 +59,7 @@
     Game.g.spellSeq = 0;
     Game.cfg.botMode = !!mode;   // mode is a boolean (true = vs computer)
     Game.cfg.diff = diff || MD.Settings.diff || 2;
+    Game.cfg.mode = spellMode || 'classic';
     // local pass-and-play always starts White at the bottom; colour choice is for vs Computer
     const col = mode ? (color || 'w') : 'w';
     Game.cfg.human = col;
@@ -70,7 +73,7 @@
     UI.clearMsg();
     // put the human's side at the bottom of the board
     if (UI.setHomeColor) UI.setHomeColor(Game.humanColor);
-    addLog(Game.g, 'A new battle begins. Every turn both sides are dealt 3 random spells from a pool of ' + MD.ABILITIES.length + ' — cast one, then move!', 'sys', 'flag');
+    addLog(Game.g, 'A new battle begins — spell mode: ' + Game.cfg.mode.toUpperCase() + '. Every turn you must cast 1 spell, then move.', 'sys', 'flag');
     if (Game.cfg.botMode && Game.humanColor === 'b') addLog(Game.g, 'You are playing as Black — the computer opens as White.', 'sys', 'flag');
     Game.phase = 'cards';
     UI.render();
@@ -79,7 +82,7 @@
 
   Game.rematch = function () {
     const was = Game.cfg;
-    Game.start(was.botMode, was.diff, was.human);
+    Game.start(was.botMode, was.diff, was.human, was.mode || 'classic');
   };
 
   /* ---------------- turn handling ---------------- */
@@ -114,12 +117,57 @@
       Game.renderAndMaybeBot();
       return;
     }
-    // deal fresh hand (a Borrowed Time can shrink the enemy's hand)
-    const handN = (Game.g.lowHand && Game.g.lowHand[color]) ? 2 : 3;
-    if (Game.g.lowHand) Game.g.lowHand[color] = false;
-    Game.hand = { for: color, cards: MD.drawHand(handN), used: false, usedId: null };
+    // a bonus/extra turn only allows a move — no fresh spells can be cast on it
+    if (Game.g.moveOnly && Game.g.moveOnly[color]) {
+      Game.g.moveOnly[color] = false;
+      Game.hand = null;
+      Game.phase = 'move';
+      UI.toast('Bonus turn — move only, no new spells.', 'sys');
+      Game.renderAndMaybeBot();
+      return;
+    }
+    // deal the hand for this mode. (A Borrowed Time can shrink it.)
+    const mode = Game.cfg.mode || 'classic';
+    let baseN = mode === 'draft' ? 4 : 3;
+    if (Game.g.lowHand && Game.g.lowHand[color]) { baseN = Math.max(1, baseN - 1); Game.g.lowHand[color] = false; }
+    const echoId = (Game.g.echo && Game.g.echo[color]) || null;
+    if (Game.g.echo) Game.g.echo[color] = null;
+    if (mode === 'chaos') {
+      // one spell is chosen for the player — cast automatically, then they must move
+      Game.hand = { for: color, cards: MD.drawPlayable(Game.g, color, 1), used: false, usedId: null };
+      Game.phase = 'cards';
+      UI.render();
+      UI.toast('Chaos: fate casts a spell for ' + sideOf(color) + '…', 'sys');
+      setTimeout(() => Game.chaosFire(color), 500);
+      return;
+    }
+    let cards = MD.drawPlayable(Game.g, color, baseN);
+    // Echo mode: the opponent also received a copy of the spell you last cast
+    if (mode === 'echo' && echoId && MD.abilityById(echoId)) {
+      cards = cards.filter(a => a.id !== echoId);
+      cards.unshift(MD.abilityById(echoId));
+      cards = cards.slice(0, baseN);
+    }
+    Game.hand = { for: color, cards, used: false, usedId: null };
     Game.phase = 'cards';
+    UI.toast(mode === 'draft' ? 'Draft: pick 1 of 4, then move.' : mode === 'echo' ? 'Echo: your opponent got a copy of the last spell cast.' : 'Cast 1 spell, then move.', 'sys');
     Game.renderAndMaybeBot();
+  };
+
+  // force-fire for Chaos mode (the spell is chosen for the player)
+  Game.chaosFire = function (color) {
+    setTimeout(() => {
+      if (Game.g.over || !Game.hand || Game.hand.for !== color || Game.hand.used) return;
+      const ab = Game.hand.cards[0];
+      if (!ab) { Game.hand.used = true; Game.phase = 'move'; UI.render(); return; }
+      const t = MD.needsTarget(ab) ? MD.botTarget(Game.g, ab, color) : null;
+      Game.castAbility(ab, t);
+      // if it's the computer's turn in chaos mode, it still has to make a move
+      if (!Game.g.over && Game.cfg.botMode && Game.g.turn !== Game.humanColor) {
+        Game.phase = 'bot';
+        setTimeout(() => Game.botMove(), 350);
+      }
+    }, 60);
   };
 
   Game.renderAndMaybeBot = function () {
@@ -204,7 +252,12 @@
     // victory check (e.g. assassinate)
     const end = E.evaluateEnd(Game.g, side);
     if (end.over) { Game.finish(end); return; }
-    // still this side's move
+    // Echo mode: the enemy receives a copy of this spell in their next hand
+    if ((Game.cfg.mode || 'classic') === 'echo') {
+      if (!Game.g.echo) Game.g.echo = { w: null, b: null };
+      Game.g.echo[opp(side)] = ab.id;
+    }
+    // still this side's move — casting alone never ends your turn
     Game.phase = 'move';
     UI.render();
   };
@@ -228,17 +281,21 @@
     if (Game.phase !== 'bot' || Game.g.over) return;
     const side = Game.g.turn;
     const h = Game.hand;
-    // bot may cast an ability if it has one (and not silenced — silence handled in startTurn)
+    // chaos mode casts automatically via chaosFire; nothing more to do here
+    if ((Game.cfg.mode || 'classic') === 'chaos') {
+      setTimeout(() => { if (Game.g.over) return; Game.phase = 'move'; Game.botMove(); }, 620);
+      return;
+    }
+    // the bot must cast one spell each turn (silenced/move-only turns have no hand)
     try {
-      if (h && !h.used && MD.Settings.diff >= 1) {
-        const chosen = MD.AI.chooseAbility(Game.g, side, h.cards);
-        if (chosen) {
-          const t = MD.botTarget(Game.g, chosen, side);
-          Game.castAbility(chosen, t); // will set phase='move'
-        } else {
-          h.used = true;
-          Game.phase = 'move';
-        }
+      if (h && !h.used && h.cards.length && MD.Settings.diff >= 1) {
+        let chosen = MD.AI.chooseAbility(Game.g, side, h.cards);
+        if (!chosen) chosen = h.cards[Math.floor(Math.random() * h.cards.length)]; // forced cast
+        const t = MD.botTarget(Game.g, chosen, side);
+        Game.castAbility(chosen, t); // will set phase='move'
+      } else {
+        h.used = true;
+        Game.phase = 'move';
       }
     } catch (err) {
       console.error('bot ability error', err);
@@ -297,9 +354,14 @@
       const ev = events.filter(x => x.kind === 'poison');
       ev.forEach(x => addLog(g, 'A poisoned piece detonates!', 'bad', '💥'));
     }
-    // next side to act (extra moves let the mover go again)
+    // next side to act (extra moves let the mover go again — but ONLY to move, no new spell)
     let next = opp(mover);
-    if (g.extra[mover] > 0) { g.extra[mover]--; next = mover; }
+    if (g.extra[mover] > 0) {
+      g.extra[mover]--;
+      next = mover;
+      if (!g.moveOnly) g.moveOnly = { w: false, b: false };
+      g.moveOnly[mover] = true;
+    }
     if (next !== mover) { g.extraCycle.w = false; g.extraCycle.b = false; }
     const end = E.evaluateEnd(g, next);
     if (end.over) { Game.finish(end); return; }
@@ -404,6 +466,13 @@
   };
 
   Game.attemptUserMove = function (from, to) {
+    // every turn requires casting a spell BEFORE moving — no moves while a spell is pending
+    if (Game.phase === 'cards') {
+      UI.toast(MD.iconHTML('spark') + ' Cast a spell first, then make your move.', 'sys');
+      Game.sel = null;
+      UI.render();
+      return;
+    }
     const moves = E.legalMoves(Game.g, Game.g.turn);
     const cands = moves.filter(m => m.r0 === from.r && m.c0 === from.c && m.r1 === to.r && m.c1 === to.c);
     if (!cands.length) {

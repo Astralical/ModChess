@@ -1,7 +1,7 @@
 # ♞ Mod Chess — Ability Chess
 
 A chess web app in the visual spirit of chess.com — **but every turn, both players
-are dealt 3 random spells from a pool of 356 unique fantasy abilities** and may
+are dealt spells from a pool of 506 unique fantasy abilities** and must
 cast **one** before moving. Spells can buff your army, curse the enemy, warp the
 board, or reshape reality itself. When a spell is cast, **both sides always see it**
 — a cinematic reveal, an on-screen effect readout, and a running battle log.
@@ -15,17 +15,20 @@ board, or reshape reality itself. When a spell is cast, **both sides always see 
     Choose to play as **White or Black** from the menu.
   - 👥 **Two Players** — local pass-and-play.
 - **The Ability system**
-  - **356 hand-written spells**, each with its own icon, rarity (Common/Rare/Epic/Legendary), rules text, and flavor line.
+  - **506 hand-written spells**, each with its own icon, rarity (Common/Rare/
+    Epic/Legendary), rules text, and flavor line.
     Browse all of them in the **Ability Codex**.
-  - Each turn a player draws **3 random spells** and may play **1** before moving
-    (or skip). No two people ever see the same game twice.
+  - Each turn a player draws spells (Classic/Draft give a choice) and **must cast 1**
+    before moving — no skipping. No two people ever see the same game twice.
   - **When a spell is used the game announces its exact effects** (burst text + toasts +
     battle-log entries), so both sides always know what just happened.
   - Categories: Attack, Curse, Buff, Summon, Transform, Chaos, Status, Time,
     Kingship, Economy, Luck — everything from *Fireball* to *Black Hole*, *Possession*,
-    *Time Warp*, *Ragnarok*, *Assassinate*… and the 36 Stratagems.
-  - **Two new themes add 100 more spells:** 🐺 **The Wild** (beasts, roots & storms of the
-    old woods) and 🌌 **The Void** (stars, entropy & fate) — 50 abilities each.
+    *Time Warp*, *Ragnarok*… and the 36 Stratagems.
+  - **Five themed families** stack on the core: 🐺 **The Wild** (beasts & forests),
+    🌌 **The Void** (stars & entropy), 🤖 **The Machine** (sci-fi robots & lasers),
+    🎪 **Carnival of Miracles** (tricksters & circus), and 🏛️ **Legends & Myths**
+    (gods & titans) — 50 spells each, several with summons.
   - A **balance & de-duplication pass** (js/rebalance.js) assigns every card a consistent
     rarity ladder and makes overlapping “same effect, different name” spells mechanically
     distinct (no two spells in the codex are synonyms).
@@ -57,12 +60,11 @@ Or serve it however you like (e.g. `python3 -m http.server`).
 
 ## 🎮 How a turn works
 
-1. When it's your turn, **3 random spells** are dealt on the right panel.
-2. You may **cast one** (click a card). If it needs a target, the board lights up
+1. When it's your turn, spells are dealt on the right panel.
+2. You **must cast one** (click a card). If it needs a target, the board lights up
    the legal squares — click one. The cast is announced to both players.
-   *(You may also just skip and move.)*
-3. Make a **chess move** (drag or click). The turn passes — and the next player
-   (or the computer) draws **their** 3 spells.
+3. Make a **chess move** (drag or click) — moving is blocked until you've cast.
+   The turn passes, and the next player (or the computer) draws their spells.
 
 Watch the statuses: pieces can be **❄ frozen** (can't move their next turn),
 **🛡 shielded** (can't be captured next turn), or **☠ poisoned** (detonates at the
@@ -77,12 +79,15 @@ css/styles.css        chess.com-inspired styling + themes
 js/pieces.js          original SVG vector piece set
 js/engine.js          full chess engine (rules, statuses, custom troops) — pure data
 js/troops.js          25 custom summonable troops (movement + emoji tokens)
-js/effects.js         effect toolkit used by the 356 abilities (Fx)
+js/effects.js         effect toolkit used by the 506 abilities (Fx)
 js/abilities_1..4.js  the 200 core ability definitions (50 per file)
 js/abilities_5.js     20 troop-summon abilities
 js/abilities_6.js     36 stratagems (三十六计)
-js/abilities_7.js     50 new spells — The Wild
-js/abilities_8.js     50 new spells — The Void
+js/abilities_7.js     50 spells — The Wild
+js/abilities_8.js     50 spells — The Void
+js/abilities_9.js     50 spells — The Machine (sci-fi/robotic)
+js/abilities_10.js    50 spells — Carnival of Miracles
+js/abilities_11.js    50 spells — Legends & Myths
 js/abilities_index.js registry + draw/cast logic
 js/rebalance.js       rarity ladder + de-duplication pass
 js/ai.js              bot: alpha-beta search + ability selection
@@ -99,7 +104,7 @@ vercel.json           static hosting config for Vercel
 
 ```
 node scripts/test_engine.js     # chess rules + troop movement (32 checks)
-node scripts/test_abilities.js  # all 356 abilities dry-run without errors
+node scripts/test_abilities.js  # all 506 abilities dry-run without errors
 node scripts/test_bot.js        # headless bot-vs-bot games
 ```
 
@@ -147,11 +152,14 @@ Supabase Realtime.
 - Original code and artwork — the board texture and pieces are drawn from scratch
   in a chess.com *style* (no proprietary assets are included).
 - Ability balance is deliberately **wild and swingy** — that's the point of the mod.
-  Insta-win spells like *Assassinate* exist, but they're one card out of 356 and each
-  player draws only 3 per turn, so you never know what's coming.
+  Insta-win mechanics have been removed — **no spell can ever remove a king** (blasts,
+  rays and file/rank sweeps all spare the monarch). Strong cards are high-rarity.
 - Summoned **troops** are real, moving pieces (not reskinned pawns/rooks): the engine
   generates their moves and tracks checks from them, and they show as unique emoji
   tokens on the board.
-- Extra-move spells (Time Warp etc.) are limited to one extra turn-cycle per player
-  so no one can chain turns forever.
+- Every turn you **must cast one spell and then move** (no skipping). Spells that
+  grant an extra turn only let you **move** on the bonus turn — no second spell.
+- **Spell modes** (choose in the menu): **Classic** (pick 1 of 3), **Chaos** (fate casts
+  one random spell for you), **Draft** (pick 1 of 4), **Echo** (your spell is copied
+  into your opponent's hand next turn).
 

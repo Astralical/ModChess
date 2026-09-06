@@ -442,10 +442,19 @@
       run: (g, s) => Fx.destroyN(g, s, 1, { only: 'q' }) },
 
     { id: 47, name: 'Assassinate', icon: '🗡️', rarity: 4, cat: 'Attack',
-      desc: 'Destroy the enemy king. Yes, really. Game over.',
-      flavor: 'No kingdom survives a knife in the dark.',
+      desc: 'The assassin takes out the whole court: destroy every enemy queen and rook, then poison their strongest remaining piece. The king alone survives.',
+      flavor: 'A knife in the dark — for everyone except the throne.',
       target: 'auto',
-      run: (g, s) => Fx.destroyN(g, s, 1, { only: 'k' }) },
+      run: (g, s) => {
+        const lines = [];
+        const court = en(g, s).filter(q => q.cell.t === 'q' || q.cell.t === 'r');
+        for (const q of court) { Fx.removeAt(g, q.r, q.c, {}); }
+        if (court.length) lines.push('The court falls — ' + court.length + ' major piece' + (court.length > 1 ? 's' : '') + ' struck down.');
+        const rest = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => Fx.value(b.cell.t) - Fx.value(a.cell.t));
+        const t = rest[0];
+        if (t && !court.includes(t)) { Fx.mod(t.cell, 'p', 1); Fx.flash(g, t.r, t.c, 'poison', ''); lines.push('The strongest survivor is poisoned.'); }
+        return lines.length ? lines : ['The court is empty — no one left to strike.'];
+      } },
 
     { id: 48, name: 'Beheading', icon: '🪓', rarity: 3, cat: 'Attack',
       desc: 'Destroy the enemy\'s most powerful non-king piece.',
@@ -462,7 +471,7 @@
         const lead = pawns[0];
         if (!lead) return [];
         const col = lead.c;
-        const hit = en(g, s).filter(q => q.c === col);
+        const hit = en(g, s).filter(q => q.cell.t !== 'k' && q.c === col);
         for (const q of hit) { Fx.removeAt(g, q.r, q.c, {}); }
         return hit.length ? ['Flame engulfs file ' + 'abcdefgh'[col] + '.'] : [];
       } },

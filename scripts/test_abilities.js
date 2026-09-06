@@ -4,7 +4,8 @@ const path = require('path');
 globalThis.MD = {};
 const load = p => eval(fs.readFileSync(path.join(__dirname, '..', p), 'utf8'));
 ['js/engine.js', 'js/troops.js', 'js/icons.js', 'js/effects.js', 'js/abilities_1.js', 'js/abilities_2.js',
- 'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js', 'js/abilities_8.js',
+ 'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js',
+ 'js/abilities_8.js', 'js/abilities_9.js', 'js/abilities_10.js', 'js/abilities_11.js',
  'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
 const lib = globalThis.MD, E = lib.Engine;
 
@@ -12,7 +13,7 @@ let pass = 0, fail = 0;
 function ok(c, n) { if (c) { pass++; console.log('  ✓', n); } else { fail++; console.log('  ✗ FAIL:', n); } }
 
 ok(Array.isArray(MD.ABILITIES), 'ABILITIES is array');
-ok(MD.ABILITIES.length === 356, 'exactly 356 abilities (got ' + MD.ABILITIES.length + ')');
+ok(MD.ABILITIES.length === 506, 'exactly 506 abilities (got ' + MD.ABILITIES.length + ')');
 
 // build a lively mid-game-ish board via random legal plies
 function lively() {
@@ -36,7 +37,7 @@ function lively() {
   return g;
 }
 
-let crashes = 0;
+let crashes = 0, kingsLost = 0;
 const crashList = {};
 lib.ABILITIES.forEach(ab => {
   for (let iter = 0; iter < 3; iter++) {
@@ -47,17 +48,26 @@ lib.ABILITIES.forEach(ab => {
     if (!Array.isArray(res.lines)) { crashes++; crashList[ab.id + ' ' + ab.name] = 'no lines'; }
     if (res.error) { crashes++; crashList[ab.id + ' ' + ab.name] = res.lines.join('|'); }
     try { E.legalMoves(g, side); } catch (e) { crashes++; crashList[ab.id + ' ' + ab.name] = 'legalMoves: ' + e.message; }
+    // no spell may remove a king directly (no instant wins)
+    if (!E.hasKing(g, 'w') || !E.hasKing(g, 'b')) { kingsLost++; crashList[ab.id + ' ' + ab.name] = 'removed a king'; }
   }
 });
 ok(crashes === 0, 'no ability crashed across dry-runs (crashes=' + crashes + ')');
+ok(kingsLost === 0, 'no ability removes a king (instant-win) across dry-runs');
 if (crashes) Object.entries(crashList).slice(0, 20).forEach(([k, v]) => console.log('   ✗', k, '::', v));
 
-// ensure Assassinate can actually end the game by removing a king (game loop will detect)
+// Assassinate must NOT remove the king (no instant wins) but should hit the court
 {
   const g = E.newGame();
   const ab = lib.abilityById(47);
   lib.cast(g, ab, 'w', null);
-  ok(!E.hasKing(g, 'b'), 'Assassinate removes black king (game-over trigger)');
+  ok(E.hasKing(g, 'b'), 'Assassinate no longer removes the king');
+  let rooks = 0, queens = 0;
+  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const cell = g.board[r][c];
+    if (cell && cell.c === 'b') { if (cell.t === 'r') rooks++; if (cell.t === 'q') queens++; }
+  }
+  ok(rooks === 0 && queens === 0, 'Assassinate destroys the enemy court (rooks+queens)');
 }
 
 // Wild Magic never calls itself infinitely (guarded in index via id filter + single chain)

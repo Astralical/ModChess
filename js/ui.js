@@ -10,7 +10,7 @@
   const clear = el => { while (el.firstChild) el.removeChild(el.firstChild); };
 
   /* ---------- settings (persisted) ---------- */
-  const DEFAULTS = { premove: true, autoQueen: true, legal: true, lastMove: true, autoCastle: true, sound: true, anim: true, theme: 'green', diff: 2, human: 'w' };
+  const DEFAULTS = { premove: true, autoQueen: true, legal: true, lastMove: true, autoCastle: true, sound: true, anim: true, theme: 'green', diff: 2, human: 'w', smode: 'classic' };
   MD.Settings = Object.assign({}, DEFAULTS);
   try {
     const saved = JSON.parse(localStorage.getItem('modchess.settings') || '{}');
@@ -491,9 +491,16 @@
     if (G.phase === 'cards' || G.phase === 'move') {
       // whose hand is on screen?
       const side = G.hand ? G.hand.for : null;
+      const mode = G.cfg.mode || 'classic';
+      const MODE_SUB = {
+        classic: 'Classic — cast 1, then move',
+        chaos: 'Chaos — fate casts 1 for you',
+        draft: 'Draft — pick 1 of 4, then move',
+        echo: 'Echo — your spell echoes to the enemy'
+      };
       if (!side || (G.phase === 'cards' && !G.hand.cards.length)) {
         azTitle.textContent = 'Ability Phase';
-        azSub.textContent = 'draw 3 · play 1 per turn';
+        azSub.textContent = MODE_SUB[mode] || 'cast before moving';
         skipBtn.style.display = 'none';
         note.textContent = '';
         zone.appendChild(empty('spark', G.phase === 'cards' ? 'Dealing your spells…' : 'Choose a spell, then move.'));
@@ -502,22 +509,22 @@
       const isHumanSide = G.cfg.botMode ? (side === G.humanColor) : true;
       if (!isHumanSide) {
         azTitle.textContent = 'Opponent\'s spells';
-        azSub.textContent = 'face down — revealed when cast';
+        azSub.textContent = MODE_SUB[mode] || 'face down until cast';
         skipBtn.style.display = 'none';
         note.textContent = '';
-        for (let i = 0; i < 3; i++) zone.appendChild(backCard());
+        const n = Math.max(1, (G.hand && G.hand.cards.length) || 3);
+        for (let i = 0; i < n; i++) zone.appendChild(backCard());
         return;
       }
       azTitle.textContent = 'Your Spells — ' + (G.hand.used ? 'cast' : 'choose 1');
-      azSub.textContent = 'cast before moving · revealed to all';
+      azSub.textContent = MODE_SUB[mode] || 'cast before moving · revealed to all';
+      skipBtn.style.display = 'none';
       if (G.hand.used) {
-        skipBtn.style.display = 'none';
-        note.textContent = 'Make your move.';
-        // show cards dimmed with cast state
+        note.textContent = G.phase === 'move' ? 'Make your move.' : '';
         hand.forEach((a, i) => zone.appendChild(makeCard(a, true, G.hand.usedId === a.id)));
       } else {
-        skipBtn.style.display = G.phase === 'cards' ? 'inline-block' : 'none';
-        note.textContent = G.pickingIdx >= 0 ? 'Pick a highlighted square on the board' : 'Click a card to cast it';
+        note.textContent = G.pickingIdx >= 0 ? 'Pick a highlighted square on the board' :
+          (mode === 'chaos' ? 'Fate is casting a spell for you…' : 'Click a card to cast it, then move.');
         hand.forEach((a, i) => zone.appendChild(makeCard(a, false, false, G.pickingIdx === i)));
       }
       return;
@@ -882,6 +889,12 @@
   }
   UI.setColorRow = setColorRow;
 
+  function setModeRow() {
+    const sm = MD.Settings.smode || 'classic';
+    document.querySelectorAll('#smodeRow .chip').forEach(c => c.classList.toggle('selected', c.dataset.smode === sm));
+  }
+  UI.setModeRow = setModeRow;
+
   function wireMenu() {
     document.querySelectorAll('.mode-card').forEach(b => {
       b.addEventListener('click', () => {
@@ -905,10 +918,17 @@
         MD.Settings.save();
       });
     });
+    document.querySelectorAll('#smodeRow .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#smodeRow .chip').forEach(x => x.classList.toggle('selected', x === c));
+        MD.Settings.smode = c.dataset.smode;
+        MD.Settings.save();
+      });
+    });
     $('#btnStart').addEventListener('click', () => {
       const sel = document.querySelector('.mode-card.selected');
       const isBot = !sel || sel.dataset.mode === 'bot';
-      MD.Game.start(isBot, MD.Settings.diff, MD.Settings.human || 'w');
+      MD.Game.start(isBot, MD.Settings.diff, MD.Settings.human || 'w', MD.Settings.smode || 'classic');
     });
   }
 

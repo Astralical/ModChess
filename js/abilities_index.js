@@ -5,7 +5,8 @@
 
   const ALL = []
     .concat(MD.AB_1 || [], MD.AB_2 || [], MD.AB_3 || [], MD.AB_4 || [],
-      MD.AB_5 || [], MD.AB_6 || [], MD.AB_7 || [], MD.AB_8 || []);
+      MD.AB_5 || [], MD.AB_6 || [], MD.AB_7 || [], MD.AB_8 || [],
+      MD.AB_9 || [], MD.AB_10 || [], MD.AB_11 || []);
 
   // dedupe + validate
   const seenIds = new Set(), seenNames = new Set();
@@ -29,13 +30,28 @@
     4: { label: 'Legendary', color: '#ffc55a' }
   };
 
-  MD.CATS = ['Attack', 'Curse', 'Buff', 'Summon', 'Transform', 'Chaos', 'Status', 'Time', 'Kingship', 'Economy', 'Luck', 'Wild', 'Void'];
+  MD.CATS = ['Attack', 'Curse', 'Buff', 'Summon', 'Transform', 'Chaos', 'Status', 'Time', 'Kingship', 'Economy', 'Luck', 'Wild', 'Void', 'SciFi', 'Show', 'Myth'];
 
   // distinct hand-size for bonus/reduced draws is handled in main.js via g.lowHand
 
   // draw `n` distinct random abilities for a hand
   MD.drawHand = function (n) {
     const pool = MD.ABILITIES.slice();
+    const out = [];
+    while (out.length < n && pool.length) {
+      out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+    }
+    return out;
+  };
+
+  // draw `n` abilities that can actually be CAST right now for `side`
+  // (targeted spells are only dealt when a valid target exists).
+  MD.drawPlayable = function (g, side, n) {
+    const Fx = MD.Fx;
+    const playable = MD.ABILITIES.filter(a =>
+      !MD.needsTarget(a) || (Fx && Fx.targetList(g, side, a.target).length > 0)
+    );
+    const pool = playable.slice();
     const out = [];
     while (out.length < n && pool.length) {
       out.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
