@@ -6,6 +6,7 @@ const load = p => eval(fs.readFileSync(path.join(__dirname, '..', p), 'utf8'));
 ['js/engine.js', 'js/troops.js', 'js/icons.js', 'js/effects.js', 'js/abilities_1.js', 'js/abilities_2.js',
  'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js',
  'js/abilities_8.js', 'js/abilities_9.js', 'js/abilities_10.js', 'js/abilities_11.js',
+ 'js/abilities_12.js', 'js/abilities_13.js', 'js/abilities_14.js', 'js/abilities_15.js',
  'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
 const lib = globalThis.MD, E = lib.Engine;
 
@@ -13,7 +14,7 @@ let pass = 0, fail = 0;
 function ok(c, n) { if (c) { pass++; console.log('  ✓', n); } else { fail++; console.log('  ✗ FAIL:', n); } }
 
 ok(Array.isArray(MD.ABILITIES), 'ABILITIES is array');
-ok(MD.ABILITIES.length === 506, 'exactly 506 abilities (got ' + MD.ABILITIES.length + ')');
+ok(MD.ABILITIES.length === 706, 'exactly 706 abilities (got ' + MD.ABILITIES.length + ')');
 
 // build a lively mid-game-ish board via random legal plies
 function lively() {
@@ -78,15 +79,20 @@ if (crashes) Object.entries(crashList).slice(0, 20).forEach(([k, v]) => console.
   ok(Array.isArray(res.lines), 'Wild Magic returns lines');
 }
 
-// troop summons actually place custom creatures that can move
+// troop summons actually place custom creatures; fresh summons cannot act until their owner's next turn
 {
   const g = E.newGame();
   lib.cast(g, lib.abilityById(12), 'w', null); // Summon Imp
   let imps = 0;
   for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.board[r][c] && g.board[r][c].t === 'imp') imps++;
   ok(imps === 1 && g.anyTroop, 'Summon Imp places an Imp troop');
+  const movesNow = E.legalMoves(g, 'w').some(m => g.board[m.r0][m.c0].t === 'imp');
+  ok(!movesNow, 'freshly summoned Imp cannot move/capture on its first turn');
+  // after the owner finishes a turn the summon is ready
   const any = E.legalMoves(g, 'w');
-  ok(any.some(m => g.board[m.r0][m.c0].t === 'imp'), 'the Imp can actually move');
+  if (any.length) { E.applyMove(g, any[0]); E.tickAfterMove(g, 'w'); }
+  const movesNext = E.legalMoves(g, 'w').some(m => g.board[m.r0][m.c0] && g.board[m.r0][m.c0].t === 'imp');
+  ok(movesNext, 'the Imp can act from the owner\'s next turn');
 }
 {
   const g = E.newGame();

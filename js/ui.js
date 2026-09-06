@@ -204,6 +204,7 @@
   function statusClass(cell) {
     if (!cell || !cell.b) return '';
     const b = cell.b;
+    if (b.z > 0) return 'recruiting';
     if (b.f > 0) return 'frozen';
     if (b.s > 0) return 'shielded';
     if (b.p > 0) return 'poisoned';
@@ -283,6 +284,8 @@
         };
         if (cell.b.p > 0) addB('b-psn', 'skull');
         if (cell.b.f > 0) addB('b-frz', 'ice');
+        if (cell.b.z > 0) { const r = document.createElement('span'); r.className = 'pbadge b-rec'; r.innerHTML = MD.iconHTML('clock'); r.title = 'Newly summoned — cannot act until its owner\'s next turn'; p.appendChild(r); }
+        if (cell.b.mature > 0 && cell.b.growTo) { const r = document.createElement('span'); r.className = 'pbadge b-grow'; r.innerHTML = MD.iconHTML('star'); r.title = 'Growing — will become ' + (MD.pieceName ? MD.pieceName(cell.b.growTo) : cell.b.growTo) + ' after ' + cell.b.mature + ' more move' + (cell.b.mature > 1 ? 's' : ''); p.appendChild(r); }
         if (cell.b.s > 0) addB('b-shd', 'shield');
       }
       const pos = px(r, c);

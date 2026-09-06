@@ -348,11 +348,16 @@
 
   Game.resolveAfterMove = function (mover) {
     const g = Game.g;
-    // status ticks (poison explosions, freeze/shield expiry)
+    // status ticks (poison explosions, freeze/shield expiry, growth, auras)
     const events = E.tickAfterMove(g, mover);
     if (events.length) {
-      const ev = events.filter(x => x.kind === 'poison');
-      ev.forEach(x => addLog(g, 'A poisoned piece detonates!', 'bad', '💥'));
+      for (const ev of events) {
+        if (ev.kind === 'poison') addLog(g, 'A poisoned piece detonates!', 'bad', '💥');
+        else if (ev.kind === 'grow') addLog(g, (ev.text || 'A troop grows into its adult form') + '.', 'sys', 'star');
+        else if (ev.kind === 'aura') addLog(g, (ev.text || 'An aura pulses') + '.', 'w', 'spark');
+        else if (ev.kind === 'regen') addLog(g, (ev.text || 'A troop regenerates') + '.', 'sys', 'heart');
+        else if (ev.kind === 'rattle') addLog(g, (ev.text || 'A dying troop leaves a mark') + '.', 'bad', 'skull');
+      }
     }
     // next side to act (extra moves let the mover go again — but ONLY to move, no new spell)
     let next = opp(mover);
@@ -395,6 +400,7 @@
       if (!canAct(cell.c)) return false;
       if (cell.c !== Game.g.turn) return false;
       if (cell.b && cell.b.f > 0) return false;
+      if (cell.b && cell.b.z > 0) return false; // newly-summoned: still waking up
       return true;
     }
     return false;
@@ -454,6 +460,7 @@
     if (Game.phase !== 'cards' && Game.phase !== 'move') return;
     const cell = Game.g.board[r][c];
     if (cell && cell.c === Game.g.turn && cell.b && cell.b.f > 0) { UI.toast('This piece is frozen!', 'bad'); return; }
+    if (cell && cell.c === Game.g.turn && cell.b && cell.b.z > 0) { UI.toast('Just summoned — it cannot act yet.', 'sys'); return; }
     if (Game.sel) {
       if (Game.sel.r === r && Game.sel.c === c) { Game.sel = null; UI.render(); return; }
       if (cell && cell.c === Game.g.turn) { Game.grab(r, c); return; }

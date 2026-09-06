@@ -419,7 +419,7 @@
         const cols = {};
         for (const q of own(g, s)) if (q.cell.t === 'p') cols[q.c] = (cols[q.c] || 0) + 1;
         const files = Object.keys(cols).filter(c => cols[c] >= 2).map(Number);
-        const hit = en(g, s).filter(q => files.includes(q.c));
+        const hit = en(g, s).filter(q => q.cell.t !== 'k' && files.includes(q.c));
         for (const q of hit) Fx.removeAt(g, q.r, q.c, {});
         return hit.length ? ['Lightning ravages the crowded enemy files.'] : ['No doubled pawn files to call the storm.'];
       } },
@@ -546,28 +546,35 @@
       } },
 
     { id: 192, name: 'Overrun', icon: '🐘', rarity: 2, cat: 'Chaos',
-      desc: 'Advance ALL enemy pawns one square (toward their own side, retreating).',
-      flavor: 'Stampede! Even the enemy\'s pawns flee.',
+      desc: 'All enemy pawns flee one square back toward their own side; any that cannot flee instead surge one square forward — the line bends, nothing is destroyed.',
+      flavor: 'The whole line wavers.',
       target: 'auto',
       run: (g, s) => {
+        // build a list of enemy pawns first so moves are stable
+        const pawns = [];
+        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+          const cell = g.board[r][c];
+          if (cell && cell.c !== s && cell.t === 'p') pawns.push({ r, c });
+        }
         let moved = 0;
-        const retreat = (cell) => cell.c === 'w' ? 1 : -1;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-          const cell = g.board[r][c];
-          if (!cell || cell.c !== O(s) || cell.t !== 'p') continue;
-          const dr = retreat(cell);
-          if (g.board[r + dr] && !g.board[r + dr][c]) { Fx.relocate(g, r, c, r + dr, c, {}); moved++; }
+        // 1) try to retreat (toward their own back rank)
+        for (const p of pawns) {
+          const cell = g.board[p.r][p.c];
+          if (!cell) continue;               // could have moved already
+          const back = cell.c === 'w' ? 1 : -1;
+          const nr = p.r + back, nc = p.c;
+          if (nr >= 0 && nr < 8 && !g.board[nr][nc]) { Fx.relocate(g, p.r, p.c, nr, nc, {}); moved++; }
         }
-        if (moved) return ['Panic pushes the enemy pawns backward!'];
-        // nowhere to flee: the stampede breaks FORWARD instead
-        moved = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-          const cell = g.board[r][c];
-          if (!cell || cell.c !== O(s) || cell.t !== 'p') continue;
-          const dr = -retreat(cell);
-          if (g.board[r + dr] && !g.board[r + dr][c]) { Fx.relocate(g, r, c, r + dr, c, {}); moved++; }
+        if (moved) return ['The enemy line falls back as one — ' + moved + ' pawn' + (moved > 1 ? 's flee' : ' flees') + '.'];
+        // 2) nothing could retreat: the line surges FORWARD instead
+        for (const p of pawns) {
+          const cell = g.board[p.r][p.c];
+          if (!cell) continue;
+          const fwd = cell.c === 'w' ? -1 : 1;
+          const nr = p.r + fwd, nc = p.c;
+          if (nr >= 0 && nr < 8 && !g.board[nr][nc]) { Fx.relocate(g, p.r, p.c, nr, nc, {}); moved++; }
         }
-        return moved ? ['The pawns break ranks and surge forward!'] : ['The lines hold — not a pawn moves.'];
+        return moved ? ['With nowhere to run, the enemy pawns surge forward!'] : ['The enemy pawns are frozen in place — not one stirs.'];
       } },
 
     { id: 193, name: 'Broken Arrow', icon: '🏹', rarity: 1, cat: 'Attack',

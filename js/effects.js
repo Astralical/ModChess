@@ -78,6 +78,7 @@
     g.board[r][c] = null;
     g.ep = null;
     flash(g, r, c, opts.kind || 'destroy', opts.text || '');
+    if (E.deathRattle) E.deathRattle(g, r, c, cell); // dying troops can leave a mark
     return cell;
   }
   Fx.removeAt = removeAt;
@@ -106,8 +107,17 @@
     opts = opts || {};
     if (!onBoard(r, c)) return null;
     if (g.board[r][c]) { if (opts.overwrite) removeAt(g, r, c); else return null; }
-    const cell = { c: color, t: type };
-    if (E.isTroop(type)) g.anyTroop = true;
+    // adults with `hatch` arrive as their weak egg; eggs grow back into the adult
+    const plan = E.spawnPlan ? E.spawnPlan(type) : { type, growTo: null, mature: 0 };
+    const cell = { c: color, t: plan.type };
+    if (E.isTroop(plan.type)) g.anyTroop = true;
+    if (!opts.noStatus) {
+      const st = { f: 0, s: 0, p: 0 };
+      // summoning sickness: a fresh piece can't act until it survives its owner's turn
+      if (!opts.noRecruit) st.z = E.recruitDelay ? E.recruitDelay(plan.type) : 1;
+      if (plan.growTo && plan.mature > 0) { st.mature = plan.mature; cell.b = st; cell.b.growTo = plan.growTo; }
+      else if (st.z > 0 || st.s > 0 || st.p > 0) cell.b = st;
+    }
     g.board[r][c] = cell;
     g.ep = null;
     flash(g, r, c, 'summon', opts.text || '');
@@ -313,10 +323,14 @@
   Fx.promotePawn = Fx.promotePawn;
 
   // revive captured pieces back onto the board for `side`
+  // A side's own fallen pieces (g.lost) are raised first; if nothing of yours
+  // has fallen, enemy pieces you captured may be CONSCRIPTED to your cause.
   Fx.revive = (g, side, count, opts) => {
     opts = opts || {};
-    const grave = g.capt[side].slice();
-    let pool = grave.filter(p => p.t !== 'k');
+    if (!g.lost) g.lost = { w: [], b: [] };
+    const mine = g.lost[side] || (g.lost[side] = []);
+    let pool = mine.filter(p => p.t !== 'k');
+    if (!pool.length) pool = (g.capt[side] || []).filter(p => p.t !== 'k');
     if (opts.type) pool = pool.filter(p => p.t === opts.type);
     // no corpse of the wanted kind: conjure a fresh creature instead
     if (!pool.length && opts.type) {
@@ -337,17 +351,18 @@
     pool.sort((a, b) => Fx.value(b.t) - Fx.value(a.t));
     const lines = [];
     let revived = 0;
-    for (const p of pool) {
-      if (revived >= count) break;
-      const backRank = side === 'w' ? 7 : 0;
+    const backRank = side === 'w' ? 7 : 0;
+    for (let gi = 0; gi < pool.length && revived < count; gi++) {
+      const p = pool[gi];
       let empties = Fx.emptySq(g, (r) => r === backRank);
       if (!empties.length) empties = Fx.emptySq(g);
       const sq = Fx.rand(empties);
       if (!sq) break;
-      const cell = place(g, side, p.t, sq.r, sq.c, {});
-      const gi = g.capt[side].indexOf(p);
-      if (gi >= 0) g.capt[side].splice(gi, 1);
-      lines.push(sideName(side) + ' ' + pname(p.t) + ' rises from the grave on ' + E.sqName(sq.r, sq.c) + '.');
+      const wasMine = mine.indexOf(p) >= 0;
+      place(g, side, p.t, sq.r, sq.c, { noRecruit: true });
+      if (wasMine) { const ii = mine.indexOf(p); if (ii >= 0) mine.splice(ii, 1); }
+      else { const ci = (g.capt[side] || []).indexOf(p); if (ci >= 0) g.capt[side].splice(ci, 1); }
+      lines.push(sideName(side) + ' ' + pname(p.t) + (wasMine ? ' rises from the grave on ' : ' is conscripted to your banner on ') + E.sqName(sq.r, sq.c) + '.');
       revived++;
     }
     return lines;

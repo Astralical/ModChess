@@ -27,7 +27,7 @@
     warhorse:  { name: 'Warhorse',     icon: '🐎', letter: 'W', value: 430,  leap: KNIGHT.concat(FERZ) },
     guardian:  { name: 'Guardian',     icon: '🛡️', letter: 'G', value: 640,  leap: FERZ, slide: ORTH },
     archmage:  { name: 'Archmage',     icon: '🧙', letter: 'A', value: 640,  leap: WAZIR, slide: DIAG },
-    phoenix:   { name: 'Phoenix',      icon: '🐦‍🔥', letter: 'X', value: 1250, leap: KNIGHT, slide: ALL8 },
+    phoenix:   { name: 'Phoenix',      icon: '🐦‍🔥', letter: 'X', value: 1250, leap: KNIGHT, slide: ALL8, hatch: { egg: 'phoenixegg', after: 3 } },
 
     // — 20 brand-new summoned troops —
     goblin:    { name: 'Goblin',       icon: '🧌', letter: 'Z', value: 340,  leap: DABBABA.concat(ALFIL) },
@@ -45,11 +45,31 @@
     djinn:     { name: 'Djinn',        icon: '🧞', letter: 'O', value: 1150, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]] },
     owlbear:   { name: 'Owlbear',      icon: '🦉', letter: 'U', value: 760,  leap: KNIGHT, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]] },
     banshee:   { name: 'Banshee',      icon: '👻', letter: 'L', value: 820,  leap: KNIGHT.concat(ALL8) },
-    hydra:     { name: 'Hydra',        icon: '🐲', letter: 'S', value: 1100, leap: WAZIR, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5],[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]] },
+    hydra:     { name: 'Hydra',        icon: '🐲', letter: 'S', value: 1100, leap: WAZIR, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5],[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]], hatch: { egg: 'hydraling', after: 2 } },
     tiger:     { name: 'Tiger',        icon: '🐅', letter: 'P', value: 850,  leap: CAMEL, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]] },
     unicorn:   { name: 'Unicorn',      icon: '🦄', letter: 'U', value: 720, leap: WAZIR, slide: [[1,1,6],[1,-1,6],[-1,1,6],[-1,-1,6]] },
     turtle:    { name: 'Turtle',       icon: '🐢', letter: 'T', value: 420,  slide: [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1]] },
-    reaper:    { name: 'Reaper',       icon: '⚰️', letter: 'R', value: 1600, leap: DABBABA, slide: ALL8 }
+    reaper:    { name: 'Reaper',       icon: '⚰️', letter: 'R', value: 1600, leap: DABBABA, slide: ALL8 },
+
+    // — growth-stage lings: weak, mature into the adult after a round —
+    hydraling: { name: 'Hydraling',    icon: '🐣', letter: 's', value: 460,  leap: WAZIR, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], growTo: 'hydra', growAfter: 2 },
+    phoenixegg:{ name: 'Phoenix Egg',  icon: '🥚', letter: 'x', value: 240,  leap: FERZ, growTo: 'phoenix', growAfter: 3 },
+
+    // — brand-new summoned troops (unique TRAITS — none repeat the roster above) —
+    // Spriggan: a living thicket — it heals itself every turn and, when "destroyed",
+    //   splits into two loyal pawns that crawl from its roots. It is never truly gone.
+    spriggan:  { name: 'Spriggan',     icon: '🌱', letter: 's', value: 620,  leap: FERZ, slide: [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1]], regen: true, onDeath: 'split' },
+    // Gremlin: a volatile little saboteur — when it dies it EXPLODES, blasting every
+    //   adjacent enemy. Fragile, but nobody wants to kill it.
+    gremlin:   { name: 'Gremlin',      icon: '👺', letter: 'g', value: 420,  leap: DABBABA.concat(CAMEL), onDeath: 'burst' },
+    // Warden: a walking law of nature — at the end of each of its owner's turns it
+    //   FREEZES an adjacent foe in place (they skip a turn). Advance carefully.
+    warden:    { name: 'Warden',       icon: '🧊', letter: 'w', value: 980,  leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4]], aura: 'freeze' },
+    // Samurai: a lone blade spirit — an elegant knight-jump that also cuts two squares
+    //   straight. No trait, pure duelist — a rare "clean" summon.
+    samurai:   { name: 'Samurai',      icon: '⚔️', letter: 'Q', value: 760,  leap: KNIGHT, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]] },
+    // Siren: a sea-witch — at the end of its owner's turn it POISONS an adjacent foe.
+    siren:     { name: 'Siren',        icon: '🧜‍♀️', letter: 'y', value: 900,  leap: WAZIR, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], aura: 'poison' }
   };
 
   MD.TROOPS = T;

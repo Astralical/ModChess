@@ -85,8 +85,8 @@
   });
 
   def(262, 'Hydra Growth', 3, 'Wild', 'spark', 'Summon a Hydra on an empty square; if you already own one, it instead splits into two more heads (two extra Hydra-adjacent pawns).', 'Cut one, grow three.', (g, s) => {
-    if (troopOwn(g, s).some(q => q.cell.t === 'hydra')) {
-      const h = troopOwn(g, s).find(q => q.cell.t === 'hydra');
+    if (troopOwn(g, s).some(q => E.isFamily(q.cell.t, 'hydra'))) {
+      const h = troopOwn(g, s).find(q => E.isFamily(q.cell.t, 'hydra'));
       const spots = [];
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (!dr && !dc) continue;
@@ -254,35 +254,28 @@
     return lines.length ? lines : ['No room for the briar wall.'];
   });
 
-  def(276, 'Stampede', 3, 'Wild', 'paw', 'All enemy pawns flee BACKWARD three squares; anything they land on or pass is trampled (destroyed).', 'The herd does not stop.', (g, s) => {
-    let destroyed = 0, moved = 0;
-    const back = s === 'w' ? -1 : 1; // enemy pawns flee toward their own back rank
+  def(276, 'Stampede', 3, 'Wild', 'paw', 'All enemy pawns flee BACKWARD two squares — they scatter to their own side but trample NOTHING; nothing is destroyed.', 'The herd runs, the field survives.', (g, s) => {
+    const back = s === 'w' ? -1 : 1; // from the caster's view, enemy flees toward their own back rank
+    const pawns = [];
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
       const cell = g.board[r][c];
-      if (!cell || cell.c !== O(s) || cell.t !== 'p') continue;
-      let nr = r + back, ok = true;
-      while (nr !== r) {
-        if (nr < 0 || nr > 7) { ok = false; break; }
-        if (g.board[nr][c] && g.board[nr][c] !== cell) {
-          if (g.board[nr][c].c === cell.c) { ok = false; break; }
-        }
-        nr += back;
-        if (nr < 0 || nr > 7) break;
-      }
-      // simpler: flee 1 step (trampling squares behind)
-      const rr = r + back;
-      if (rr < 0 || rr > 7) continue;
-      if (g.board[rr][c]) {
-        if (g.board[rr][c].c !== O(s) || g.board[rr][c].t === 'k') continue;
-        Fx.removeAt(g, rr, c, {}); destroyed++;
-      }
-      Fx.relocate(g, r, c, rr, c, {});
-      moved++;
+      if (cell && cell.c === O(s) && cell.t === 'p') pawns.push({ r, c });
     }
-    const lines = [];
-    if (destroyed) lines.push('The stampede tramples ' + destroyed + ' piece' + (destroyed > 1 ? 's' : '') + '!');
-    if (moved) lines.push('Enemy pawns scatter in panic.');
-    return lines.length ? lines : ['The herd refuses to run.'];
+    let moved = 0;
+    for (const p of pawns) {
+      const cell = g.board[p.r][p.c];
+      if (!cell) continue;
+      // try to fall back two, then one — no destruction, no captures
+      for (const dist of [2, 1]) {
+        const nr = p.r + back * dist, nc = p.c;
+        if (nr < 0 || nr > 7 || g.board[nr][nc]) continue;
+        Fx.relocate(g, p.r, p.c, nr, nc, {});
+        moved++;
+        break;
+      }
+    }
+    if (moved) return ['The enemy pawns scatter backward in panic — ' + moved + ' of them retreat without a single trampled piece.'];
+    return ['The herd is boxed in and refuses to run.'];
   });
 
   def(277, 'Marsh', 1, 'Wild', 'drop', 'Poison every enemy piece standing on the two center files.', 'The marsh takes what wanders in.', (g, s) => {

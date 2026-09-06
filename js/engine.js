@@ -1,10 +1,24 @@
 /* ============================================================
    Mod Chess — core chess engine (vanilla, pure data state)
    Board: board[r][c] with r0=rank8(top) .. r7=rank1(bottom); c0=file a.
-   cell = { c:'w'|'b', t:'p|n|b|r|q|k', b?:{f,s,p} } | null
+   cell = { c:'w'|'b', t:'p|n|b|r|q|k', b?:{f,s,p,z,mature,growTo} } | null
      b.f  = frozen (pieces of owner can't move for f of owner's own turns)
-     b.s  = shielded (can't be captured for s of opponent's turns)
+     b.s  = shielded (CANNOT BE CAPTURED for s of opponent's turns)
      b.p  = poisoned (detonates at end of owner's next turn)
+     b.z  = recruit delay — a just-summoned piece can't move/capture until
+            it has survived `z` of its OWNER's own turn-ends (summoning
+            sickness, scaled by troop strength).
+     b.mature / b.growTo = growth: after `mature` half-moves the piece
+            transforms into its adult troop type `growTo` (eggs, lings).
+     Troop traits (read from MD.TROOPS defs, data-driven):
+       recruit        fixed recruit delay (overrides strength-based)
+       hatch {egg,after}  summoning an adult places its weak `egg` which
+                          grows into the adult after `after` half-moves
+       growTo/growAfter   weak form that matures into growTo
+       onDeath 'split'    when destroyed leaves 2 pawns behind
+       onDeath 'burst'    when destroyed blasts adjacent enemies
+       regen true         clears own poison/freeze at end of owner's turn
+       aura 'freeze'|'poison' applies once per own turn-end to an adjacent foe
    ============================================================ */
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
@@ -23,6 +37,32 @@
   E.isTroop = t => !!TROOP(t);
   E.troopLetter = t => { const d = TROOP(t); return d ? (d.letter || '?') : '?'; };
   E.val = t => (E.PIECE_VAL[t] || (TROOP(t) && TROOP(t).value) || 0);
+
+  // how many of the OWNER's own turn-ends a freshly placed piece must wait
+  // before it may move/capture (summoning sickness, scaled by strength)
+  E.recruitDelay = function (t) {
+    const d = TROOP(t);
+    if (!d) return 1;
+    if (d.recruit != null) return Math.max(1, d.recruit);
+    return (d.value || 0) >= 1000 ? 2 : 1;
+  };
+  // resolve what actually lands on the board when type is summoned
+  // (an adult with `hatch` places its weaker egg, which later matures)
+  E.spawnPlan = function (type) {
+    const d = TROOP(type);
+    if (d && d.hatch) return { type: d.hatch.egg, growTo: type, mature: (d.hatch.after || 2) };
+    if (d && d.growTo) return { type, growTo: d.growTo, mature: (d.growAfter || 2) };
+    return { type, growTo: null, mature: 0 };
+  };
+  // is this troop type (or one of its growth forms) part of family `family`?
+  E.isFamily = function (type, family) {
+    if (type === family) return true;
+    const d = TROOP(type);
+    if (d && d.growTo === family) return true;
+    const fam = TROOP(family);
+    if (fam && fam.hatch && fam.hatch.egg === type) return true;
+    return false;
+  };
 
   // does the troop at (pr,pc) attack square (r,c)? (leaps + limited slides, path-aware)
   function troopHits(g, t, pr, pc, r, c) {
@@ -70,7 +110,7 @@
     return {
       board: b, turn: 'w', castle: { wk: true, wq: true, bk: true, bq: true },
       ep: null, half: 0, full: 1, plies: 0,
-      capt: { w: [], b: [] }, hist: [], lastMove: null,
+      capt: { w: [], b: [] }, lost: { w: [], b: [] }, hist: [], lastMove: null,
       extra: { w: 0, b: 0 }, extraCycle: { w: false, b: false },
       anyTroop: false,
       over: false, result: null, reason: null, winner: null,
@@ -185,6 +225,7 @@
     return !!(cell && cell.b && cell.b.f > 0);
   }
   E.isFrozen = isFrozen;
+  E.isRecruit = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.z > 0);
   E.isShielded = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.s > 0);
   E.isPoisoned = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.p > 0);
 
@@ -350,7 +391,12 @@
     const captured = b[mv.r1][mv.c1];
     if (captured) {
       g.capt[color].push({ t: captured.t, c: captured.c, at: { r: mv.r1, c: mv.c1 }, b: captured.b || null });
+      // the captured colour also remembers what it lost (for resurrection)
+      if (g.lost) g.lost[captured.c] = g.lost[captured.c] || [];
+      else g.lost = { w: [], b: [] };
+      g.lost[captured.c].push({ t: captured.t, c: captured.c, at: { r: mv.r1, c: mv.c1 } });
       revokeLeave(g, mv.r1, mv.c1, captured);
+      deathRattle(g, mv.r1, mv.c1, captured); // dying troops can leave a mark
     }
 
     // --- move piece ---
@@ -433,7 +479,14 @@
     const w = clone(g);
     for (const mv of pseudo) {
       const piece = w.board[mv.r0][mv.c0];
-      if (piece && piece.b && piece.b.f > 0) continue; // frozen pieces cannot move
+      if (!piece) continue;
+      // frozen or newly-summoned (recruiting) pieces cannot move
+      if (piece.b && (piece.b.f > 0 || piece.b.z > 0)) continue;
+      // shielded enemy pieces cannot be captured (a shield is a wall)
+      if (mv.capture && !mv.ep) {
+        const dest = w.board[mv.r1][mv.c1];
+        if (dest && dest.c !== color && dest.b && dest.b.s > 0) continue;
+      }
       const und = applyMove(w, mv, { silent: true });
       const k = findKing(w, color);
       const ok = k && !attacked(w, k.r, k.c, E.opp(color));
@@ -529,31 +582,124 @@
   }
   E.explodeCell = explodeCell;
 
+  /* when a troop with an on-death trait is removed (captured or destroyed)
+     its corpse does something — data-driven via MD.TROOPS[t].onDeath */
+  function deathRattle(g, r, c, cell) {
+    if (!cell) return;
+    const d = TROOP(cell.t);
+    if (!d) return;
+    const events = [];
+    if (d.onDeath === 'split') {
+      // it splits into two loyal pawns crawling out of the wreckage
+      let placed = 0;
+      const near = [];
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) near.push({ r: nr, c: nc });
+      }
+      for (const q of near) {
+        if (placed >= 2) break;
+        g.board[q.r][q.c] = { c: cell.c, t: 'p', b: { f: 0, s: 0, p: 0 } };
+        placed++;
+        events.push({ kind: 'rattle', r: q.r, c: q.c, text: cell.c === 'w' ? 'White' : 'Black' + ' pawn crawls from the wreck' });
+      }
+    } else if (d.onDeath === 'burst') {
+      // dying volatile: blast every adjacent ENEMY (never the king)
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const nr = r + dr, nc = c + dc;
+        if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+        const t = g.board[nr][nc];
+        if (t && t.c !== cell.c && t.t !== 'k') {
+          g.capt ? g.capt : null;
+          revokeLeave(g, nr, nc, t);
+          g.board[nr][nc] = null;
+          events.push({ kind: 'rattle', r: nr, c: nc, text: 'Death-burst destroys a ' + pieceLabel(t.t) });
+        }
+      }
+    }
+    return events;
+  }
+  E.deathRattle = deathRattle;
+  const pieceLabel = t => { const d = TROOP(t); return d ? d.name : (E.PIECE_LABEL ? E.PIECE_LABEL[t] : t); };
+
   // tick statuses after `mover` has completed their turn
   function tickAfterMove(g, mover) {
     const events = [];
+    const bList = [];
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
       const cell = g.board[r][c];
       if (!cell || !cell.b) continue;
+      bList.push({ r, c, cell });
+    }
+    const T = root.MD && root.MD.TROOPS;
+    for (const { r, c, cell } of bList) {
+      if (!g.board[r][c] || g.board[r][c] !== cell) continue; // removed meanwhile (rattle)
       const b = cell.b;
+      const def = T ? T[cell.t] : null;
       if (cell.c === mover) {
         // owner finished their turn
         if (b.f > 0) b.f--;
+        // a regenerating troop cleanses itself before poison can bite
+        if (def && def.regen && (b.p > 0 || b.f > 0)) {
+          b.p = 0; b.f = 0;
+          events.push({ kind: 'regen', r, c, text: sideLabel(cell.c) + ' ' + (def.name || cell.t) + ' regenerates' });
+        }
         if (b.p > 0) {
           b.p = 0;
           events.push({ kind: 'poison', r, c });
           const boom = explodeCell(g, r, c);
           if (boom) events.push(...boom);
+          continue;
         }
+        // recruit countdown — summoning sickness fades as the owner's turns pass
+        if (b.z > 0) b.z--;
       } else {
         // opponent's shield wears off after this turn
         if (b.s > 0) b.s--;
       }
-      if (b.f <= 0 && b.s <= 0 && b.p <= 0) cell.b = undefined;
+      // owner-turn-end auras: pressure an adjacent foe
+      if (cell.c === mover && def && def.aura && g.board[r][c] === cell) {
+        const foes = [];
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const nr = r + dr, nc = c + dc;
+          if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+          const t = g.board[nr][nc];
+          if (t && t.c !== cell.c && t.t !== 'k') foes.push({ r: nr, c: nc, cell: t });
+        }
+        if (foes.length) {
+          const pick = foes[Math.floor(Math.random() * foes.length)];
+          const key = def.aura === 'freeze' ? 'f' : def.aura === 'poison' ? 'p' : null;
+          if (key) {
+            const bb = pick.cell.b || (pick.cell.b = { f: 0, s: 0, p: 0, z: 0 });
+            bb[key] = Math.max(bb[key] || 0, 1);
+            events.push({ kind: 'aura', r: pick.r, c: pick.c, aura: def.aura, text: (def.name || cell.t) + ' aura ' + def.aura + 's a foe' });
+          }
+        }
+      }
+      // growth: piece matures into its adult form
+      if (g.board[r][c] === cell && b.mature > 0) {
+        b.mature--;
+        if (b.mature <= 0 && b.growTo && T && T[b.growTo]) {
+          const adult = b.growTo;
+          cell.t = adult;
+          delete b.mature; delete b.growTo;
+          events.push({ kind: 'grow', r, c, text: (T[adult].name || adult) + ' has grown into its adult form' });
+        }
+      }
+      // clean up when every counter is spent
+      if (g.board[r][c] === cell) {
+        const bb = cell.b;
+        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0);
+        if (spent) cell.b = undefined;
+      }
     }
     return events;
   }
   E.tickAfterMove = tickAfterMove;
+  function sideLabel(c) { return c === 'w' ? 'White' : 'Black'; }
 
   /* piece value for AI / advantage */
   E.PIECE_VAL = { p: 100, n: 320, b: 330, r: 500, q: 950, k: 30000 };

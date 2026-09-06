@@ -100,7 +100,14 @@
     tiger: F(`<circle cx="12" cy="13" r="7"/><path d="M6 6 3 3c1.6 1 3.4 2 5 2.5M18 6l3-3c-1.6 1-3.4 2-5 2.5"/><circle cx="12" cy="13" r="2.4"/><path d="M12 13l1-1M12 13l-1-1M13.4 11.6l1 1M10.6 11.6l-1 1"/><path d="M9.5 16c1.6 1.2 3.4 1.2 5 0"/>`),
     unicorn: F(`<path d="M10 3l2 2-3 5H5l-2 4 4 1 1 6h8l1-7 2-2-4-3 1-3-4-1-2-2z"/><path d="M13 3l4-1-1 4"/>`),
     turtle: F(`<path d="M6 3 4 7l3 2-2 2 4 1-1 3 2 1 1 5 2-5 1-1 2 1-1-3 4-1-2-2 3-2-2-4 4-2-2-3-3 3-1-1-1 1-2-3-3 3z"/>`),
-    reaper: F(`<path d="M12 3 9 7l5 5 4-1-6-8z"/><path d="M13 8 9 12l-2-1v2l4 3h7l1-6-3-1-1 2-4-3z"/><path d="M9 12v3M9 21l1-4M15 21l-1-4"/>`)
+    reaper: F(`<path d="M12 3 9 7l5 5 4-1-6-8z"/><path d="M13 8 9 12l-2-1v2l4 3h7l1-6-3-1-1 2-4-3z"/><path d="M9 12v3M9 21l1-4M15 21l-1-4"/>`),
+    hydraling: F(`<circle cx="8" cy="13" r="2.4"/><circle cx="16" cy="13" r="2.4"/><path d="M8 15.4v6M16 15.4v6M8 13l3 4M16 13l-3 4"/><circle cx="8" cy="13" r="1"/><circle cx="16" cy="13" r="1"/>`),
+    phoenixegg: F(`<path d="M12 4c3 2 4.5 5 4.5 8 0 3.6-2 8-4.5 8s-4.5-4.4-4.5-8C7.5 9 9 6 12 4z"/><path d="M12 8c1 1.4 1.4 2.8 1.4 4.6 0 2-1 4.4-1.4 4.4"/>`),
+    spriggan: F(`<path d="M12 3 9 8l3-1 1 3-2 2 2 1-1 2-3-1 3 4 3-4-3 1 1-2 2-1-2-2 1-3 3 1-3-5z"/>`),
+    gremlin: F(`<path d="M8 21l-1-7-3-2 3-2-1-5 4 2 1-4h2l1 4 4-2-1 5 3 2-3 2-1 7-4-2-4 2z"/><circle cx="10.5" cy="13" r="1"/><circle cx="13.5" cy="13" r="1"/>`),
+    warden: F(`<path d="M12 2 6 5v6c0 4 2.6 7.2 6 9.6 3.4-2.4 6-5.6 6-9.6V5l-6-3z"/><path d="M12 7v8M12 12l-3-3M12 15l3-3"/>`),
+    samurai: F(`<path d="M19 3 8 14l-2 5 5-2L22 6l-3-3z"/><path d="M12 12l-3 1-2 2M14 10l1 3-2 2"/><circle cx="6.5" cy="17.5" r="1.4"/>`),
+    siren: F(`<path d="M12 3c2.6 2.4 4 5.2 4 8a4 4 0 0 1-8 0c0-2.8 1.4-5.6 4-8z"/><path d="M9 13c-2.5 2-4 4.4-4 7h14c0-2.6-1.5-5-4-7M10.5 18l1-2M13.5 18l-1-2"/><path d="M9 12c0 2 1.4 3 3 3"/>`)
   };
 
   // ======== build markup helpers ========
@@ -127,7 +134,8 @@
     Attack: 'sword', Curse: 'skull', Buff: 'shieldup', Summon: 'portal',
     Transform: 'rune', Chaos: 'chaos', Status: 'eye', Time: 'clock',
     Kingship: 'crown', Economy: 'coin', Luck: 'dice',
-    Wild: 'leaf', Void: 'void', SciFi: 'boltring', Show: 'star', Myth: 'rune'
+    Wild: 'leaf', Void: 'void', SciFi: 'boltring', Show: 'star', Myth: 'rune',
+    Jujutsu: 'rune', Wuxia: 'sword', Ocean: 'drop', War: 'target'
   };
   const KEYWORD = [
     [/fire|flame|burn|dragon'?s?|inciner|meteor|ragnarok|cannon|sunburst/i, 'fire'],
