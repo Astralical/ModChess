@@ -414,18 +414,19 @@
     const meIsHuman = !cfg.botMode || MD.Game.humanColor === meColor;
 
     // me (bottom chip — chess.com shows your username + rating here)
+    const inCamp = MD.Campaign && MD.Campaign.active;
     const profName = (P.name || '').trim();
-    const meName = cfg.botMode ? (profName || 'You') : (meColor === 'w' ? 'White' : 'Black');
-    const oppName = cfg.botMode ? 'Computer' : (topColor === 'w' ? 'White' : 'Black');
+    const meName = inCamp ? (profName || 'Your Realm') : cfg.botMode ? (profName || 'You') : (meColor === 'w' ? 'White' : 'Black');
+    const oppName = inCamp ? 'The Warlord' : cfg.botMode ? 'Computer' : (topColor === 'w' ? 'White' : 'Black');
     $('#meName').textContent = meName;
     $('#oppName').textContent = oppName;
     // meta rows (user tag + rating like chess.com's player line)
-    const meUser = cfg.botMode ? ('@' + (profName || 'guest')) : (meColor === 'w' ? 'White' : 'Black');
-    const meElo = meIsHuman && !cfg.botMode ? '' : String(P.elo || 1200);
+    const meUser = inCamp ? ('@' + (profName || 'defender')) : cfg.botMode ? ('@' + (profName || 'guest')) : (meColor === 'w' ? 'White' : 'Black');
+    const meElo = (meIsHuman && !cfg.botMode) && !inCamp ? '' : String(P.elo || 1200);
     $('#meUser').textContent = meUser;
-    $('#meElo').textContent = meElo ? '• ' + meElo : '';
-    const oppUser = cfg.botMode ? 'Mod AI' : (topColor === 'w' ? 'White' : 'Black');
-    const oppElo = cfg.botMode ? '• ' + (['Easy', 'Normal', 'Hard'][(cfg.diff || 2) - 1] || 'Normal') : '';
+    $('#meElo').textContent = inCamp ? '' : (meElo ? '• ' + meElo : '');
+    const oppUser = inCamp ? 'Siege Host' : cfg.botMode ? 'Mod AI' : (topColor === 'w' ? 'White' : 'Black');
+    const oppElo = inCamp ? '• waves of war' : cfg.botMode ? '• ' + (['Easy', 'Normal', 'Hard'][(cfg.diff || 2) - 1] || 'Normal') : '';
     $('#oppUser').textContent = oppUser;
     $('#oppElo').textContent = oppElo;
 
@@ -480,8 +481,28 @@
     const G = MD.Game;
     const zone = $('#azCards');
     clear(zone);
-    const hand = G.hand && G.hand.cards ? G.hand.cards : [];
     const azTitle = $('#azTitle'), azSub = $('#azSub'), skipBtn = $('#btnSkipAbility'), note = $('#azNote');
+
+    // campaign mode replaces the ability zone with its own instructions
+    if (MD.Campaign && MD.Campaign.active) {
+      azTitle.textContent = 'Siege of the Crystal Throne';
+      azSub.textContent = 'roguelike campaign · 1-time run';
+      skipBtn.style.display = 'none';
+      note.textContent = '';
+      const c = MD.Campaign;
+      const line1 = c.phase === 'enemy' ? 'The enemy host is marching… hold the line!' :
+        (c.phase === 'reward' ? 'The wave is broken — choose a boon.' : 'Your round — move up to ' + c.tokens + ' piece' + (c.tokens === 1 ? '' : 's') + ', then press ENEMY PHASE.');
+      const line2 = c.phase === 'enemy' ? 'Every surviving enemy takes one step.' :
+        'Captures earn gold · your army persists · lose your King and the run ends.';
+      const d = document.createElement('div');
+      d.className = 'az-empty';
+      d.innerHTML = '<div class="az-empty-ico">' + MD.iconHTML(c.phase === 'enemy' ? 'skull' : 'crown') + '</div>' +
+        '<div class="az-empty-title">' + esc(line1) + '</div>' +
+        '<div class="az-empty-sub">' + esc(line2) + '</div>';
+      zone.appendChild(d);
+      return;
+    }
+    const hand = G.hand && G.hand.cards ? G.hand.cards : [];
 
     if (G.phase === 'over') {
       azTitle.textContent = 'Battle Over';
@@ -903,8 +924,10 @@
       b.addEventListener('click', () => {
         document.querySelectorAll('.mode-card').forEach(x => x.classList.toggle('selected', x === b));
         const isBot = b.dataset.mode === 'bot';
+        const isCamp = b.dataset.mode === 'campaign';
         $('#diffRow').style.display = isBot ? '' : 'none';
         $('#colorRow').style.display = isBot ? '' : 'none';
+        $('#smodeRow').style.display = isCamp ? 'none' : '';
       });
     });
     document.querySelectorAll('#diffRow .chip').forEach(c => {
@@ -930,7 +953,11 @@
     });
     $('#btnStart').addEventListener('click', () => {
       const sel = document.querySelector('.mode-card.selected');
-      const isBot = !sel || sel.dataset.mode === 'bot';
+      const mode = sel ? sel.dataset.mode : 'bot';
+      if (mode === 'campaign') {
+        if (MD.Campaign && MD.Campaign.start) { MD.Campaign.start(); return; }
+      }
+      const isBot = mode === 'bot';
       MD.Game.start(isBot, MD.Settings.diff, MD.Settings.human || 'w', MD.Settings.smode || 'classic');
     });
   }

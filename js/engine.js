@@ -612,7 +612,6 @@
         if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
         const t = g.board[nr][nc];
         if (t && t.c !== cell.c && t.t !== 'k') {
-          g.capt ? g.capt : null;
           revokeLeave(g, nr, nc, t);
           g.board[nr][nc] = null;
           events.push({ kind: 'rattle', r: nr, c: nc, text: 'Death-burst destroys a ' + pieceLabel(t.t) });

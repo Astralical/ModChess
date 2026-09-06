@@ -63,6 +63,18 @@
         <div class="board-msg" id="boardMsg"></div>
       </div>
     </div>
+    <div class="camp-hud" id="campHud" style="display:none">
+      <div class="camp-hud-left">
+        <span class="camp-pill" id="campWave">Wave 1</span>
+        <span class="camp-pill" id="campGold">Gold 0</span>
+        <span class="camp-pill" id="campArmy">Army 0</span>
+        <span class="camp-pill" id="campMoves">Moves 2</span>
+      </div>
+      <div class="camp-hud-right">
+        <button class="btn-small camp-end" id="btnEndRound">Enemy Phase ➜</button>
+        <button class="btn-small camp-quit" id="btnQuitRun">Abandon</button>
+      </div>
+    </div>
 
     <!-- me player chip -->
     <div class="player-card bottom" id="meCard">
@@ -128,6 +140,11 @@
         <div class="mode-emoji" data-ico="users"></div>
         <div class="mode-title">Two Players</div>
         <div class="mode-sub">Pass & play on one screen</div>
+      </button>
+      <button class="mode-card" data-mode="campaign">
+        <div class="mode-emoji" data-ico="crown"></div>
+        <div class="mode-title">Campaign — Siege of the Throne</div>
+        <div class="mode-sub">Roguelike waves · events · keep your army</div>
       </button>
     </div>
     <div class="diff-row" id="diffRow">
@@ -211,6 +228,30 @@
     <div class="result-btns">
       <button class="btn-big primary" id="btnRematch">Rematch</button>
       <button class="btn-big" id="btnResultMenu">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Campaign: wave reward (choose a boon) -->
+<div class="modal small" id="campRewardModal">
+  <div class="modal-inner">
+    <div class="modal-close" data-close="campRewardModal">✕</div>
+    <h2 id="campRewardTitle">Wave Cleared!</h2>
+    <p class="modal-sub" id="campRewardSub"></p>
+    <div class="camp-rewards" id="campRewards"></div>
+  </div>
+</div>
+
+<!-- Campaign: run over -->
+<div class="modal small" id="campEndModal">
+  <div class="modal-inner">
+    <div class="result-emoji" id="campEndEmoji"></div>
+    <h2 id="campEndTitle">The Throne Has Fallen</h2>
+    <p class="modal-sub" id="campEndSub"></p>
+    <div class="camp-runstats" id="campRunStats"></div>
+    <div class="result-btns">
+      <button class="btn-big primary" id="btnCampRetry">New Run</button>
+      <button class="btn-big" id="btnCampMenu">Main Menu</button>
     </div>
   </div>
 </div>
@@ -325,6 +366,7 @@
 <script src="js/ai.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/main.js"></script>
+<script src="js/campaign.js"></script>
 <script src="js/meta.js"></script>
 <script src="js/online.js"></script>
 </body>

@@ -1,7 +1,7 @@
 # ♞ Mod Chess — Ability Chess
 
 A chess web app in the visual spirit of chess.com — **but every turn, both players
-are dealt spells from a pool of 506 unique fantasy abilities** and must
+are dealt spells from a pool of 706 unique fantasy abilities** and must
 cast **one** before moving. Spells can buff your army, curse the enemy, warp the
 board, or reshape reality itself. When a spell is cast, **both sides always see it**
 — a cinematic reveal, an on-screen effect readout, and a running battle log.
@@ -14,8 +14,14 @@ board, or reshape reality itself. When a spell is cast, **both sides always see 
   - 🤖 **vs Computer** — 3 strengths (Easy / Normal / Hard), alpha-beta search with quiescence.
     Choose to play as **White or Black** from the menu.
   - 👥 **Two Players** — local pass-and-play.
+  - 🏰 **Campaign — Siege of the Crystal Throne** — a roguelike, one-time-run adventure:
+    you (White) defend a fortress against **6 escalating waves** of the Warlord's host.
+    Your army **persists between waves**, every capture earns gold, each round you may
+    move 2 pieces then press **Enemy Phase** (every surviving enemy steps once). Clear a
+    wave to choose a **boon** — reinforcements, armories, drillmasters, or risky shrine
+    **events**. If your King falls, the run is over. Best run is remembered.
 - **The Ability system**
-  - **506 hand-written spells**, each with its own icon, rarity (Common/Rare/
+  - **706 hand-written spells**, each with its own icon, rarity (Common/Rare/
     Epic/Legendary), rules text, and flavor line.
     Browse all of them in the **Ability Codex**.
   - Each turn a player draws spells (Classic/Draft give a choice) and **must cast 1**
@@ -25,21 +31,33 @@ board, or reshape reality itself. When a spell is cast, **both sides always see 
   - Categories: Attack, Curse, Buff, Summon, Transform, Chaos, Status, Time,
     Kingship, Economy, Luck — everything from *Fireball* to *Black Hole*, *Possession*,
     *Time Warp*, *Ragnarok*… and the 36 Stratagems.
-  - **Five themed families** stack on the core: 🐺 **The Wild** (beasts & forests),
-    🌌 **The Void** (stars & entropy), 🤖 **The Machine** (sci-fi robots & lasers),
-    🎪 **Carnival of Miracles** (tricksters & circus), and 🏛️ **Legends & Myths**
-    (gods & titans) — 50 spells each, several with summons.
+  - **Nine themed families** stack on the core: 🐺 **The Wild**, 🌌 **The Void**,
+    🤖 **The Machine** (sci-fi), 🎪 **Carnival of Miracles**, 🏛️ **Legends & Myths**,
+    ⛩️ **Jujutsu** (咒术回战 cursed techniques & domains), ⚔ **Wuxia** (江湖侠客 sects &
+    secret arts), ⚓ **Ocean** (pirates & the deep), and 🎖 **War** (World War II) —
+    50 spells each, several with summons.
   - A **balance & de-duplication pass** (js/rebalance.js) assigns every card a consistent
     rarity ladder and makes overlapping “same effect, different name” spells mechanically
     distinct (no two spells in the codex are synonyms).
   - Target-spells highlight valid squares for you to click.
   - Spell reveals are visible to **both** players (cards in hand are face-down for the opponent).
-- **Custom summoned troops (25 creatures)** — summons now conjure real, unique units instead
-  of reskinned pawns/rooks/queens. Each has its own emoji token and its own movement:
-  Imps skitter, Warhorses leap-and-dart, Guardians slide and guard, Phoenixes move like a
-  queen **and** strike like a knight… plus 20 more: Goblin, Ranger, Dwarf, Harpy, Golem,
-  Sphinx, Lich, Treant, Griffon, Manticore, Vampire, Basilisk, Djinn, Owlbear, Banshee,
-  Hydra, Tiger, Unicorn, Battle Turtle and the Reaper.
+- **Custom summoned troops (34 creatures + growth stages)** — summons conjure real, unique
+  units instead of reskinned pawns/rooks/queens. Each has its own icon and movement:
+  Imps, Warhorses, Guardians, Phoenixes, Goblins, Rangers, Dwarves, Harpies, Golems,
+  Sphinxes, Liches, Treants, Griffons, Manticores, Vampires, Basilisks, Djinns, Owlbears,
+  Banshees, Hydras, Tigers, Unicorns, Battle Turtles, the Reaper… plus **new-trait units**: 🌱
+  Spriggans (regenerate, split into pawns on death), 👺 Gremlins (explode when killed),
+  🧊 Wardens (freeze an adjacent foe every turn), ⚔ Samurai, and 🧜 Sirens (poison an adjacent
+  foe every turn). **Hydras & Phoenixes now arrive as weak Hydralings / Phoenix Eggs that
+  mature into their adult form after a round** — no more turn-1 monsters.
+- **Balance pass on summons & shields**
+  - **Summoning sickness** — freshly summoned pieces can't move or capture until they've
+    survived the summoner's turn (stronger troops wake up later). No more spawn-next-to-the-king cheese.
+  - **Shields now really work** — a shielded piece **cannot be captured** while the ward holds.
+  - **Resurrection fixed** — revival raises your own fallen pieces (g.lost is tracked), and
+    falls back to conscripting captured enemies or conjuring from the aether, so it never
+    silently fizzles. Stampede no longer tramples (pawns just flee), Overrun is fixed,
+    and no ability can ever remove a king instantly.
 - **chess.com-style settings** — enable **premoves** (vs computer, they auto-fire on
   your turn), auto-queen, show legal moves, highlight last move, auto-castle, sound,
   animations, and board themes (**Green / Wood / Slate**). Settings persist locally.
