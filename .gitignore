@@ -11,3 +11,4 @@
 
 # node (kept only if a package.json appears)
 node_modules
+.env*
