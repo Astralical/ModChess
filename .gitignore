@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# logs / local junk
+*.log
+.vscode/*
+!.vscode/extensions.json
+
+# vercel
+.vercel
+
+# node (kept only if a package.json appears)
+node_modules

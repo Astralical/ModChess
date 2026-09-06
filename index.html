@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mod Chess — Ability Chess</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/chess.css">
+</head>
+<body>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar">
+  <div class="tb-left">
+    <div class="logo">
+      <div class="logo-mark" id="logoMark"></div>
+      <span class="logo-text">Mod<span>Chess</span></span>
+    </div>
+    <nav class="tb-nav">
+      <button id="btnPlay" class="tb-btn accent">Play</button>
+      <button id="btnNewGame" class="tb-btn">New Game</button>
+    </nav>
+  </div>
+  <div class="tb-right">
+    <div class="turn-pill" id="turnPill"><span id="turnPillIcon">●</span><span id="turnPillText">Ready</span></div>
+    <button id="btnFlip" class="tb-btn icon-btn" title="Flip board"></button>
+    <button id="btnSound" class="tb-btn icon-btn" title="Toggle sound"></button>
+    <button id="btnProfile" class="tb-btn" title="Your profile">Profile</button>
+    <button id="btnHistory" class="tb-btn" title="Match history">History</button>
+    <button id="btnSettings" class="tb-btn" title="Settings">Settings</button>
+    <button id="btnCodex" class="tb-btn" title="Browse all abilities">Ability Codex</button>
+  </div>
+</header>
+
+<!-- ============ MAIN LAYOUT ============ -->
+<main class="layout">
+  <!-- LEFT: BOARD -->
+  <section class="left">
+    <!-- opponent player chip -->
+    <div class="player-card top" id="oppCard">
+      <div class="avatar" id="oppAvatar"></div>
+      <div class="pc-body">
+        <div class="pc-name"><span id="oppName">Opponent</span><span class="pc-clock" id="oppClock">∞</span></div>
+        <div class="pc-meta"><span class="pc-user" id="oppUser"></span><span class="pc-elo" id="oppElo"></span><span class="pc-badge" id="oppBadge"></span></div>
+        <div class="captured" id="oppCaptured"></div>
+      </div>
+    </div>
+    <div class="board-wrap" id="boardWrap">
+      <div class="board-shadow"></div>
+      <div class="board" id="board">
+        <div class="coords coords-top" id="coordsTop"></div>
+        <div class="coords coords-bottom" id="coordsBottom"></div>
+        <div class="coords coords-left" id="coordsLeft"></div>
+        <div class="coords coords-right" id="coordsRight"></div>
+        <div class="square-layer" id="squareLayer"></div>
+        <div class="highlighter" id="highlighter"></div>
+        <div class="piece-layer" id="pieceLayer"></div>
+        <div class="fx-layer" id="fxLayer"></div>
+        <div class="premove-layer" id="premoveLayer"></div>
+        <div class="board-msg" id="boardMsg"></div>
+      </div>
+    </div>
+
+    <!-- me player chip -->
+    <div class="player-card bottom" id="meCard">
+      <div class="avatar" id="meAvatar"></div>
+      <div class="pc-body">
+        <div class="pc-name"><span id="meName">You</span><span class="pc-clock" id="meClock">∞</span></div>
+        <div class="pc-meta"><span class="pc-user" id="meUser"></span><span class="pc-elo" id="meElo"></span><span class="pc-badge" id="meBadge"></span></div>
+        <div class="captured" id="meCaptured"></div>
+      </div>
+    </div>
+    <div class="move-log-wrap">
+      <div class="ml-tabs">
+        <span class="ml-tab active" id="tabMoves">Moves</span>
+        <span class="ml-tab" id="tabLog">Battle Log</span>
+        <span class="ml-tab" id="tabSpells">Spells</span>
+      </div>
+      <div class="move-log" id="moveLog"></div>
+      <div class="battle-log" id="battleLog" style="display:none"></div>
+      <div class="battle-log" id="spellLog" style="display:none"></div>
+    </div>
+  </section>
+
+  <!-- RIGHT: PLAYERS + ABILITIES -->
+  <aside class="right">
+    <!-- ability zone -->
+    <div class="ability-zone">
+      <div class="az-header">
+        <span id="azTitle">Ability Pool</span>
+        <span class="az-sub" id="azSub">draw 3 · play 1 per turn</span>
+      </div>
+      <div class="az-cards" id="azCards">
+        <div class="az-empty">
+          <div class="az-empty-title">Ability Phase</div>
+          <div class="az-empty-sub">Each turn a player is dealt 3 random spells and may cast one before moving. The spell is revealed to both sides!</div>
+        </div>
+      </div>
+      <div class="az-controls">
+        <button class="az-skip" id="btnSkipAbility" style="display:none">Skip ability → move</button>
+        <div class="az-note" id="azNote"></div>
+      </div>
+    </div>
+
+    <!-- me -->
+  </aside>
+</main>
+
+<!-- ============ OVERLAYS ============ -->
+<div class="modal-back" id="modalBack" style="display:none"></div>
+
+<!-- New game / mode select -->
+<div class="modal" id="menuModal">
+  <div class="modal-inner">
+    <div class="modal-close" data-close="menuModal">✕</div>
+    <h2>Mod Chess</h2>
+    <p class="modal-sub">Chess, but every turn both players are dealt 3 random <b>abilities</b> from a pool of <b><span id="poolCount">0</span></b> and may cast one. Spells are always revealed to both sides.</p>
+    <div class="mode-grid">
+      <button class="mode-card" data-mode="bot">
+        <div class="mode-emoji" data-ico="robot"></div>
+        <div class="mode-title">vs Computer</div>
+        <div class="mode-sub">Play against the Mod AI</div>
+      </button>
+      <button class="mode-card" data-mode="local">
+        <div class="mode-emoji" data-ico="users"></div>
+        <div class="mode-title">Two Players</div>
+        <div class="mode-sub">Pass & play on one screen</div>
+      </button>
+    </div>
+    <div class="diff-row" id="diffRow">
+      <span>Bot strength:</span>
+      <button class="chip" data-diff="1">Easy</button>
+      <button class="chip selected" data-diff="2">Normal</button>
+      <button class="chip" data-diff="3">Hard</button>
+    </div>
+    <div class="diff-row" id="colorRow">
+      <span>Play as:</span>
+      <button class="chip" data-color="w">White</button>
+      <button class="chip" data-color="b">Black</button>
+    </div>
+    <button class="btn-big primary" id="btnStart">Start Game</button>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="modal" id="settingsModal">
+  <div class="modal-inner">
+    <div class="modal-close" data-close="settingsModal">✕</div>
+    <h2>Settings</h2>
+    <div class="set-group">
+      <h3>Board</h3>
+      <div class="set-row">
+        <span>Theme</span>
+        <div class="seg" id="themeSeg">
+          <button class="seg-btn" data-theme="green">Green</button>
+          <button class="seg-btn" data-theme="wood">Wood</button>
+          <button class="seg-btn" data-theme="dark">Slate</button>
+        </div>
+      </div>
+    </div>
+    <div class="set-group">
+      <h3>Gameplay</h3>
+      <label class="set-row check"><input type="checkbox" id="setPremove"><span>Enable premoves (vs computer)</span></label>
+      <label class="set-row check"><input type="checkbox" id="setAutoQueen" checked><span>Auto-queen on promotion</span></label>
+      <label class="set-row check"><input type="checkbox" id="setLegal" checked><span>Show legal moves</span></label>
+      <label class="set-row check"><input type="checkbox" id="setLastMove" checked><span>Highlight last move</span></label>
+      <label class="set-row check"><input type="checkbox" id="setAutoCastle" checked><span>Auto-castle when moving king</span></label>
+    </div>
+    <div class="set-group">
+      <h3>Feel</h3>
+      <label class="set-row check"><input type="checkbox" id="setSound" checked><span>Sound effects</span></label>
+      <label class="set-row check"><input type="checkbox" id="setAnim" checked><span>Animations</span></label>
+    </div>
+  </div>
+</div>
+
+<!-- Ability codex -->
+<div class="modal" id="codexModal">
+  <div class="modal-inner codex">
+    <div class="modal-close" data-close="codexModal">✕</div>
+    <h2>Ability Codex <span class="codex-count" id="codexCount"></span></h2>
+    <div class="codex-filter" id="codexFilter"></div>
+    <div class="codex-grid" id="codexGrid"></div>
+  </div>
+</div>
+
+<!-- Promotion picker -->
+<div class="modal small" id="promoModal">
+  <div class="modal-inner">
+    <h2>Promote to</h2>
+    <div class="promo-row" id="promoRow"></div>
+  </div>
+</div>
+
+<!-- Result -->
+<div class="modal" id="resultModal">
+  <div class="modal-inner">
+    <div class="result-emoji" id="resultEmoji"></div>
+    <h2 id="resultTitle">Result</h2>
+    <p class="modal-sub" id="resultSub"></p>
+    <div class="result-btns">
+      <button class="btn-big primary" id="btnRematch">Rematch</button>
+      <button class="btn-big" id="btnResultMenu">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Ability reveal splash -->
+<div class="burst" id="burst"></div>
+
+<!-- Profile -->
+<div class="modal small" id="profileModal">
+  <div class="modal-inner">
+    <div class="modal-close" data-close="profileModal">✕</div>
+    <h2>Profile</h2>
+    <div class="form-row"><label>Username</label><input id="pfName" maxlength="18" placeholder="e.g. GrandMaester" autocomplete="off"></div>
+    <div class="inline" style="justify-content:space-between">
+      <span style="font-size:12.5px;color:#a7adb8;font-weight:700">Rating</span>
+      <span class="pc-elo" style="font-size:18px" id="pfElo">1200</span>
+    </div>
+    <p class="modal-sub" id="pfStatus" style="margin:8px 0 0">Used on the player card, in history and (soon) online.</p>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn-big primary" id="btnProfileSave">Save</button>
+      <button class="btn-big secondary" id="btnOnline">Play Online</button>
+    </div>
+  </div>
+</div>
+
+<!-- Match history -->
+<div class="modal" id="historyModal">
+  <div class="modal-inner">
+    <div class="modal-close" data-close="historyModal">✕</div>
+    <h2>Match History</h2>
+    <div class="hist-list" id="historyList"></div>
+  </div>
+</div>
+
+<!-- Analysis -->
+<div class="modal" id="analysisModal">
+  <div class="modal-inner" style="width:min(800px,96vw)">
+    <div class="modal-close" data-close="analysisModal">✕</div>
+    <h2>Game Analysis</h2>
+    <div class="analysis-layout">
+      <div class="an-board-wrap"><div class="an-board" id="anBoard"></div></div>
+      <div class="an-panel">
+        <div class="an-caption" id="anCaption"></div>
+        <div class="an-controls">
+          <button class="btn-small" id="anPrev">◀</button>
+          <button class="btn-small" id="anPlay">▶ Play</button>
+          <button class="btn-small" id="anNext">▶</button>
+          <button class="btn-small" id="anEnd">End ⏭</button>
+        </div>
+        <div class="an-moves" id="anMoves"></div>
+        <div class="an-trays" id="anTrays"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Online (Supabase) -->
+<div class="modal" id="onlineModal">
+  <div class="modal-inner">
+    <div class="modal-close" data-close="onlineModal">✕</div>
+    <h2>Play Online</h2>
+    <p class="modal-sub" id="olStatus">Connect your Supabase project to enable accounts, ELO and live matches.</p>
+    <div id="olAuthed" style="display:none">
+      <div class="inline" style="justify-content:space-between"><span id="olWho" style="font-weight:800"></span><span id="olElo"></span></div>
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+        <button class="btn-big primary" id="btnFindMatch">Find a Match</button>
+        <button class="btn-big secondary" id="btnSignOut">Sign out</button>
+      </div>
+      <p class="modal-sub" id="olLobby" style="margin-top:10px"></p>
+    </div>
+    <div id="olGuest">
+      <div class="form-row"><label>Email</label><input id="olEmail" type="email" placeholder="you@example.com" autocomplete="off"></div>
+      <div class="form-row"><label>Password</label><input id="olPass" type="password" placeholder="••••••••" autocomplete="off"></div>
+      <div class="form-row"><label>Username (first time only)</label><input id="olUser" placeholder="GrandMaester" maxlength="18" autocomplete="off"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-big primary" id="btnOlLogin">Sign in</button>
+        <button class="btn-big secondary" id="btnOlSignup">Create account</button>
+      </div>
+      <details style="margin-top:12px"><summary style="font-size:12px;color:#8b93a1;cursor:pointer">Configure Supabase (URL + anon key)</summary>
+        <div class="form-row" style="margin-top:8px"><label>Supabase URL</label><input id="olUrl" placeholder="https://xxxx.supabase.co"></div>
+        <div class="form-row"><label>Anon (public) key</label><input id="olAnon" placeholder="eyJ..."></div>
+        <button class="btn-big secondary" id="btnOlSaveCfg">Save connection</button>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="js/pieces.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/troops.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/abilities_1.js"></script>
+<script src="js/abilities_2.js"></script>
+<script src="js/abilities_3.js"></script>
+<script src="js/abilities_4.js"></script>
+<script src="js/abilities_5.js"></script>
+<script src="js/abilities_6.js"></script>
+<script src="js/abilities_7.js"></script>
+<script src="js/abilities_8.js"></script>
+<script src="js/abilities_index.js"></script>
+<script src="js/rebalance.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+<script src="js/meta.js"></script>
+<script src="js/online.js"></script>
+</body>
+</html>

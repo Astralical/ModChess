@@ -1,0 +1,105 @@
+/* ============================================================
+   Mod Chess — chess.com-style overlay additions
+   (player chips flanking the board, solid cast splash, profile,
+    history + analysis UI). Loaded after styles.css.
+   ============================================================ */
+
+/* ---- solid backdrop behind the ability-cast splash ---- */
+#burst{
+  background:
+    radial-gradient(1200px 600px at 50% 30%, rgba(60,70,95,.35), rgba(0,0,0,0) 60%),
+    linear-gradient(180deg, rgba(8,10,14,.82), rgba(12,14,18,.93)) !important;
+  backdrop-filter: blur(3px);
+}
+#burst .burst-card{ background:rgba(24,27,34,.6); border-radius:18px; padding:22px 30px; box-shadow:0 22px 70px rgba(0,0,0,.65) }
+
+/* ---- player chips (chess.com style: avatar | name/meta | captures) ---- */
+.left{ gap:6px }
+.player-card{
+  background:linear-gradient(180deg,#31353c,#202329);
+  border:1px solid #3b4048; border-radius:10px;
+  padding:7px 10px; display:flex; align-items:center; gap:11px;
+  box-shadow:0 5px 14px rgba(0,0,0,.4);
+  width:min(calc(var(--sq)*8 + 6px),100%); box-sizing:border-box;
+}
+.player-card.top{ order:0 }
+.player-card.bottom{ order:3 }
+.board-wrap{ order:1 }
+.move-log-wrap{ order:2 }
+.player-card .avatar{ width:44px; height:44px; border-radius:50%; flex:none; position:relative }
+.player-card .avatar::after{ content:''; position:absolute; inset:-2px; border-radius:50%; border:2px solid transparent }
+.player-card.active .avatar::after{ border-color:#81b64c }
+.player-card.active .avatar.w::after{ border-color:#e8e8ea }
+.player-card .avatar img{ width:44px; height:44px; border-radius:50% }
+.player-card .pc-body{ flex:1; min-width:0; display:flex; flex-direction:column }
+.player-card .pc-name{ display:flex; align-items:center; justify-content:space-between; gap:8px; font-weight:800; font-size:15px; color:#eef1f6; line-height:1.2 }
+.player-card .pc-meta{ display:flex; align-items:center; gap:7px; font-size:12px; color:#9aa3b1; margin-top:1px; min-height:15px }
+.player-card .pc-user{ font-style:italic; color:#d7c27a; font-weight:600 }
+.player-card .pc-elo{ font-weight:700; color:#c9cfd9; letter-spacing:.3px }
+.player-card .pc-clock{ font-size:18px; color:#cfd6e2; font-weight:700; font-variant-numeric:tabular-nums }
+.player-card .captured{ min-height:18px; margin-top:3px; gap:2px }
+
+/* captured tray advantage pill (chess.com "material") */
+.captured .cap-advantage{
+  margin-left:7px; font-size:11.5px; font-weight:800; color:#ffd76f;
+  background:rgba(255,215,111,.12); border-radius:8px; padding:1px 6px; letter-spacing:.3px;
+}
+.player-card .captured img,.player-card .captured .ptoken{ width:19px; height:19px }
+
+/* ---- generic small field rows for profile ---- */
+.form-row{ margin:10px 0; display:flex; flex-direction:column; gap:6px }
+.form-row label{ font-size:12.5px; color:#a7adb8; font-weight:700; letter-spacing:.3px }
+.form-row input{
+  background:#1b1e23; border:1px solid #3a3f49; border-radius:8px; color:#eef1f6;
+  font-size:14px; padding:9px 11px; outline:none;
+}
+.form-row input:focus{ border-color:#81b64c }
+.btn-big.secondary{ background:#3a3e45; color:#e7eaf0 }
+.btn-big.secondary:hover{ background:#484d56 }
+.inline{ display:flex; gap:8px; align-items:center }
+.pill{ font-size:11px; font-weight:800; border-radius:10px; padding:2px 8px; background:#3a3e45; color:#cfd; letter-spacing:.3px }
+.pill.on{ background:#3d6b30; color:#d4f2bf }
+
+/* ---- history list ---- */
+.hist-list{ max-height:54vh; overflow:auto; display:flex; flex-direction:column; gap:8px; padding:2px }
+.hist-item{
+  display:flex; align-items:center; gap:10px; background:#202328; border:1px solid #32363d;
+  border-radius:10px; padding:9px 12px;
+}
+.hist-item .h-main{ flex:1; min-width:0 }
+.hist-item .h-title{ font-weight:800; font-size:14px; color:#eef1f6 }
+.hist-item .h-title .win{ color:#9ee26b } .hist-item .h-title .lose{ color:#ff8c7a } .hist-item .h-title .draw{ color:#ffd76f }
+.hist-item .h-sub{ font-size:12px; color:#8b93a1; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.hist-item .h-who{ font-size:12.5px; color:#c3c9d4; white-space:nowrap }
+.hist-item .btn-small{
+  background:#33363c; border:none; color:#dde2ea; font-weight:700; font-size:12px;
+  padding:6px 12px; border-radius:8px; cursor:pointer;
+}
+.hist-item .btn-small:hover{ background:#454a54 }
+.hist-item .btn-small.primary{ background:#81b64c; color:#13240a }
+.hist-empty{ color:#8b93a1; text-align:center; padding:26px; font-size:13px; line-height:1.6 }
+
+/* ---- analysis modal ---- */
+.analysis-layout{ display:flex; gap:18px; flex-wrap:wrap; justify-content:center }
+.an-board-wrap{ position:relative; width:min(360px,92vw); aspect-ratio:1 }
+.an-board{ position:absolute; inset:0 }
+.an-board .an-sq{ position:absolute; width:12.5%; height:12.5% }
+.an-board .an-sq.light{ background:#ebd0b0 } .an-board .an-sq.dark{ background:#b58863 }
+body.theme-green .an-board .an-sq.light{ background:#edeed1 } body.theme-green .an-board .an-sq.dark{ background:#779556 }
+body.theme-dark .an-board .an-sq.light{ background:#b7b9c0 } body.theme-dark .an-board .an-sq.dark{ background:#6b6e76 }
+.an-board .an-p{ position:absolute; width:12.5%; height:12.5% }
+.an-board .an-p img,.an-board .an-p .ptoken{ width:100%; height:100% }
+.an-board .an-hl{ position:absolute; width:12.5%; height:12.5%; background:rgba(255,213,60,.4); border-radius:3px; z-index:2 }
+.an-panel{ flex:1; min-width:250px; max-width:330px; display:flex; flex-direction:column; gap:8px }
+.an-caption{ font-size:14px; color:#eef1f6; min-height:20px; font-weight:600; line-height:1.4 }
+.an-moves{ background:#1b1e23; border:1px solid #32363d; border-radius:8px; overflow:auto; max-height:220px; padding:6px }
+.an-move{
+  display:inline-block; padding:2px 6px; margin:1px; border-radius:6px; font-size:12px; color:#c3c9d4; cursor:pointer;
+}
+.an-move.ability{ color:#c9a6e8; font-style:italic }
+.an-move.cur{ background:#81b64c; color:#13240a }
+.an-controls{ display:flex; gap:6px; flex-wrap:wrap }
+.an-controls .btn-small{ flex:1; text-align:center }
+.an-trays{ display:flex; flex-direction:column; gap:4px; font-size:12px; color:#a7adb8 }
+.an-trays .at-row{ display:flex; align-items:center; gap:6px; flex-wrap:wrap }
+.an-trays img,.an-trays .ptoken{ width:17px; height:17px }
