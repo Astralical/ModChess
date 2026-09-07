@@ -99,6 +99,28 @@
   Game.startTurn = function (color) {
     if (Game.phase === 'over' || !Game.g || Game.g.over) return;
     Game.g.turn = color;
+    // ranged artillery: fire at distant enemies without moving (then cooldown)
+    if (MD.Engine && MD.Engine.rangeCandidates && Game.g.anyTroop) {
+      const T = MD.TROOPS || {};
+      const n = Game.g.n || 8;
+      for (let rr = 0; rr < n; rr++) for (let cc = 0; cc < n; cc++) {
+        const cell = Game.g.board[rr][cc];
+        if (!cell || cell.c !== color) continue;
+        const tdef = T[cell.t];
+        if (!tdef || !(tdef.artillery || tdef.range)) continue;
+        if (cell.b && (cell.b.z > 0 || cell.b.f > 0)) continue;
+        const art = tdef.artillery || { range: tdef.range, radius: 0, cd: 2 };
+        const bb = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+        if ((bb.ac || 0) > 0) continue;
+        const cands = MD.Engine.rangeCandidates(Game.g, rr, cc, art.range);
+        if (!cands.length) continue;
+        const tgt = cands.slice().sort((a, b) => (E.val(b.cell.t) - E.val(a.cell.t)) || (a.d - b.d))[0];
+        const hits = MD.Engine.strike(Game.g, tgt.r, tgt.c, art.radius, color);
+        bb.ac = art.cd || 2;
+        addLog(Game.g, ((tdef.name || cell.t)) + ' fires at ' + E.sqName(tgt.r, tgt.c) + ' — ' + (hits ? (hits > 1 ? hits + ' pieces caught' : 'direct hit') : 'the shot is wide') + '!', 'bad', 'storm');
+      }
+    }
+    if (MD.Engine && MD.Engine.tickArtillery) MD.Engine.tickArtillery(Game.g, color);
     // delayed mortar/siege shells tick down as their firing side's turns begin
     if (MD.Engine && MD.Engine.tickShells) {
       const evs = MD.Engine.tickShells(Game.g, color);

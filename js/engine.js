@@ -356,6 +356,47 @@
     return evs;
   };
 
+  /* ---- RANGED artillery troops: fire at range without moving ----
+     A troop with `artillery: {range, radius, cd}` (or legacy `range`) can
+     strike enemies on a clear straight/diagonal line within range. The owner
+     auto-fires at the start of their turn and then cools down `cd` own turns. */
+  E.rangeCandidates = function (g, r, c, range) {
+    const n = g.n || CUR;
+    const me = g.board[r] && g.board[r][c];
+    const out = [];
+    if (!me) return out;
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+    for (const [dr, dc] of dirs) {
+      let rr = r + dr, cc = c + dc, d = 1;
+      while (rr >= 0 && rr < n && cc >= 0 && cc < n && d <= range) {
+        if (E.terrainAt && E.terrainAt(g, rr, cc)) break;
+        const cell = g.board[rr][cc];
+        if (cell) { if (cell.c !== me.c && cell.t !== 'k') out.push({ r: rr, c: cc, cell, d }); break; }
+        rr += dr; cc += dc; d++;
+      }
+    }
+    return out;
+  };
+  // immediate ranged strike (radius 0 = destroy the one target)
+  E.strike = function (g, r, c, radius, side) {
+    const hits = engineBomb(g, r, c, Math.max(0, radius | 0 || 0), side);
+    return hits.length;
+  };
+  // lower artillery cooldowns at the start of the owner's own turns
+  E.tickArtillery = function (g, side) {
+    const T = root.MD && root.MD.TROOPS;
+    if (!T || !g.anyTroop) return;
+    const n = g.n || CUR;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      const cell = g.board[r][c];
+      if (!cell || cell.c !== side) continue;
+      const d = T[cell.t];
+      if (!d || !(d.artillery || d.range)) continue;
+      const bb = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+      if ((bb.ac || 0) > 0) bb.ac--;
+    }
+  };
+
   function findKing(g, color) {
     for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
       const cell = g.board[r][c];
