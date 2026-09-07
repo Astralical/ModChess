@@ -25,38 +25,82 @@
     tokens: 2, enemyRunning: false,
     _orig: {}
   };
-  const TOTAL_WAVES = 6;
-
-  /* ---------------- terrain board templates ----------------
-     each map: 8 rows x 8 chars from the top (black side) down to the bottom.
-     '.' open · '#' wall (blocks move+sight) · '~' river (blocks move+sight).
-     No map ever fully blocks a lane — there is always a way across. */
-  const MAPS = [
-    { name: 'The Open Field', grid: [
-      '........', '........', '........', '........', '........', '........', '........', '........'] },
-    { name: 'Ruined Keep', grid: [
-      '........', '...#....', '..##....', '....#...', '...#....', '....#...', '...#....', '........'] },
-    { name: 'The Divided River', grid: [
-      '........', '...~....', '...~....', '...~....', '....~...', '....~...', '....~...', '........'] },
-    { name: 'Twin Bastions', grid: [
-      '........', '........', '..##.##.', '........', '........', '..##.##.', '........', '........'] },
-    { name: 'Frozen Shallows', grid: [
-      '..~~....', '........', '....~~..', '........', '..~~....', '........', '....~~..', '........'] },
-    { name: 'Canyon of Bones', grid: [
-      '........', '..#...#.', '..#...#.', '..#...#.', '..#...#.', '..#...#.', '..#...#.', '........'] }
-  ];
-
-  /* ---------------- wave recipes (escalating) ---------------- */
-  // each recipe lists unit types; the Warlord (black king) is always added
-  const WAVES = [
-    ['p', 'p', 'p', 'p', 'p', 'p'],                                   // wave 1
-    ['p', 'p', 'p', 'p', 'p', 'p', 'n', 'n'],                         // wave 2
-    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'n', 'b', 'r'],               // wave 3
-    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'r', 'r', 'b', 'n', 'imp'],   // wave 4
-    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'q', 'r', 'b', 'n', 'warhorse', 'hydraling'], // wave 5
-    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'q', 'q', 'r', 'r', 'b', 'n', 'siren', 'golem'] // wave 6 boss
-  ];
+  /* -------- endless campaign: sizes / encounters / gold -------- */
+  const SIZES = [8, 10, 12];
   const valOf = t => E.val(t);
+
+  // --- economy: gold is scarce & hard-won ---
+  const goldVal = v => Math.max(3, Math.round(v / 30)); // p3 n11 b11 r17 q32 …
+  const spoilsOf = w => 12 + w * 6;                     // tiny spoils per wave
+  const chestOf = w => 25 + w * 12;                     // war-chest boon
+
+  // --- encounter types ---
+  //   host  : the classic horde (pawn swarms + support)
+  //   raid  : an elite strike force (few, strong)
+  //   ambush: killers already slip behind your lines, hidden in mist
+  //   boss  : every 5th wave the Warlord himself leads a siege
+  function encounterFor(w) {
+    if (w <= 1) return 'host';
+    if (w % 5 === 0) return 'boss';
+    const r = Math.random();
+    return r < 0.55 ? 'host' : (r < 0.8 ? 'raid' : 'ambush');
+  }
+  // enemy-value budget grows every wave (endless but fair)
+  function hostBudget(w) { return 320 + w * 190 + (w > 5 ? (w - 5) * 150 : 0); }
+
+  // --- terrain for an n x n board: open at first; later a few scattered
+  // walls/rivers in the middle band (lanes always stay open) ---
+  function buildTerrain(g, n, w) {
+    if (g.blocked) for (let r = 0; r < g.blocked.length; r++) for (let c = 0; c < n; c++) if (g.blocked[r]) g.blocked[r][c] = null;
+    if (w <= 1) { C.run.mapName = 'The Open Field'; return; }
+    const usedC = new Set();
+    const walls = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < walls; i++) {
+      const cc = 1 + Math.floor(Math.random() * (n - 2));
+      if (usedC.has(cc)) continue;
+      usedC.add(cc);
+      const rr = 2 + Math.floor(Math.random() * Math.max(1, n - 5));
+      if (rr < n - 1) E.setTerrain(g, rr, cc, 'wall');
+    }
+    if (w >= 4 && Math.random() < 0.45) {
+      const cc = 1 + Math.floor(Math.random() * (n - 2));
+      if (!usedC.has(cc)) { for (let rr = 2; rr < n - 1; rr++) E.setTerrain(g, rr, cc, 'river'); }
+    }
+    C.run.mapName = (usedC.size ? 'The Scarred Field' : 'The Open Field');
+  }
+
+  // --- procedural host for a wave: spend the budget, respect the board ---
+  const TROOP_POOL = ['imp', 'goblin', 'ranger', 'warhorse', 'spriggan', 'divinedog', 'samurai', 'jianke', 'seaserpent'];
+  function hostUnits(w, n, enc) {
+    const cap = Math.max(4, Math.floor(n * n * 0.24));
+    const budget = hostBudget(w);
+    const heavy = enc === 'raid' || enc === 'boss';
+    const out = [];
+    let spent = 0, guard = 0;
+    const pickType = () => {
+      const r = Math.random();
+      const tp = () => TROOP_POOL[Math.floor(Math.random() * TROOP_POOL.length)];
+      if (heavy) return r < 0.3 ? tp() : r < 0.52 ? 'n' : r < 0.7 ? 'b' : r < 0.88 ? 'r' : 'q';
+      if (r < 0.34) return 'p';
+      if (r < 0.66) return 'p';
+      if (r < 0.8) return Math.random() < 0.5 ? 'n' : 'b';
+      if (r < 0.92) return Math.random() < 0.6 ? 'r' : tp();
+      return 'q';
+    };
+    while (guard++ < 300 && out.length < cap) {
+      const t = pickType();
+      const v = valOf(t) || 100;
+      if (spent + v > budget) { if (out.length >= 4) break; continue; }
+      out.push(t); spent += v;
+      // keep the pawn wall from overrunning the board
+      if (!heavy && out.filter(x => x === 'p').length > Math.min(9, n)) {
+        const i = out.lastIndexOf('p');
+        if (i >= 0) out[i] = Math.random() < 0.5 ? 'n' : 'b';
+      }
+    }
+    if (enc === 'boss') { out.push('qilin'); out.push('hydraling'); }
+    return out;
+  }
 
   function applyMap(g, map) {
     if (g.blocked) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.blocked[r][c] = null;
@@ -70,47 +114,80 @@
 
   // re-deploy the surviving defenders into a fresh formation (no spawn-camping)
   function redeploy(g) {
+    const n = (g.n | 0) || 8;
     const units = listPieces(g, 'w');
-    const free = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c] && !E.isTerrain(g, r, c);
+    const free = (r, c) => r >= 0 && r < n && c >= 0 && c < n && !g.board[r][c] && !E.isTerrain(g, r, c);
     const king = units.find(u => u.cell.t === 'k');
     const rest = units.filter(u => u !== king).sort(() => Math.random() - 0.5);
     const clearCell = u => { g.board[u.r][u.c] = null; };
-    // put the king safely on e1 (or the nearest free back square)
-    const backSpots = [];
-    for (const r of [7, 6, 5]) for (let c = 0; c < 8; c++) if (free(r, c)) backSpots.push({ r, c });
+    // king safely on the home centre (or nearest free back square)
+    const Kc = n >> 1;
     let si = 0;
+    const spots = [];
+    for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free(r, c)) spots.push({ r, c });
+    const sqAt = (r, c) => spots.find(s => s.r === r && s.c === c) || spots[si++];
     if (king) {
       clearCell(king);
-      const sq = (free(7, 4) ? { r: 7, c: 4 } : backSpots[0]) || { r: 6, c: 4 };
-      g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
+      const sq = (free(n - 1, Kc) ? { r: n - 1, c: Kc } : spots[0]) || { r: n - 2, c: Kc };
+      if (sq) g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
     }
-    // array of still-free back squares (recompute after king)
-    const spots = [];
-    for (const r of [7, 6, 5, 4]) for (let c = 0; c < 8; c++) if (free(r, c)) spots.push({ r, c });
-    const anyFree = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (free(r, c)) anyFree.push({ r, c });
+    // refill spot list after the king is placed
+    const back = [];
+    for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free(r, c)) back.push({ r, c });
+    const anyFree = back.slice();
     for (const u of rest) {
       clearCell(u);
-      let sq = spots[si++];
+      let sq = back[si++];
       if (!sq) sq = anyFree.length ? anyFree[Math.floor(Math.random() * anyFree.length)] : null;
       if (sq && free(sq.r, sq.c)) g.board[sq.r][sq.c] = { c: 'w', t: u.cell.t };
     }
-    // rebuild anyTroop flag
     g.anyTroop = listPieces(g, 'w').some(p => E.isTroop(p.cell.t));
+  }
+
+  // ---- board growth (army persists, so a run's board only ever gets bigger) ----
+  function emptyBoard(n) { const a = []; for (let r = 0; r < n; r++) a.push(new Array(n).fill(null)); return a; }
+  function resizeBoard(n) {
+    const g = C.g;
+    const types = listPieces(g, 'w').map(u => u.cell.t);
+    E.setSize(n);
+    g.n = n;
+    g.board = emptyBoard(n);
+    g.haz = emptyBoard(n); g.blocked = emptyBoard(n); g.zone = emptyBoard(n);
+    g.anyTroop = false;
+    const free2 = (r, c) => !g.board[r][c];
+    const Kc = n >> 1;
+    const spots = [];
+    for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free2(r, c)) spots.push({ r, c });
+    let si = 0;
+    const place = t => {
+      const sq = (t === 'k' && free2(n - 1, Kc)) ? { r: n - 1, c: Kc } : spots[si++];
+      if (!sq) return;
+      g.board[sq.r][sq.c] = { c: 'w', t };
+      if (E.isTroop(t)) g.anyTroop = true;
+    };
+    const kIdx = types.indexOf('k');
+    const ordered = [];
+    if (kIdx >= 0) ordered.push('k');
+    for (const t of types) if (t !== 'k') ordered.push(t);
+    for (const t of ordered.sort(() => Math.random() - 0.5)) place(t);
+    if (!ordered.length) { g.board[n - 1][Kc] = { c: 'w', t: 'k' }; }
+    C.run.size = n;
   }
 
   /* ---------------- board helpers ---------------- */
   function count(g, color) {
-    let n = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const n = (g.n | 0) || 8;
+    let k = 0;
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
-      if (cell && cell.c === color) n++;
+      if (cell && cell.c === color) k++;
     }
-    return n;
+    return k;
   }
   function listPieces(g, color) {
+    const n = (g.n | 0) || 8;
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (cell && cell.c === color) out.push({ r, c, cell });
     }
@@ -118,11 +195,12 @@
   }
   function findFree(g, ranks, cols) {
     const order = [];
-    for (const r of ranks) for (const c of cols) if (!g.board[r][c] && !E.isTerrain(g, r, c)) order.push({ r, c });
+    for (const r of ranks) for (const c of cols) if (g.board[r] && !g.board[r][c] && !E.isTerrain(g, r, c)) order.push({ r, c });
     return order.length ? order[Math.floor(Math.random() * order.length)] : null;
   }
   function placeRaw(g, color, type, r, c) {
-    if (r < 0 || r > 7 || c < 0 || c > 7 || g.board[r][c]) return false;
+    const n = (g.n | 0) || 8;
+    if (r < 0 || r >= n || c < 0 || c >= n || (g.board[r] && g.board[r][c])) return false;
     if (E.isTerrain(g, r, c)) return false;
     g.board[r][c] = { c: color, t: type };
     if (E.isTroop(type)) g.anyTroop = true;
@@ -150,7 +228,7 @@
     const g = buildGame();
     const run = {
       wave: 1, gold: 0, kills: 0, rounds: 0, best: readBest(),
-      mapOff: Math.floor(Math.random() * MAPS.length), mapName: 'The Open Field',
+      size: 8, mapName: 'The Open Field', encounter: 'host',
       startPlies: 0
     };
     C.g = g; C.run = run; C.active = true; C.phase = 'player';
@@ -170,7 +248,7 @@
     UI.clearMsg();
     patchGame();
     showHud(true);
-    LOG(g, '⚔ Campaign run begins — defend the Crystal Throne for ' + TOTAL_WAVES + ' waves.', 'sys', 'flag');
+    LOG(g, '⚔ Campaign run begins — defend the Crystal Throne for as long as you can. Every 5th wave is a boss siege.', 'sys', 'flag');
     LOG(g, 'Move up to 2 pieces per round, then press ENEMY PHASE. Captures earn gold. If your King falls, the run ends.', 'sys', 'flag');
     spawnWave(g, 1);
     C.tokens = 2;
@@ -274,8 +352,9 @@
     LOG(g, '⚔ ' + san, 'w', 'sword');
     if (wasCapture) {
       C.run.kills++;
-      C.run.gold += Math.max(100, Math.round(capVal / 5) * 50);
-      LOG(g, 'Your forces destroy an enemy unit — +' + Math.max(100, Math.round(capVal / 5) * 50) + ' gold.', 'sys', 'coin');
+      const gg = goldVal(capVal);
+      C.run.gold += gg;
+      LOG(g, 'Your forces destroy an enemy unit — +' + gg + ' gold.', 'sys', 'coin');
     }
     // mark moved
     const moved = g.board[mv.r1][mv.c1];
@@ -414,44 +493,60 @@
   /* ==================== WAVES / REWARDS / END ==================== */
   function spawnWave(g, wave) {
     C.run.wave = wave;
-    // choose a fresh battlefield (rotate maps per run so no two runs look alike)
-    const map = MAPS[(C.run.mapOff + wave - 1) % MAPS.length];
-    applyMap(g, map);
+    const enc = encounterFor(wave);
+    C.run.encounter = enc;
+    const n0 = (g.n | 0) || 8;
+    // board may grow on later waves (never shrinks while the army persists)
+    let n = n0;
+    if (wave >= 3 && n0 < 12) n = (Math.random() < Math.min(0.85, 0.25 + wave * 0.06)) ? Math.min(12, n0 + 2) : n0;
+    if (n > n0) resizeBoard(n); else n = n0;
+    buildTerrain(g, n, wave);
     // clear any lingering enemy pieces then raise a fresh defensive formation
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.board[r][c] && g.board[r][c].c === 'b') g.board[r][c] = null;
+    for (let r = 0; r < g.board.length; r++) for (let c = 0; c < n; c++) if (g.board[r][c] && g.board[r][c].c === 'b') g.board[r][c] = null;
     redeploy(g);
 
-    const recipe = WAVES[wave - 1] || [];
-    const cols = [0, 1, 2, 3, 4, 5, 6, 7].sort(() => Math.random() - 0.5);
+    const recipe = hostUnits(wave, n, enc);
+    const cols = Array.from({ length: n }, (_, i) => i).sort(() => Math.random() - 0.5);
     // the Warlord always at the heart of the host (skips terrain automatically)
-    placeRaw(g, 'b', 'k', 0, 4) || placeRaw(g, 'b', 'k', 0, 3) || placeRaw(g, 'b', 'k', 1, 4) || placeRaw(g, 'b', 'k', 0, 2);
-    const order = recipe.slice();
-    for (const type of order) {
+    placeRaw(g, 'b', 'k', 0, n >> 1) || placeRaw(g, 'b', 'k', 0, (n >> 1) - 1) || placeRaw(g, 'b', 'k', 1, n >> 1) || placeRaw(g, 'b', 'k', 0, 0);
+    for (const type of recipe) {
       const pawn = type === 'p';
       const ranks = pawn ? [1, 2, 3] : [0, 1, 2];
       let placed = false;
-      for (const r of ranks) {
-        for (const c of cols) {
-          if (placeRaw(g, 'b', type, r, c)) { placed = true; break; }
-        }
-        if (placed) break;
+      for (const r of ranks) for (const c of cols) {
+        if (placeRaw(g, 'b', type, r, c)) { placed = true; break; }
       }
-      if (!placed) {
-        for (let r = 0; r < 8 && !placed; r++) for (let c = 0; c < 8; c++) if (placeRaw(g, 'b', type, r, c)) { placed = true; break; }
-      }
+      if (!placed) for (let r = 0; r < n && !placed; r++) for (let c = 0; c < n; c++) if (placeRaw(g, 'b', type, r, c)) { placed = true; break; }
     }
-    LOG(g, 'The battle moves to ' + map.name + ' — the Warlord sends wave ' + wave + '.', 'sys', 'flag');
+    // ambush: killers already slip behind your lines, hidden in mist
+    if (enc === 'ambush') {
+      const kinds = ['n', 'b', 'r', 'n'];
+      const back = [];
+      for (let r = n - 2; r >= Math.max(0, n - 4); r--) for (let c = 0; c < n; c++) if (r >= 0 && !g.board[r][c] && !E.isTerrain(g, r, c)) back.push({ r, c });
+      back.sort(() => Math.random() - 0.5);
+      let put = 0;
+      for (const sq of back) {
+        if (put >= 2) break;
+        const t = kinds[Math.floor(Math.random() * kinds.length)];
+        g.board[sq.r][sq.c] = { c: 'b', t, b: { f: 0, s: 0, p: 0, v: 1 } };
+        if (E.isTroop(t)) g.anyTroop = true;
+        put++;
+      }
+      if (put) LOG(g, 'AMBUSH! ' + put + ' assassin' + (put > 1 ? 's are' : ' is') + ' already behind your lines, hidden in mist.', 'bad', 'skull');
+    }
+    const lbl = enc === 'host' ? 'a wave of the host' : enc === 'raid' ? 'an elite RAID' : enc === 'boss' ? 'a BOSS SIEGE — the Warlord leads in person!' : 'an ambush';
+    LOG(g, 'The battle moves to ' + C.run.mapName + ' (' + n + '×' + n + ') — ' + lbl + ' (wave ' + wave + ').', 'sys', 'flag');
   }
 
   function onWaveCleared() {
     if (!C.active) return;
     const g = C.g;
     if (count(g, 'b') !== 0) return;
-    if (C.run.wave >= TOTAL_WAVES) { endRun(true, 'All six waves broken! The Crystal Throne stands eternal.'); return; }
-    // spoils of war — the realm pays for holding the line
-    const bonus = 200 + C.run.wave * 80;
+    // spoils of war — scarce, hard-won gold
+    const bonus = spoilsOf(C.run.wave);
     C.run.gold += bonus;
-    LOG(g, 'Wave ' + C.run.wave + ' repelled — the realm pays ' + bonus + ' gold in spoils.', 'sys', 'coin');
+    if (C.run.encounter === 'boss') { C.run.gold += 40; LOG(g, 'A warlord siege broken — spoils of +' + (bonus + 40) + ' gold.', 'sys', 'coin'); }
+    else LOG(g, 'Wave ' + C.run.wave + ' repelled — the realm pays ' + bonus + ' gold in spoils.', 'sys', 'coin');
     C.phase = 'reward';
     banner('The host is scattered!', 'good');
     MD.playSfx('win');
@@ -492,9 +587,13 @@
 
   function buildRewards(wave) {
     const g = C.g;
+    const n = (g.n | 0) || 8;
     const opts = [];
+    const backRanks = [n - 1, n - 2, n - 3];
+    const allCols = Array.from({ length: n }, (_, i) => i);
     const pawns = listPieces(g, 'w').filter(p => p.cell.t === 'p');
     const units = listPieces(g, 'w');
+    const advPawn = () => pawns.slice().sort((a, b) => a.r - b.r)[0]; // white promotes upward
     const randomType = () => ['imp', 'goblin', 'ranger', 'warhorse', 'samurai', 'spriggan', 'divinedog'][Math.floor(Math.random() * 7)];
     const hireType = () => ['nue', 'qilin', 'siegetank', 'coralqueen', 'seaserpent', 'howitzer', 'jianke', 'divinedog'][Math.floor(Math.random() * 8)];
 
@@ -504,10 +603,10 @@
       run: () => {
         const near = [];
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-          const r = 7 + dr, c = 4 + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c] && !E.isTerrain(g, r, c)) near.push({ r, c });
+          const r = n - 1 + dr, c = (n >> 1) + dc;
+          if (r >= 0 && r < n && c >= 0 && c < n && !g.board[r][c] && !E.isTerrain(g, r, c)) near.push({ r, c });
         }
-        const q = near.length ? near[Math.floor(Math.random() * near.length)] : findFree(g, [6, 7], [0, 1, 2, 3, 4, 5, 6, 7]);
+        const q = near.length ? near[Math.floor(Math.random() * near.length)] : findFree(g, backRanks, allCols);
         const type = randomType();
         if (!q) return;
         placeRaw(g, 'w', type, q.r, q.c);
@@ -520,9 +619,9 @@
       name: 'Royal Armorer', icon: 'shield', rarity: 2,
       desc: 'Every friendly piece standing on your back two ranks is shielded.',
       run: () => {
-        let n = 0;
-        for (const p of listPieces(g, 'w')) if (p.r >= 6) { Fx.mod(p.cell, 's', 1); n++; }
-        LOG(g, 'The armorer shields ' + n + ' defender' + (n > 1 ? 's' : '') + '.', 'w', 'shield');
+        let k = 0;
+        for (const p of listPieces(g, 'w')) if (p.r >= n - 2) { Fx.mod(p.cell, 's', 1); k++; }
+        LOG(g, 'The armorer shields ' + k + ' defender' + (k > 1 ? 's' : '') + '.', 'w', 'shield');
         UI.toast('Back ranks are shielded.', 'sys');
       }
     });
@@ -531,7 +630,7 @@
       name: 'Drillmaster', icon: 'sword', rarity: 3,
       desc: 'Your most advanced pawn is promoted to a KNIGHT, and your King is healed.',
       run: () => {
-        const adv = pawns.slice().sort((a, b) => (a.r < b.r ? 1 : -1))[0];
+        const adv = advPawn();
         if (adv) { adv.cell.t = 'n'; LOG(g, 'A pawn is knighted by the drillmaster.', 'w', 'sword'); }
         const k = E.findKing(g, 'w');
         if (k && g.board[k.r][k.c].b) { g.board[k.r][k.c].b.f = 0; g.board[k.r][k.c].b.p = 0; }
@@ -541,11 +640,12 @@
 
     opts.push({
       name: 'War Chest', icon: 'coin', rarity: 1,
-      desc: 'Plunder +' + (300 + wave * 100) + ' gold (spent on future boons).',
+      desc: 'Plunder +' + chestOf(wave) + ' gold — scarce, so spend it wisely.',
       run: () => {
-        C.run.gold += 300 + wave * 100;
-        LOG(g, 'The war chest swells by ' + (300 + wave * 100) + ' gold.', 'w', 'coin');
-        UI.toast('+' + (300 + wave * 100) + ' gold.', 'sys');
+        const amt = chestOf(wave);
+        C.run.gold += amt;
+        LOG(g, 'The war chest swells by ' + amt + ' gold.', 'w', 'coin');
+        UI.toast('+' + amt + ' gold.', 'sys');
       }
     });
 
@@ -555,7 +655,7 @@
       run: () => {
         const r = Fx.revive(g, 'w', 1);
         if (r.length) { LOG(g, 'A fallen champion is ransomed back to the realm.', 'w', 'heart'); UI.toast('A fallen champion returns.', 'sys'); }
-        else { C.run.gold += 200; UI.toast('No ransom needed — +200 gold.', 'sys'); }
+        else { C.run.gold += 20; UI.toast('No ransom needed — +20 gold.', 'sys'); }
       }
     });
 
@@ -565,9 +665,9 @@
       run: () => {
         if (Math.random() < 0.62) {
           const type = ['guardian', 'archmage', 'griffon', 'siren', 'samurai'][Math.floor(Math.random() * 5)];
-          const q = findFree(g, [6, 7], [0, 1, 2, 3, 4, 5, 6, 7]);
+          const q = findFree(g, backRanks, allCols);
           if (q) { placeRaw(g, 'w', type, q.r, q.c); LOG(g, 'The shrine grants a ' + MD.pieceName(type) + ' ally!', 'w', 'star'); UI.toast('The shrine grants a ' + MD.pieceName(type) + '!', 'sys'); }
-          else { C.run.gold += 400; UI.toast('The shrine grants 400 gold.', 'sys'); }
+          else { C.run.gold += 60; UI.toast('The shrine grants 60 gold.', 'sys'); }
         } else {
           const victim = units.filter(u => u.cell.t !== 'k').sort(() => Math.random() - 0.5)[0];
           if (victim) {
@@ -579,19 +679,19 @@
       }
     });
 
-    // — gold purchases: mercenaries & royal works —
+    // — gold purchases: pricey mercenaries & royal works —
     opts.push({
-      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 320,
+      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 150,
       desc: 'Hire a champion: a ' + MD.pieceName(hireType()) + ' joins your army.',
       run: () => {
-        const q = findFree(g, [5, 6, 7], [0, 1, 2, 3, 4, 5, 6, 7]);
+        const q = findFree(g, backRanks, allCols);
         const type = hireType();
         if (q) { placeRaw(g, 'w', type, q.r, q.c); LOG(g, 'A hired ' + MD.pieceName(type) + ' takes the field.', 'w', 'star'); UI.toast('Hired a ' + MD.pieceName(type) + '.', 'sys'); }
         else UI.toast('No room to field the mercenary — gold refunded.', 'sys');
       }
     });
     opts.push({
-      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 260,
+      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 90,
       desc: 'Field hospitals: cleanse your whole army, revive a fallen pawn, and shield your king.',
       run: () => {
         for (const p of listPieces(g, 'w')) if (p.cell.b && (p.cell.b.f > 0 || p.cell.b.p > 0)) { p.cell.b.f = 0; p.cell.b.p = 0; }
@@ -603,12 +703,12 @@
       }
     });
     opts.push({
-      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 450,
+      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 220,
       desc: 'Promote your most advanced pawn to a QUEEN and shield your two most advanced pieces.',
       run: () => {
-        const adv = pawns.slice().sort((a, b) => (a.r < b.r ? 1 : -1))[0];
+        const adv = advPawn();
         if (adv) { adv.cell.t = 'q'; Fx.flash(g, adv.r, adv.c, 'transform', ''); LOG(g, 'The forge crowns a QUEEN.', 'w', 'fire'); }
-        const top2 = listPieces(g, 'w').filter(p => p.cell.t !== 'k').sort((a, b) => (a.r < b.r ? 1 : -1)).slice(0, 2);
+        const top2 = listPieces(g, 'w').filter(p => p.cell.t !== 'k').sort((a, b) => a.r - b.r).slice(0, 2);
         for (const p of top2) Fx.mod(p.cell, 's', 1);
         UI.toast('The forge works its wonders.', 'sys');
       }
@@ -632,17 +732,16 @@
     if (!C.active) return;
     C.phase = 'over';
     const run = C.run;
+    const cleared = Math.max(0, C.run.wave - 1);
     const stats = [];
     const army = count(C.g, 'w');
-    stats.push({ k: 'Waves cleared', v: (victory ? TOTAL_WAVES : Math.min(C.run.wave - 1 + 0, TOTAL_WAVES)) + ' / ' + TOTAL_WAVES });
+    stats.push({ k: 'Waves cleared', v: cleared + (victory ? ' — the Realm is saved!' : '') });
     stats.push({ k: 'Enemies slain', v: run.kills });
     stats.push({ k: 'Gold plundered', v: run.gold });
     stats.push({ k: 'Surviving army', v: army + ' units' });
-    if (!victory) {
-      const best = readBest();
-      if (C.run.wave - 1 > best) { writeBest(C.run.wave - 1); stats.push({ k: 'Best run', v: 'NEW — ' + (C.run.wave - 1) + ' waves' }); }
-      else stats.push({ k: 'Best run', v: best + ' waves' });
-    }
+    const best = readBest();
+    if (cleared > best) { writeBest(cleared); stats.push({ k: 'Best run', v: 'NEW — ' + cleared + ' waves' }); }
+    else stats.push({ k: 'Best run', v: best + ' waves' });
     const em = $('campEndEmoji'), tt = $('campEndTitle'), sb = $('campEndSub'), st = $('campRunStats');
     em.innerHTML = MD.iconHTML(victory ? 'trophy' : 'skull');
     tt.textContent = victory ? 'The Realm Is Saved!' : 'The Throne Has Fallen';
@@ -663,7 +762,7 @@
   function updateHud() {
     if (!C.active || !C.g) return;
     const w = $('campWave'), gd = $('campGold'), ar = $('campArmy'), mv = $('campMoves');
-    if (w) w.textContent = 'Wave ' + C.run.wave + '/' + TOTAL_WAVES;
+    if (w) w.textContent = 'Wave ' + C.run.wave + (C.run.encounter === 'boss' ? ' · BOSS' : '');
     if (gd) gd.textContent = 'Gold ' + C.run.gold;
     if (ar) ar.textContent = 'Army ' + count(C.g, 'w');
     if (mv) mv.textContent = (C.phase === 'player' && !C.enemyRunning) ? 'Moves ' + C.tokens : (C.enemyRunning ? 'Enemies marching…' : 'Round over');
@@ -699,6 +798,17 @@
   C.waveOf = () => (C.run ? C.run.wave : 0);
   C.goldOf = () => (C.run ? C.run.gold : 0);
   C.armyOf = () => (C.active ? count(C.g, 'w') : 0);
+  // test/QA: jump straight to a given wave (spawns the procedural host)
+  C.debugJump = function (wave) {
+    if (!C.active) return false;
+    try {
+      spawnWave(C.g, wave);
+      C.tokens = 2; C.phase = 'player'; C.enemyRunning = false;
+      MD.Game.phase = 'move'; MD.Game.sel = null; MD.Game.legalCache = [];
+      UI.render(); updateHud();
+      return true;
+    } catch (e) { console.error('debugJump', e); return false; }
+  };
   C.debugApply = function (r0, c0, r1, c1) {
     if (!C.active || C.phase !== 'player' || C.enemyRunning) return false;
     const g = C.g;
