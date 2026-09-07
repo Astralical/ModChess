@@ -966,15 +966,20 @@
   function tickAfterMove(g, mover) {
     const events = [];
     const bList = [];
+    const T0 = root.MD && root.MD.TROOPS;
     for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
       const cell = g.board[r][c];
-      if (!cell || !cell.b) continue;
+      if (!cell) continue;
+      // sworn heroes are always ticked (the oath can grant a shield even to a
+      // piece that carries no status yet), plus any piece that already has one
+      const ownSworn = cell.c === mover && T0 && T0[cell.t] && T0[cell.t].sworn;
+      if (!cell.b && !ownSworn) continue;
       bList.push({ r, c, cell });
     }
-    const T = root.MD && root.MD.TROOPS;
+    const T = T0;
     for (const { r, c, cell } of bList) {
       if (!g.board[r][c] || g.board[r][c] !== cell) continue; // removed meanwhile (rattle)
-      const b = cell.b;
+      const b = cell.b || (cell.b = { f: 0, s: 0, p: 0, z: 0, st: 0, v: 0, doom: 0, mature: 0 });
       const def = T ? T[cell.t] : null;
       if (cell.c === mover) {
         // owner finished their turn
@@ -985,6 +990,27 @@
         if (def && def.regen && (b.p > 0 || b.f > 0)) {
           b.p = 0; b.f = 0;
           events.push({ kind: 'regen', r, c, text: sideLabel(cell.c) + ' ' + (def.name || cell.t) + ' regenerates' });
+        }
+        // SWORN-OATH (义): a hero standing shoulder-to-shoulder with a same-faction
+        // ally is cleansed and shielded at the end of its owner's turn — this runs
+        // before venom/doom bite so the oath can save a poisoned comrade.
+        if (g.board[r][c] === cell && def && def.sworn && !(b.z > 0)) {
+          let ally = false;
+          for (let dr = -1; dr <= 1 && !ally; dr++) for (let dc = -1; dc <= 1 && !ally; dc++) {
+            if (!dr && !dc) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr < 0 || nr >= CUR || nc < 0 || nc >= CUR) continue;
+            const t = g.board[nr][nc];
+            if (!t || t.c !== cell.c) continue;
+            const d2 = T ? T[t.t] : null;
+            if (d2 && d2.sworn === def.sworn) ally = true;
+          }
+          if (ally && (b.p > 0 || b.f > 0 || !(b.s > 0))) {
+            const was = (b.p > 0 || b.f > 0);
+            b.p = 0; b.f = 0;
+            if (!(b.s > 0)) b.s = 1;
+            events.push({ kind: 'sworn', r, c, text: sideLabel(cell.c) + ' ' + (def.name || cell.t) + ' ' + (was ? 'is cleansed by a sworn ally' : 'stands sworn behind a shield-brother') });
+          }
         }
         // DOOM: the death-mark claims the piece quietly at the end of its own turn
         if (b.doom > 0) {

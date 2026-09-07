@@ -127,6 +127,33 @@
   TROOP['scorpion'] = TROOP['basilisk'];
   TROOP['urchin'] = TROOP['seaserpent'];
   TROOP['plaguebearer'] = TROOP['reaper'];
+  // THE OUTBREAK / SCI-FI / VOID / SHOW glyphs
+  TROOP['zombie'] = TROOP['gremlin'];
+  TROOP['ghoul'] = TROOP['lich'];
+  TROOP['bloater'] = TROOP['hydraling'];
+  TROOP['plaguehound'] = TROOP['divinedog'];
+  TROOP['necrolord'] = TROOP['reaper'];
+  TROOP['servodrone'] = TROOP['golem'];
+  TROOP['warbot'] = TROOP['guardian'];
+  TROOP['voidwisp'] = TROOP['djinn'];
+  TROOP['starspawn'] = TROOP['sphinx'];
+  TROOP['strongman'] = TROOP['samurai'];
+  TROOP['firebreather'] = TROOP['phoenix'];
+  // THREE KINGDOMS glyphs
+  TROOP['liubei'] = TROOP['samurai'];
+  TROOP['guanyu'] = TROOP['jianke'];
+  TROOP['zhangfei'] = TROOP['tiger'];
+  TROOP['caocao'] = TROOP['guardian'];
+  TROOP['sunquan'] = TROOP['qilin'];
+  TROOP['zhugeliang'] = TROOP['archmage'];
+  TROOP['zhouyu'] = TROOP['siren'];
+  TROOP['xiahoudun'] = TROOP['warhorse'];
+  TROOP['diaochan'] = TROOP['banshee'];
+  TROOP['lubu'] = TROOP['reaper'];
+  TROOP['taishici'] = TROOP['ranger'];
+  TROOP['huangzhong'] = TROOP['ranger'];
+  TROOP['ganning'] = TROOP['seaserpent'];
+  TROOP['guojia'] = TROOP['djinn'];
 
   // ======== build markup helpers ========
   function inner(key) { return B[key] || TROOP[key] || B.spark || ''; }

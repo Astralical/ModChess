@@ -18,7 +18,7 @@
   const rand = a => (a && a.length ? a[Math.floor(Math.random() * a.length)] : null);
   const foes = (g, s) => Fx.enemy(g, s).filter(q => q.cell.t !== 'k');
   const mine = (g, s) => Fx.own(g, s).filter(q => q.cell.t !== 'k');
-  const undead = ['lich', 'banshee', 'reaper', 'gremlin', 'ghast', 'plaguebearer', 'nue', 'yasha'];
+  const undead = ['lich', 'banshee', 'reaper', 'gremlin', 'plaguebearer', 'nue', 'yasha', 'zombie', 'ghoul', 'bloater', 'plaguehound', 'necrolord'];
   const dead = t => Fx.value ? Fx.value(t) : (E.val ? E.val(t) : 0);
   const ownHalf = (g, s) => Fx.ownHalfRows ? Fx.ownHalfRows(g, s) : [];
   const enemyHalf = (g, s) => Fx.enemyHalfRows ? Fx.enemyHalfRows(g, s) : [];
@@ -78,7 +78,7 @@
   def(861, 'Zombie Apocalypse', 4, 'Zombie', 'rune', 'Every husk pawn you control is upgraded to a random undead creature.', 'This is how it starts. This is how it always starts.', (g, s) => {
     const ps = Fx.own(g, s).filter(q => q.cell.t === 'p');
     const lines = [];
-    const pool = ['gremlin', 'nue', 'banshee', 'yasha', 'plaguebearer'];
+    const pool = ['gremlin', 'nue', 'banshee', 'yasha', 'plaguebearer', 'zombie', 'ghoul', 'bloater', 'necrolord'];
     for (const q of ps.slice(0, 8)) { q.cell.t = rand(pool) || 'gremlin'; Fx.flash(g, q.r, q.c, 'transform', ''); lines.push('A husk crawls into a ' + pname(q.cell.t) + '.'); }
     return lines.length ? lines : ['No husks to evolve.'];
   });

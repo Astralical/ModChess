@@ -314,6 +314,7 @@ body.theme-wood .board::after, body.theme-green .board::after{
 .rarity-2{color:#5bb9ff;border:1px solid #5bb9ff44;background:#223040}
 .rarity-3{color:#c17bf0;border:1px solid #c17bf044;background:#2d2336}
 .rarity-4{color:#ffc55a;border:1px solid #ffc55a55;background:#38301e}
+.rarity-5{color:#ff4d6d;border:1px solid #ff4d6d55;background:#3a2228}
 
 /* ability card on target-pick state */
 .ability-card.picking{animation:pulseGlow 1.1s ease infinite;border-color:#6fd7ff}

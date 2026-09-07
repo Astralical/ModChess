@@ -6,7 +6,7 @@ const load = p => eval(fs.readFileSync(p, 'utf8'));
  'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js',
  'js/abilities_8.js', 'js/abilities_9.js', 'js/abilities_10.js', 'js/abilities_11.js',
  'js/abilities_12.js', 'js/abilities_13.js', 'js/abilities_14.js', 'js/abilities_15.js', 'js/abilities_16.js',
- 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
+ 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_20.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
 const MD2 = globalThis.MD, E = MD2.Engine;
 
 let pass = 0, fail = 0;
@@ -16,7 +16,7 @@ function clean(n) { const g = E.newGame(n); for (let r = 0; r < n; r++) for (let
 // --- 1. Outbreak set present (75 cards, ids 855-929, cat Zombie) ---
 const zombie = MD2.ABILITIES.filter(a => a.cat === 'Zombie');
 ok(zombie.length === 75, '75 Zombie cards registered (got ' + zombie.length + ')');
-ok(MD2.ABILITIES.length === 857, 'total pool 857');
+ok(MD2.ABILITIES.length === 913, 'total pool 913');
 ok(zombie.every(a => a.id >= 855 && a.id <= 929), 'zombie ids 855-929');
 ok(MD2.CATS.includes('Zombie'), 'Zombie category in CATS');
 
@@ -101,6 +101,83 @@ ok(!!MD2.TROOPS.porcupine && !!MD2.TROOPS.scorpion && !!MD2.TROOPS.urchin && !!M
   const lines = src.split('\n');
   const bad = lines.filter(l => /shell\(g, s, [^)]*, [123], [23]\);/.test(l) && !/, 3, 2\);/.test(l));
   ok(bad.length === 0, 'no wide (radius 2/3) shell calls remain outside the kept Orbital Strike (found ' + bad.length + ')');
+}
+
+// --- 9. Three Kingdoms set (三国): 50 cards, ids 960-1009, cat 'Three Kingdoms' ---
+{
+  const tk = MD2.ABILITIES.filter(a => a.cat === 'Three Kingdoms');
+  ok(tk.length === 50, '50 Three Kingdoms cards registered (got ' + tk.length + ')');
+  ok(tk.every(a => a.id >= 960 && a.id <= 1009), 'Three Kingdoms ids 960-1009');
+  ok(MD2.CATS.includes('Three Kingdoms'), 'Three Kingdoms category in CATS');
+}
+
+// --- 10. theme troops exist (Outbreak / SciFi / Void / Show / 3K) ---
+{
+  const need = ['zombie', 'ghoul', 'bloater', 'plaguehound', 'necrolord',
+    'servodrone', 'warbot', 'voidwisp', 'starspawn', 'strongman', 'firebreather',
+    'liubei', 'guanyu', 'zhangfei', 'zhugeliang', 'caocao', 'xiahoudun', 'guojia',
+    'sunquan', 'zhouyu', 'taishici', 'huangzhong', 'ganning', 'diaochan', 'lubu'];
+  const missing = need.filter(t => !MD2.TROOPS[t]);
+  ok(missing.length === 0, 'all theme troops registered (missing: ' + missing.join(',') + ')');
+  const factions = {};
+  need.forEach(t => { const d = MD2.TROOPS[t]; if (d && d.sworn) factions[d.sworn] = true; });
+  ok(Object.keys(factions).length >= 3, 'sworn factions shu/wei/wu present');
+}
+
+// --- 11. sworn-oath mechanic: adjacent same-faction heroes cleanse + shield at turn end ---
+{
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  // two Shu heroes side by side; Liu Bei is poisoned + frozen, Guan Yu unshielded
+  g.board[3][3] = { c: 'w', t: 'liubei', b: { f: 1, s: 0, p: 1 } };
+  g.board[3][4] = { c: 'w', t: 'guanyu', b: { f: 0, s: 0, p: 0 } };
+  E.tickAfterMove(g, 'w'); // white's turn ends
+  ok(g.board[3][3] && !(g.board[3][3].b && g.board[3][3].b.p > 0) && !(g.board[3][3].b && g.board[3][3].b.f > 0), 'poisoned/frozen Liu Bei cleansed by sworn ally (not rotted)');
+  ok(g.board[3][3] && g.board[3][3].b && g.board[3][3].b.s > 0, 'Liu Bei shielded by sworn ally');
+  ok(g.board[3][4] && g.board[3][4].b && g.board[3][4].b.s > 0, 'Guan Yu shielded by sworn ally');
+}
+{
+  // lone hero (no same-faction neighbor) gets NO oath shield and poison still bites
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[3][3] = { c: 'w', t: 'liubei', b: { f: 0, s: 0, p: 1 } }; // isolated
+  g.board[6][6] = { c: 'w', t: 'caocao', b: { f: 0, s: 0, p: 0 } }; // wei hero far away
+  E.tickAfterMove(g, 'w');
+  ok(!g.board[3][3], 'isolated poisoned hero is NOT saved (oath needs an adjacent ally)');
+}
+{
+  // cross-faction neighbors do NOT share an oath
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[3][3] = { c: 'w', t: 'liubei', b: { f: 0, s: 0, p: 0 } };  // shu
+  g.board[3][4] = { c: 'w', t: 'caocao', b: { f: 0, s: 0, p: 0 } };  // wei
+  E.tickAfterMove(g, 'w');
+  ok(!(g.board[3][3].b && g.board[3][3].b.s > 0), 'Liu Bei NOT shielded by a Wei neighbor');
+  ok(!(g.board[3][4].b && g.board[3][4].b.s > 0), 'Cao Cao NOT shielded by a Shu neighbor');
+}
+{
+  // pristine heroes (no status object yet) still get the oath shield
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[3][3] = { c: 'w', t: 'liubei' };   // no .b at all
+  g.board[3][4] = { c: 'w', t: 'guanyu' };   // no .b at all
+  E.tickAfterMove(g, 'w');
+  ok(g.board[3][3].b && g.board[3][3].b.s > 0, 'pristine Liu Bei shielded (oath runs even without a status)');
+  ok(g.board[3][4].b && g.board[3][4].b.s > 0, 'pristine Guan Yu shielded (oath runs even without a status)');
+}
+{
+  // summon-sick sworn hero does NOT oath-shield until it wakes
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[3][3] = { c: 'w', t: 'liubei', b: { f: 0, s: 0, p: 0, z: 1 } };
+  g.board[3][4] = { c: 'w', t: 'guanyu' };
+  E.tickAfterMove(g, 'w');
+  ok(!(g.board[3][3].b && g.board[3][3].b.s > 0), 'summon-sick Liu Bei NOT oath-shielded');
 }
 
 console.log('\npass=' + pass + ' fail=' + fail);

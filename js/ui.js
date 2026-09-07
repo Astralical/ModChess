@@ -836,7 +836,7 @@
     list.forEach(a => {
       const c = document.createElement('div');
       c.className = 'codex-card rarity-' + a.rarity;
-      const rare = MD.RARITY[a.rarity];
+      const rare = MD.RARITY[a.rarity] || MD.RARITY[4];
       c.style.borderTopColor = rare.color;
       c.innerHTML = '<div class="cc-head"><span class="cc-icon">' + MD.iconHTML(a.icon) + '</span>' +
         '<span class="cc-name">' + esc(a.name) + '</span></div>' +
@@ -881,6 +881,15 @@
     if (d.aura) tr.push('aura: ' + d.aura + 's an adjacent foe each own turn');
     if (d.onDeath === 'split') tr.push('splits into 2 pawns when slain');
     if (d.onDeath === 'burst') tr.push('explodes when slain');
+    if (d.counter) {
+      const eff = d.counter === true ? 'destroys its capturer' : d.counter === 'poison' ? 'poisons its capturer' : d.counter === 'freeze' ? 'freezes its capturer' : d.counter === 'doom' ? 'dooms its capturer' : 'counterattacks its capturer';
+      tr.push('counter: ' + eff + ' when captured (kings safe)');
+    }
+    if (d.artillery) tr.push('artillery: fires on a ranged foe every ~' + ((d.artillery.cd || 1)) + ' own turn(s)');
+    if (d.sworn) {
+      const fac = d.sworn === 'shu' ? 'Shu' : d.sworn === 'wei' ? 'Wei' : d.sworn === 'wu' ? 'Wu' : d.sworn;
+      tr.push('sworn ' + fac + ': while adjacent to a same-faction ally at your turn\'s end, cleanses poison/frost and gains a shield');
+    }
     if (d.hatch) tr.push('arrives as an egg, hatches into ' + (MD.pieceName ? MD.pieceName(d.hatch.type) : d.hatch.type));
     if (d.growTo) tr.push('grows into ' + (MD.pieceName ? MD.pieceName(d.growTo) : d.growTo));
     if (tr.length) parts.push('Traits: ' + tr.join(', '));
@@ -898,6 +907,9 @@
     ['Veiled (v)', 'Hidden in living mist: only an ADJACENT enemy can capture it (spells still find it).', 'wind'],
     ['Regenerate (trait)', 'A troop that cleanses its own poison and frost at the end of its owner\'s turn.', 'heart'],
     ['Aura (trait)', 'At the end of its owner\'s turn, freezes or poisons a random adjacent foe.', 'spark'],
+    ['Counter (trait)', 'Punishes the piece that CAPTURES it — destroying, poisoning, freezing or dooming the attacker (kings stay safe).', 'sword'],
+    ['Artillery (trait)', 'Auto-fires a ranged shell at a distant enemy every few of its own turns — line-of-sight and cooldown depend on the troop.', 'fire'],
+    ['Sworn Oath (trait)', 'Three Kingdoms heroes (义) — a Shu/Wei/Wu hero standing next to a same-faction ally at the end of your turn is cleansed of poison/frost and shielded. Brothers watch each other\'s backs.', 'heart'],
     ['Growth (mature)', 'An egg or juvenile that transforms into its adult troop after a few of its owner\'s turns.', 'star']
   ];
   const PEDIA_ZONES = [
@@ -1062,7 +1074,7 @@
         MD.CATS.forEach(c => f.appendChild(mk(c, c, false, state.cat === c)));
         const sep = document.createElement('span'); sep.style.width = '10px'; f.appendChild(sep);
         f.appendChild(mk('Any rarity', 0, true, state.rar === 0));
-        [1, 2, 3, 4].forEach(r => f.appendChild(mk('★'.repeat(r), r, true, state.rar === r)));
+        [1, 2, 3, 4, 5].forEach(r => f.appendChild(mk('★'.repeat(r), r, true, state.rar === r)));
       };
       rebuild();
       UI.openModal('codexModal');

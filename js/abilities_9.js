@@ -516,5 +516,15 @@
     return lines.length ? lines : ['The factory floor is full.'];
   });
 
+  // — THE MACHINE'S OWN CREATURES —
+  def(785, 'Servo Assembly', 1, 'SciFi', 'gear', 'Stamp out a Servo-Drone on your back ranks — cheap automated labour.', 'Mass production, one unit at a time.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'servodrone', 1, { rows: Fx.backRows(g, s) });
+    return lines.length ? lines : ['The line jams.'];
+  });
+  def(786, 'Warbot Deployment', 3, 'SciFi', 'spark', 'Drop a Warbot into the fight — a heavy combat frame that charges like a rook.', 'Deploy the heavy frame.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'warbot', 1, { rows: Fx.ownHalfRows(g, s) });
+    return lines.length ? lines : ['The bay is empty.'];
+  });
+
   MD.AB_9 = A;
 })();

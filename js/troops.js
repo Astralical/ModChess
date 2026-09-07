@@ -94,7 +94,39 @@
     porcupine: { name: 'Porcupine',   icon: '🦔', letter: 'P', value: 360, leap: WAZIR, counter: true },
     scorpion:  { name: 'Scorpion',    icon: '🦂', letter: 'S', value: 620, leap: CAMEL, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], counter: 'poison' },
     urchin:    { name: 'Sea Urchin',  icon: '🌊', letter: 'U', value: 300, slide: [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1]], counter: true },
-    plaguebearer: { name: 'Plague Bearer', icon: '☣️', letter: 'B', value: 520, leap: WAZIR, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], counter: 'doom' }
+    plaguebearer: { name: 'Plague Bearer', icon: '☣️', letter: 'B', value: 520, leap: WAZIR, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], counter: 'doom' },
+    // — THE OUTBREAK (Zombie / biohazard, set 19) —
+    zombie:    { name: 'Zombie',      icon: '🧟', letter: 'Z', value: 200, leap: WAZIR, counter: 'poison' },
+    ghoul:     { name: 'Ghoul',       icon: '👺', letter: 'G', value: 430, leap: FERZ, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], counter: true },
+    bloater:   { name: 'Bloater',     icon: '🎈', letter: 'B', value: 520, slide: [[1,0,1],[-1,0,1],[0,1,1],[0,-1,1]], onDeath: 'burst' },
+    plaguehound:{ name: 'Plague Hound', icon: '🐕', letter: 'H', value: 560, leap: KNIGHT, counter: 'poison' },
+    necrolord: { name: 'Necrolord',   icon: '💀', letter: 'N', value: 1250, leap: FERZ, slide: [[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]] },
+    // — SCI-FI MACHINES (set 9) —
+    servodrone:{ name: 'Servo-Drone', icon: '🤖', letter: 'D', value: 380, leap: WAZIR, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]] },
+    warbot:    { name: 'Warbot',      icon: '🦾', letter: 'W', value: 700, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]] },
+    // — THE VOID (set 8) —
+    voidwisp:  { name: 'Voidwisp',    icon: '🫥', letter: 'V', value: 300, leap: FERZ, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], onDeath: 'split' },
+    starspawn: { name: 'Starspawn',   icon: '🌟', letter: 'S', value: 900, leap: CAMEL, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], regen: true },
+    // — THE SHOW (carnival, set 10) —
+    strongman: { name: 'Strongman',   icon: '💪', letter: 'S', value: 520, leap: FERZ, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]] },
+    firebreather: { name: 'Fire-Breather', icon: '🔥', letter: 'F', value: 460, leap: WAZIR, artillery: { range: 2, radius: 0, cd: 1 } },
+    // — THREE KINGDOMS (三国, set 20): sworn-oath (义) heroes —
+    //   def.sworn = faction tag; sworn allies adjacent at end of your turn
+    //   cleanse & shield one another (watching each other's backs).
+    liubei:   { name: 'Liu Bei',      icon: '👑', letter: 'L', value: 1200, leap: WAZIR, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], sworn: 'shu' },
+    guanyu:   { name: 'Guan Yu',      icon: '🗡️', letter: 'Y', value: 1250, leap: KNIGHT, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4],[1,0,4],[-1,0,4]], sworn: 'shu' },
+    zhangfei: { name: 'Zhang Fei',    icon: '😡', letter: 'F', value: 1100, leap: CAMEL, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], sworn: 'shu', onDeath: 'burst' },
+    zhugeliang: { name: 'Zhuge Liang', icon: '🪶', letter: 'Q', value: 1400, leap: FERZ, sworn: 'shu', artillery: { range: 4, radius: 0, cd: 1 } },
+    caocao:   { name: 'Cao Cao',      icon: '🎭', letter: 'C', value: 1150, leap: KNIGHT, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]], sworn: 'wei' },
+    xiahoudun:{ name: 'Xiahou Dun',   icon: '🦾', letter: 'X', value: 980, leap: CAMEL, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], sworn: 'wei', counter: true },
+    guojia:   { name: 'Guo Jia',      icon: '🌧️', letter: 'J', value: 1000, leap: FERZ, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], sworn: 'wei', artillery: { range: 5, radius: 0, cd: 2 } },
+    sunquan:  { name: 'Sun Quan',     icon: '🐉', letter: 'N', value: 1100, leap: WAZIR, slide: [[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]], sworn: 'wu' },
+    zhouyu:   { name: 'Zhou Yu',      icon: '🔥', letter: 'R', value: 1050, leap: KNIGHT, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], sworn: 'wu', aura: 'poison' },
+    taishici: { name: 'Tai Shi Ci',   icon: '🏹', letter: 'T', value: 950, leap: CAMEL, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3],[1,0,3],[-1,0,3]], sworn: 'wu', artillery: { range: 3, radius: 0, cd: 1 } },
+    huangzhong: { name: 'Huang Zhong', icon: '🎯', letter: 'H', value: 900, leap: WAZIR, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], sworn: 'shu', artillery: { range: 5, radius: 0, cd: 1 } },
+    ganning:  { name: 'Gan Ning',     icon: '🏴', letter: 'G', value: 940, leap: KNIGHT, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], sworn: 'wu', counter: 'poison' },
+    diaochan: { name: 'Diao Chan',    icon: '🌙', letter: 'D', value: 820, leap: FERZ, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], aura: 'freeze' },
+    lubu:     { name: 'Lu Bu',        icon: '⚡', letter: 'B', value: 1600, leap: KNIGHT.concat(CAMEL), slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], onDeath: 'split' }
   };
 
   MD.TROOPS = T;

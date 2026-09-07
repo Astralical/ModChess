@@ -431,6 +431,7 @@
         else if (ev.kind === 'regen') addLog(g, (ev.text || 'A troop regenerates') + '.', 'sys', 'heart');
         else if (ev.kind === 'rattle') addLog(g, (ev.text || 'A dying troop leaves a mark') + '.', 'bad', 'skull');
         else if (ev.kind === 'doom') addLog(g, (ev.text || 'A doomed piece perishes') + '.', 'bad', 'target');
+        else if (ev.kind === 'sworn') addLog(g, (ev.text || 'Sworn allies stand together.') , 'w', 'heart');
         else if (ev.kind === 'zone') addLog(g, (ev.text || 'The ground reacts') + '.', 'sys', 'fire');
       }
     }

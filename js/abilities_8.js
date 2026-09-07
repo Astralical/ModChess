@@ -547,5 +547,15 @@
     return n ? ['Heat death stills ' + n + ' enemy piece' + (n > 1 ? 's' : '') + ' — and entropy grants you one last move!'] : ['The universe is already still.'];
   });
 
+  // — THE VOID'S OWN CREATURES —
+  def(783, 'Void Drift', 1, 'Void', 'void', 'Summon a Voidwisp — a small tear in space that splits when destroyed.', 'It was never quite here.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'voidwisp', 1, { rows: Fx.ownHalfRows(g, s) });
+    return lines.length ? lines : ['The void refuses to open here.'];
+  });
+  def(784, 'Dark Star Hatch', 3, 'Void', 'star', 'Summon a Starspawn from a dying sun — it regenerates poison and frost.', 'Born in the last light of a dead star.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'starspawn', 1, { rows: Fx.ownHalfRows(g, s) });
+    return lines.length ? lines : ['The star will not be reborn here.'];
+  });
+
   MD.AB_8 = A;
 })();

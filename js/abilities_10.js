@@ -568,5 +568,15 @@
     return ['The king has left the stage — you take an extra move instead.'];
   });
 
+  // — THE SHOW'S OWN PERFORMERS —
+  def(787, 'Center Ring', 2, 'Show', 'spark', 'Summon a Strongman into the spotlight — he lumbers two squares straight.', 'Step right up. Do not step on him.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'strongman', 1, { rows: Fx.ownHalfRows(g, s) });
+    return lines.length ? lines : ['The big top is already full.'];
+  });
+  def(788, 'Ring of Flame', 2, 'Show', 'fire', 'Summon a Fire-Breather — it breathes a short jet of flame at ranged enemies each turn.', 'The crowd gasps. The flame obliges.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'firebreather', 1, { rows: Fx.ownHalfRows(g, s) });
+    return lines.length ? lines : ['The torch goes out.'];
+  });
+
   MD.AB_10 = A;
 })();
