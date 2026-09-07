@@ -99,8 +99,13 @@
   Game.startTurn = function (color) {
     if (Game.phase === 'over' || !Game.g || Game.g.over) return;
     Game.g.turn = color;
-    // item drops (if enabled): treasure spawns on a random empty square each turn
-    if (MD.Items && MD.Items.enabled(Game.g)) MD.Items.spawnCheck(Game.g);
+    // delayed mortar/siege shells tick down as their firing side's turns begin
+    if (MD.Engine && MD.Engine.tickShells) {
+      const evs = MD.Engine.tickShells(Game.g, color);
+      if (evs && evs.length) evs.forEach(ev => {
+        addLog(Game.g, (ev.text || 'A shell lands!') + (ev.hit > 1 ? ' (' + ev.hit + ' caught in the blast)' : ''), 'bad', 'storm');
+      });
+    }
     Game.sel = null;
     Game.legalCache = [];
     // a Time Stop can make this whole turn vanish (the enemy simply never moves)
@@ -401,6 +406,9 @@
         else if (ev.kind === 'zone') addLog(g, (ev.text || 'The ground reacts') + '.', 'sys', 'fire');
       }
     }
+    // item drops: one becomes eligible after each side completes a move, but if
+    // items are still unclaimed on the field the next waits 2^x turns (x = count)
+    if (MD.Items && MD.Items.enabled(g)) MD.Items.spawnCheck(g);
     // next side to act (extra moves let the mover go again — but ONLY to move, no new spell)
     let next = opp(mover);
     if (g.extra[mover] > 0) {

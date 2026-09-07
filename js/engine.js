@@ -148,6 +148,7 @@
       silence: { w: false, b: false }, warded: { w: false, b: false },
       skipTurn: { w: false, b: false }, lowHand: { w: false, b: false },
       moveOnly: { w: false, b: false }, echo: { w: null, b: null },
+      shells: [],
       fxevents: []
     };
   }
@@ -308,6 +309,52 @@
     return text;
   }
   E.springHazard = springHazard;
+
+  /* ---- mortar / siege SHELLS (delayed area attacks) ----
+     A shell is a pending strike on a square that detonates after `fuse` of
+     its FIRING side's own turns (ticked via E.tickShells(g, side)). It hits
+     whatever enemy piece is on/near the square when it lands. */
+  function engineBomb(g, r, c, radius, owner) {
+    const lines = [];
+    const n = g.n || CUR;
+    for (let dr = -radius; dr <= radius; dr++) for (let dc = -radius; dc <= radius; dc++) {
+      const rr = r + dr, cc = c + dc;
+      if (rr < 0 || rr >= n || cc < 0 || cc >= n) continue;
+      const cell = g.board[rr][cc];
+      if (!cell || cell.c === owner || cell.t === 'k') continue;
+      revokeLeave(g, rr, cc, cell);
+      g.board[rr][cc] = null;
+      lines.push({ r: rr, c: cc });
+    }
+    return lines;
+  }
+  E.addShell = function (g, r, c, owner, fuse, radius) {
+    if (!g) return null;
+    const n = g.n || CUR;
+    if (r < 0 || r >= n || c < 0 || c >= n) return null;
+    if (!g.shells) g.shells = [];
+    const sh = { r, c, owner, fuse: Math.max(1, (fuse | 0) || 1), radius: Math.max(0, (radius | 0) || 1) };
+    g.shells.push(sh);
+    return sh;
+  };
+  E.shellList = g => (g && g.shells) || [];
+  E.clearShells = function (g) { if (g) g.shells = []; };
+  // detonate the firing side's shells whose fuse has expired
+  E.tickShells = function (g, side) {
+    const evs = [];
+    const s = (g.shells || []).slice();
+    const alive = [];
+    for (const sh of s) {
+      if (sh.owner !== side) { alive.push(sh); continue; }
+      sh.fuse--;
+      if (sh.fuse <= 0) {
+        const hit = engineBomb(g, sh.r, sh.c, sh.radius, sh.owner);
+        evs.push({ kind: 'shell', r: sh.r, c: sh.c, radius: sh.radius, hit: hit.length, text: 'A shell strikes with a thunderous blast!' });
+      } else alive.push(sh);
+    }
+    g.shells = alive;
+    return evs;
+  };
 
   function findKing(g, color) {
     for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {

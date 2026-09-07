@@ -360,7 +360,8 @@
     pool.sort((a, b) => Fx.value(b.t) - Fx.value(a.t));
     const lines = [];
     let revived = 0;
-    const backRank = side === 'w' ? 7 : 0;
+    const n = N();
+    const backRank = side === 'w' ? n - 1 : 0;
     for (let gi = 0; gi < pool.length && revived < count; gi++) {
       const p = pool[gi];
       let empties = Fx.emptySq(g, (r) => r === backRank);
@@ -423,8 +424,10 @@
   Fx.returnHome = (g, side, sq) => {
     const cell = g.board[sq.r] && g.board[sq.r][sq.c];
     if (!cell || cell.c !== opp(side)) return [];
-    const row = cell.c === 'w' ? 7 : 0;
-    const col = cell.t === 'p' ? sq.c : { q: 3, k: 4, b: sq.c >= 4 ? 5 : 2, n: sq.c >= 4 ? 6 : 1, r: sq.c >= 4 ? 7 : 0 }[cell.t];
+    const n = N();
+    const row = cell.c === 'w' ? n - 1 : 0;
+    const K = n >> 1;
+    const col = cell.t === 'p' ? sq.c : { q: K - 1, k: K, b: sq.c >= K ? n - 3 : 2, n: sq.c >= K ? n - 2 : 1, r: sq.c >= K ? n - 1 : 0 }[cell.t];
     if (g.board[row] && g.board[row][col]) return [];
     relocate(g, sq.r, sq.c, row, col, { text: 'returned' });
     return [sideName(cell.c) + ' ' + pname(cell.t) + ' is banished home to ' + E.sqName(row, col) + '.'];
@@ -640,6 +643,17 @@
 
   Fx.opp = opp;
   Fx.PIECE_LABEL = PIECE_LABEL;
+
+  /* ---- dimension-aware rank helpers (back/front rows by board size) ----
+     Many older abilities hard-code row 7/6 (white) or 0/1 (black); these read
+     the live board size so summons land on the true back ranks on 6/8/10/12. */
+  Fx.backRows = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? [n - 1, n - 2] : [0, 1]; };
+  Fx.deepBackRows = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? [n - 1, n - 2, n - 3] : [0, 1, 2]; };
+  Fx.frontRows = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? [0, 1, 2] : [n - 3, n - 2, n - 1]; };
+  Fx.enemyHalfRows = (g, side) => { const n = (g && g.n) || N(); const half = n >> 1; return side === 'w' ? Array.from({ length: half }, (_, i) => i) : Array.from({ length: n - half }, (_, i) => half + i); };
+  Fx.ownHalfRows = (g, side) => { const n = (g && g.n) || N(); const half = n >> 1; return side === 'w' ? Array.from({ length: n - half }, (_, i) => half + i) : Array.from({ length: half }, (_, i) => i); };
+  Fx.promoRow = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? 0 : n - 1; };
+  Fx.homeCol = (g) => { const n = (g && g.n) || N(); return n >> 1; };
 
   // squares of enemy pieces currently giving check to `side`'s king
   Fx.checkers = function (g, side) {

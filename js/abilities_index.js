@@ -7,7 +7,7 @@
     .concat(MD.AB_1 || [], MD.AB_2 || [], MD.AB_3 || [], MD.AB_4 || [],
       MD.AB_5 || [], MD.AB_6 || [], MD.AB_7 || [], MD.AB_8 || [],
       MD.AB_9 || [], MD.AB_10 || [], MD.AB_11 || [], MD.AB_12 || [],
-      MD.AB_13 || [], MD.AB_14 || [], MD.AB_15 || [], MD.AB_16 || [], MD.AB_17 || []);
+      MD.AB_13 || [], MD.AB_14 || [], MD.AB_15 || [], MD.AB_16 || [], MD.AB_17 || [], MD.AB_18 || []);
 
   // dedupe + validate
   const seenIds = new Set(), seenNames = new Set();

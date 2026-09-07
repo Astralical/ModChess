@@ -346,6 +346,26 @@
         pieceLayer.appendChild(d);
       }
     }
+    // pending mortar/siege shells — a target marker with its fuse countdown
+    if (g.shells && g.shells.length) {
+      for (const sh of g.shells) {
+        const d = document.createElement('div');
+        d.className = 'shellmark';
+        const pos = px(sh.r, sh.c);
+        d.style.left = pos.x + 'px';
+        d.style.top = pos.y + 'px';
+        d.style.width = sq + 'px';
+        d.style.height = sq + 'px';
+        const ring = document.createElement('span');
+        ring.className = 'shell-ring';
+        ring.innerHTML = MD.iconHTML('target');
+        const num = document.createElement('span');
+        num.className = 'shell-n';
+        num.textContent = sh.fuse;
+        d.appendChild(ring); d.appendChild(num);
+        pieceLayer.appendChild(d);
+      }
+    }
     // animate last chess move (normal move w/o abilities)
     if (MD.Game.lastAnimate && MD.Settings.anim) {
       const an = MD.Game.lastAnimate;

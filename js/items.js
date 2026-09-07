@@ -174,21 +174,17 @@
     return it;
   }
 
-  // call once per side's turn
+  // call once per completed move-turn (either side). If the field is clear a
+  // new treasure appears; if any item is still unclaimed the next spawn waits
+  // 2^x turns (x = number of items currently on the board).
   function spawnCheck(g) {
     if (!g || !g.itemEnabled || g.over) return;
     if (!g.items) g.items = [];
+    if (g.items.length === 0) { const it = dropItem(g); if (it) g.itemCd = 2; return; }
+    if (g.itemCd == null) g.itemCd = 0;
+    if (g.itemCd > 0) { g.itemCd--; return; }
     const x = g.items.length;
-    if (x === 0) { dropItem(g); g.itemCd = 0; return; }
-    const cd = (g.itemCd == null) ? 0 : g.itemCd;
-    if (cd <= 0) {
-      const before = g.items.length;
-      const it = dropItem(g);
-      if (it) g.itemCd = Math.pow(2, before); // next spawn waits 2^x turns
-      else g.itemCd = 1;
-    } else {
-      g.itemCd = cd - 1;
-    }
+    if (dropItem(g)) g.itemCd = Math.pow(2, x); else g.itemCd = 2;
   }
 
   /* ---------------- effect resolution ---------------- */
