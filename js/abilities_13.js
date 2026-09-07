@@ -218,7 +218,7 @@
   def(577, 'Wudang Taiji Sword', 2, 'sword', 'The soft sword deflects: if the enemy\'s strongest piece attacked you (is on your half), FREEZE it; otherwise your king is shielded.', 'The willow bends; the oak breaks.', (g, s) => {
     const t = strong(g, s);
     if (!t) return [];
-    const onYourHalf = s === 'w' ? t.r >= 4 : t.r <= 3;
+    const onYourHalf = Fx.inOwnHalf(g, s, t.r);
     if (onYourHalf) { Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', ''); return ['The taiji sword deflects the invader and binds it.']; }
     const k = E.findKing(g, s);
     if (k) { Fx.mod(g.board[k.r][k.c], 's', 1); return ['No threat on your half — the sword becomes a shield for the king.']; }

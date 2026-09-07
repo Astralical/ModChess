@@ -22,7 +22,7 @@
   const strongest = (g, s, list) => strongFirst(nonKing(list || en(g, s)))[0];
   const adv = (list, s) => list.slice().sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
   const adj = (a, b) => Math.abs(a.r - b.r) <= 1 && Math.abs(a.c - b.c) <= 1;
-  const halfRows = s => (s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7]); // enemy half
+  const halfRows = (g, s) => Fx.enemyHalfRows(g, s); // enemy half
   const A = [];
   const def = (id, name, rarity, cat, icon, desc, flavor, run) => A.push({ id, name, rarity, cat, icon, desc, flavor, target: 'auto', run });
 
@@ -115,7 +115,7 @@
     'The soul steps free of the body.', (g, s) => {
       const k = E.findKing(g, s);
       if (!k) return [];
-      const rows = s === 'w' ? [4, 5, 6, 7] : [0, 1, 2, 3];
+      const rows = Fx.ownHalfRows(g, s);
       let spots = Fx.emptySq(g, (r) => rows.indexOf(r) >= 0).filter(q => !(Math.abs(q.r - k.r) <= 1 && Math.abs(q.c - k.c) <= 1));
       if (!spots.length) spots = Fx.emptySq(g);
       const d = Fx.rand(spots);
@@ -140,7 +140,7 @@
       const foe = adv(nonKing(en(g, s)), s);
       if (!foe) return ['The Rooster finds nothing to lift.'];
       const was = nameOf(foe);
-      const home = s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7];
+      const home = Fx.enemyHalfRows(g, s);
       Fx.mod(foe.cell, 'f', 1); // dazed before it is flung
       const lines = Fx.teleportToEmpty(g, { r: foe.r, c: foe.c }, { rows: home });
       if (!lines.length) return ['The Rooster cannot find a place to set the piece down.'];
@@ -176,7 +176,7 @@
   def(729, 'Fog of War', 3, 'Chaos', 'wind',
     'A cold bank of mist rolls across the enemy\'s half — cover up to FIVE empty squares there with FOG. Any piece standing in the fog is hidden: it can only be captured by a piece on an adjacent square. Shroud your vanguard, or blind their lines.',
     'War is easiest when the enemy cannot see it coming.', (g, s) => {
-      const n = Fx.layZone(g, 'fog', 5, { rows: halfRows(s) });
+      const n = Fx.layZone(g, 'fog', 5, { rows: halfRows(g, s) });
       return n ? ['Fog of war swallows ' + n + ' empty square' + (n > 1 ? 's' : '') + ' of the enemy\'s half.'] : ['The mist finds no open ground to settle on.'];
     });
 

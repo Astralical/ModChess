@@ -134,11 +134,12 @@
   });
 
   def(317, 'Dark Matter', 3, 'Void', 'void', 'Every enemy piece on the edge of the board is drawn inward one square (they cannot hide on the rim).', 'The rim of the universe is hungry.', (g, s) => {
+    const n = g.n || 8;
     let moved = 0;
     const edges = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if ((r === 0 || r === 7 || c === 0 || c === 7) && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') edges.push({ r, c });
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if ((r === 0 || r === n - 1 || c === 0 || c === n - 1) && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') edges.push({ r, c });
     for (const q of edges) {
-      const nr = Math.max(1, Math.min(6, q.r)), nc = Math.max(1, Math.min(6, q.c));
+      const nr = Math.max(1, Math.min(n - 2, q.r)), nc = Math.max(1, Math.min(n - 2, q.c));
       if (!g.board[nr][nc]) { Fx.relocate(g, q.r, q.c, nr, nc, {}); moved++; }
     }
     return moved ? ['Dark matter drags the rim pieces inward.'] : ['No enemy hides on the edge.'];
@@ -171,7 +172,7 @@
   def(320, 'Doppleganger', 2, 'Void', 'void', 'Copy the enemy\'s strongest piece: summon a pawn that becomes a mirror copy of it (same type) for you.', 'Two of everything.', (g, s) => {
     const t = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
     if (!t) return [];
-    const spot = rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r >= 3 : r <= 4));
+    const spot = rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r >= Fx.half(g) - 1 : r <= Fx.half(g)));
     if (!spot) return [];
     Fx.place(g, s, t.cell.t, spot.r, spot.c, {});
     return ['A mirror of the enemy ' + MD.pieceName(t.cell.t) + ' appears at ' + sn(spot.r, spot.c) + '!'];

@@ -28,7 +28,7 @@
         const pawns = en(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
         const t = pawns[0];
         if (!t) return [];
-        const row = s === 'w' ? 6 : 1;
+        const row = Fx.pawnRow(g, s);
         const empties = Fx.emptySq(g, r => r === row);
         const dest = Fx.rand(empties);
         if (!dest) return [];
@@ -501,8 +501,9 @@
       flavor: 'A fortress rises in seconds.',
       target: 'auto',
       run: (g, s) => {
-        const row = s === 'w' ? 6 : 1;
-        const cols = [2, 3, 4, 5];
+        const row = Fx.pawnRow(g, s);
+        const h = Fx.half(g);
+        const cols = [h - 2, h - 1, h, h + 1];
         return Fx.wallOfPawns(g, s, row, cols);
       } },
 
@@ -580,10 +581,12 @@
       flavor: 'Two towers frame the kingdom.',
       target: 'auto',
       run: (g, s) => {
-        const row = s === 'w' ? 7 : 0;
+        const n = g.n || 8;
+        const row = s === 'w' ? n - 1 : 0;
         const lines = [];
         const tried = new Set();
-        const order = [0, 7, 1, 6, 2, 5, 3, 4];
+        const order = [];
+        for (let a = 0, b = n - 1; a <= b; a++, b--) { order.push(a); if (a !== b) order.push(b); }
         for (const c of order) {
           if (lines.length >= 2) break;
           if (g.board[row][c]) continue;
@@ -592,7 +595,8 @@
         }
         if (lines.length < 2) {
           // back rank locked down: raise towers on any open ground ahead
-          const near = Fx.emptySq(g, (r, c) => s === 'w' ? r >= 3 : r <= 4);
+          const h = n >> 1;
+          const near = Fx.emptySq(g, (r, c) => s === 'w' ? r >= h - 1 : r <= h);
           const extra = near.filter(q => !tried.has(q.c)).slice(0, 2 - lines.length);
           for (const sp of extra) { Fx.place(g, s, 'r', sp.r, sp.c, {}); lines.push('A rook tower rises on ' + sn(sp.r, sp.c) + '.'); }
         }

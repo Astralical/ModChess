@@ -214,13 +214,14 @@
     const t = pawns[0];
     if (!t) return ['No enemy pawn on the network.'];
     const k = E.findKing(g, s);
+    const nb = g.n || 8;
     const spots = [];
     if (k) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < nb && c >= 0 && c < nb && !g.board[r][c]) spots.push({ r, c });
     }
-    const d = rnd(spots) || rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r >= 4 : r <= 3));
+    const d = rnd(spots) || rnd(Fx.emptySq(g, (r, c) => Fx.inOwnHalf(g, s, r)));
     if (!d) return ['No free port to spawn into.'];
     Fx.place(g, s, 'p', d.r, d.c, {});
     return ['A mirror of their pawn is cloned to ' + sn(d.r, d.c) + '!'];
@@ -299,10 +300,11 @@
   });
 
   def(385, 'Clean Sweep', 2, 'SciFi', 'swap', 'Teleport every friendly piece on your back two ranks to random empty squares in your front half.', 'Redeploy the whole garrison.', (g, s) => {
-    const mine = own(g, s).filter(q => s === 'w' ? q.r >= 6 : q.r <= 1);
+    const n2 = g.n || 8;
+    const mine = own(g, s).filter(q => s === 'w' ? q.r >= n2 - 2 : q.r <= 1);
     let moved = 0;
     for (const q of mine) {
-      const d = rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r <= 4 : r >= 3));
+      const d = rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r <= (n2 >> 1) : r >= (n2 >> 1) - 1));
       if (d) { Fx.relocate(g, q.r, q.c, d.r, d.c, {}); moved++; }
     }
     return moved ? ['The garrison teleports forward — ' + moved + ' unit' + (moved > 1 ? 's' : '') + ' moved.'] : ['No garrison to move.'];
@@ -412,7 +414,7 @@
     const lines = [];
     const n = Fx.statusOn(g, own(g, s), 's', 1, 'shield');
     if (n) lines.push('Your whole host is shielded.');
-    const f = Fx.statusOn(g, en(g, s).filter(q => s === 'w' ? q.r >= 4 : q.r <= 3), 'f', 1, 'freeze');
+    const f = Fx.statusOn(g, en(g, s).filter(q => Fx.inOwnHalf(g, s, q.r)), 'f', 1, 'freeze');
     if (f) lines.push('Invaders in your sector are frozen.');
     return lines.length ? lines : ['The grid hums on an empty field.'];
   });
@@ -438,7 +440,7 @@
   });
 
   def(399, 'Trojan Pawn', 1, 'SciFi', 'spark', 'Summon a pawn inside enemy territory (their back four ranks).', 'It came in the crate.', (g, s) => {
-    return Fx.summonN(g, s, 'p', 1, { rows: s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7] });
+    return Fx.summonN(g, s, 'p', 1, { rows: Fx.enemyHalfRows(g, s) });
   });
 
   def(400, 'Mech Pilot', 2, 'SciFi', 'spark', 'Swap your most advanced pawn with any of your knights or bishops, then upgrade that piece to a rook.', 'Everyone wants the heavy frame.', (g, s) => {
@@ -457,18 +459,20 @@
     return n ? ['Blackout! ' + n + ' heavy unit' + (n > 1 ? 's are' : ' is') + ' frozen in the dark.'] : ['No heavy units to black out.'];
   });
 
-  def(402, 'Assembly Line', 3, 'SciFi', 'spark', 'Summon TWO friendly Rooks on empty squares of your back two ranks.', 'They come off the line two at a time.', (g, s) => Fx.summonN(g, s, 'r', 2, { rows: s === 'w' ? [6, 7] : [0, 1] }));
+  def(402, 'Assembly Line', 3, 'SciFi', 'spark', 'Summon TWO friendly Rooks on empty squares of your back two ranks.', 'They come off the line two at a time.', (g, s) => Fx.summonN(g, s, 'r', 2, { rows: Fx.backRows(g, s) }));
 
   def(403, 'Warp Core Leak', 4, 'SciFi', 'void', 'Every enemy piece slides one square toward the CENTER files, and the center square they land on detonates.', 'Do not stand near the engine.', (g, s) => {
+    const n = g.n || 8;
+    const h = n >> 1;
     let moved = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-      const nc = c < 4 ? c + 1 : c > 3 ? c - 1 : c;
+      const nc = c < h ? c + 1 : c - 1;
       if (nc !== c && !g.board[r][nc]) { Fx.relocate(g, r, c, r, nc, {}); moved++; }
     }
     let gone = 0;
-    for (const [r, c] of [[3, 3], [3, 4], [4, 3], [4, 4]]) {
+    for (let r = h - 1; r <= h; r++) for (let c = h - 1; c <= h; c++) {
       const cell = g.board[r] && g.board[r][c];
       if (cell && cell.t !== 'k' && cell.c === O(s)) { Fx.removeAt(g, r, c, {}); gone++; }
     }

@@ -162,15 +162,15 @@
   });
 
   def(269, 'Mudslide', 2, 'Wild', 'drop', 'Every enemy piece slides one step DOWN toward your side (like mud). Pieces already in your half are destroyed.', 'The whole hill gives way.', (g, s) => {
+    const n = g.n || 8;
     const dir = s === 'w' ? 1 : -1;
     let moved = 0, crushed = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-      if (s === 'w' && r >= 4) { Fx.removeAt(g, r, c, {}); crushed++; continue; }
-      if (s === 'b' && r <= 3) { Fx.removeAt(g, r, c, {}); crushed++; continue; }
+      if (Fx.inOwnHalf(g, s, r)) { Fx.removeAt(g, r, c, {}); crushed++; continue; }
       const nr = r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
+      if (nr >= 0 && nr < n && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
     }
     const lines = [];
     if (crushed) lines.push('The mud swallows ' + crushed + ' enemy piece' + (crushed > 1 ? 's' : '') + ' on your side!');
@@ -234,7 +234,7 @@
       const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
       const p = pawns[0];
       if (!p) return [];
-      const toC = p.c < 4 ? p.c + 1 : p.c - 1;
+      const toC = p.c < Fx.half(g) ? p.c + 1 : p.c - 1;
       if (!g.board[p.r][toC]) { Fx.relocate(g, p.r, p.c, p.r, toC, {}); return ['The griffon swoops your vanguard inward.']; }
       return ['The griffon circles but finds no landing room.'];
     }

@@ -233,7 +233,7 @@
     const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
     let moved = 0;
     for (const p of pawns) {
-      const nc = p.c < 4 ? p.c + 1 : p.c - 1;
+      const nc = p.c < Fx.half(g) ? p.c + 1 : p.c - 1;
       if (!g.board[p.r][nc]) { Fx.relocate(g, p.r, p.c, p.r, nc, {}); moved++; }
     }
     return moved ? ['Your raiders slip one file toward the center.'] : ['No room to raid inward.'];

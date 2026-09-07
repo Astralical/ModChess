@@ -141,12 +141,13 @@
       flavor: 'Physics was already the house rules.',
       target: 'auto',
       run: (g, s) => {
+        const n = g.n || 8;
         let moved = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
           const cell = g.board[r][c];
           if (!cell) continue;
-          const dr = r < 3 ? 1 : r > 4 ? -1 : 0;
-          const dc = c < 3 ? 1 : c > 4 ? -1 : 0;
+          const dr = Fx.towardMidRow(g, r);
+          const dc = Fx.towardMidCol(g, c);
           if ((dr || dc) && !g.board[r + dr][c + dc]) { Fx.relocate(g, r, c, r + dr, c + dc, {}); moved++; }
         }
         return moved ? ['The board lurches toward its core.'] : [];
@@ -157,8 +158,9 @@
       flavor: 'Up is down. Forward is back.',
       target: 'auto',
       run: (g, s) => {
+        const n = g.n || 8;
         let moved = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
           const cell = g.board[r][c];
           if (!cell) continue;
           const dr = cell.t === 'p' ? (cell.c === 'w' ? -1 : 1) : (cell.c === 'w' ? 1 : -1);

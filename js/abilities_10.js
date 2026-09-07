@@ -114,10 +114,10 @@
   });
 
   def(416, 'Mirror Maze', 2, 'Show', 'void', 'Teleport every enemy piece on your half of the board to a random empty square on THEIR half (they get lost in mirrors).', 'Which way is out?', (g, s) => {
-    const foes = en(g, s).filter(q => s === 'w' ? q.r >= 4 : q.r <= 3);
+    const foes = en(g, s).filter(q => Fx.inOwnHalf(g, s, q.r));
     let moved = 0;
     for (const q of foes) {
-      const d = rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r <= 3 : r >= 4));
+      const d = rnd(Fx.emptySq(g, (r, c) => Fx.inEnemyHalf(g, s, r)));
       if (d) { Fx.relocate(g, q.r, q.c, d.r, d.c, {}); moved++; }
     }
     return moved ? ['The mirror maze spits out ' + moved + ' invader' + (moved > 1 ? 's' : '') + ' back home.'] : ['No invaders lost in the mirrors.'];
@@ -224,7 +224,7 @@
     }
     const p = en(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!p) return ['Tails — but the enemy has no pawn to drag back.'];
-    const row = s === 'w' ? 7 : 0;
+    const row = Fx.backRow(g, s);
     const d = rnd(Fx.emptySq(g, (r, c) => r === row));
     if (!d) { Fx.grantExtra(g, s, 1); return ['Tails — your bluff pays off as extra momentum!']; }
     Fx.relocate(g, p.r, p.c, d.r, d.c, {});
@@ -236,13 +236,13 @@
     let moved = 0;
     for (const p of pawns) {
       const r = p.r + fwd(s);
-      if (r >= 0 && r < 8 && !g.board[r][p.c]) { Fx.relocate(g, p.r, p.c, r, p.c, {}); moved++; }
+      if (r >= 0 && r < (g.n || 8) && !g.board[r][p.c]) { Fx.relocate(g, p.r, p.c, r, p.c, {}); moved++; }
     }
     return moved ? ['The pawns take a bow — ' + moved + ' step' + (moved > 1 ? 's' : '') + ' forward.'] : ['The parade is stuck backstage.'];
   });
 
   def(427, 'Big Top', 3, 'Show', 'spark', 'Summon a Treant (the tent pole) and shield every friendly piece adjacent to it.', 'Under the big top, all are safe.', (g, s) => {
-    const lines = Fx.summonN(g, s, 'treant', 1, { rows: [3, 4] });
+    const lines = Fx.summonN(g, s, 'treant', 1, { rows: [Fx.half(g) - 1, Fx.half(g)] });
     const got = own(g, s).filter(q => q.cell.t === 'treant').slice(-1)[0];
     if (got) {
       const near = own(g, s).filter(q => q !== got && Math.abs(q.r - got.r) <= 1 && Math.abs(q.c - got.c) <= 1);
@@ -260,18 +260,19 @@
       const r = k.r + dr, c = k.c + dc;
       if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
     }
-    const d = rnd(spots) || rnd(Fx.emptySq(g, (r, c) => s === 'w' ? r >= 4 : r <= 3));
+    const d = rnd(spots) || rnd(Fx.emptySq(g, (r, c) => Fx.inOwnHalf(g, s, r)));
     if (!d) return [];
     Fx.place(g, s, 'p', d.r, d.c, {});
     return ['A pawn appears out of thin air at ' + sn(d.r, d.c) + '!'];
   });
 
   def(429, 'Tightrope', 1, 'Show', 'swap', 'Move your most advanced piece one square toward the enemy along the edge of the board, shielded.', 'High above the crowd.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k' && (q.c === 0 || q.c === 7)).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0] ||
+    const mw = g.n || 8;
+    const mine = own(g, s).filter(q => q.cell.t !== 'k' && (q.c === 0 || q.c === mw - 1)).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0] ||
       own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!mine) return [];
     const r = mine.r + fwd(s);
-    if (r >= 0 && r < 8 && !g.board[r][mine.c]) { Fx.relocate(g, mine.r, mine.c, r, mine.c, {}); Fx.mod(g.board[r][mine.c], 's', 1); return ['Your star walks the wire forward, shielded.']; }
+    if (r >= 0 && r < mw && !g.board[r][mine.c]) { Fx.relocate(g, mine.r, mine.c, r, mine.c, {}); Fx.mod(g.board[r][mine.c], 's', 1); return ['Your star walks the wire forward, shielded.']; }
     Fx.mod(mine.cell, 's', 1);
     return ['No wire forward — your piece is shielded in place.'];
   });
@@ -283,8 +284,8 @@
     for (const q of en(g, s)) {
       if (q.cell.t === 'k') continue;
       if (Math.max(Math.abs(q.r - k.r), Math.abs(q.c - k.c)) > 2) continue;
-      const nc = q.c < 4 ? q.c + 1 : q.c - 1;
-      if (nc >= 0 && nc <= 7 && !g.board[q.r][nc]) { Fx.relocate(g, q.r, q.c, q.r, nc, {}); moved++; }
+      const nc = q.c < Fx.half(g) ? q.c + 1 : q.c - 1;
+      if (nc >= 0 && nc < (g.n || 8) && !g.board[q.r][nc]) { Fx.relocate(g, q.r, q.c, q.r, nc, {}); moved++; }
     }
     return moved ? ['The phantom crowd shoves ' + moved + ' enemy unit' + (moved > 1 ? 's' : '') + ' aside.'] : ['The phantom audience is polite today.'];
   });
@@ -554,7 +555,7 @@
 
   def(456, 'Encore of Kings', 4, 'Show', 'spark', 'If your king is still on its starting square, upgrade your two most advanced pawns to rooks AND shield them; otherwise take an extra move.', 'The show must go on.', (g, s) => {
     const k = E.findKing(g, s);
-    const home = s === 'w' ? (k && k.r === 7 && k.c === 4) : (k && k.r === 0 && k.c === 4);
+    const home = k && k.r === Fx.backRow(g, s) && k.c === Fx.homeCol(g);
     if (home) {
       const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
       const lines = [];

@@ -197,25 +197,26 @@
       desc: 'Summon a friendly queen to YOUR back rank.',
       flavor: 'A second queen is a declaration of war.',
       target: 'auto',
-      run: (g, s) => Fx.summonN(g, s, 'q', 1, { rows: [s === 'w' ? 7 : 0] }) },
+      run: (g, s) => Fx.summonN(g, s, 'q', 1, { rows: [Fx.backRow(g, s)] }) },
 
     { id: 73, name: 'Frontline Reinforcements', icon: '🎖️', rarity: 2, cat: 'Summon',
       desc: 'Summon three friendly pawns on the front three ranks (toward the enemy).',
       flavor: 'Reinforcements arrive where the fighting is worst.',
       target: 'auto',
-      run: (g, s) => Fx.summonN(g, s, 'p', 3, { rows: s === 'w' ? [3, 4, 5] : [2, 3, 4] }) },
+      run: (g, s) => Fx.summonN(g, s, 'p', 3, { rows: Fx.frontPawnRows(g, s) }) },
 
     { id: 74, name: 'Gravitational Anchor', icon: '🧲', rarity: 3, cat: 'Chaos',
       desc: 'Pull every enemy piece one square toward the center.',
       flavor: 'They cannot resist the pull.',
       target: 'auto',
       run: (g, s) => {
+        const n = g.n || 8;
         let moved = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
           const cell = g.board[r][c];
           if (!cell || cell.c !== O(s)) continue;
-          const dr = r < 3 ? 1 : r > 4 ? -1 : 0;
-          const dc = c < 3 ? 1 : c > 4 ? -1 : 0;
+          const dr = Fx.towardMidRow(g, r);
+          const dc = Fx.towardMidCol(g, c);
           if ((dr || dc) && !g.board[r + dr][c + dc]) { Fx.relocate(g, r, c, r + dr, c + dc, {}); moved++; }
         }
         return moved ? ['The enemy is dragged inward.'] : [];
@@ -307,9 +308,9 @@
         for (const sp of spots.slice(0, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A guard pawn appears at ' + sn(sp.r, sp.c) + '.'); }
         if (!lines.length) {
           // crowded court: raise the guard further out, then anywhere in own half
-          const row = s === 'w' ? 6 : 1;
-          let pool = Fx.emptySq(g, (r, c) => r === row || r === (s === 'w' ? 7 : 0));
-          if (!pool.length) pool = Fx.emptySq(g, (r, c) => s === 'w' ? r >= 4 : r <= 3);
+          const row = Fx.pawnRow(g, s);
+          let pool = Fx.emptySq(g, (r, c) => r === row || r === Fx.backRow(g, s));
+          if (!pool.length) pool = Fx.emptySq(g, (r, c) => Fx.inOwnHalf(g, s, r));
           for (const sp of pool.slice(0, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A guard pawn rallies at ' + sn(sp.r, sp.c) + '.'); }
           if (!lines.length) return ['The guard is scattered — your court is already sealed.'];
         }

@@ -103,11 +103,12 @@
       flavor: 'The war council reshuffles.',
       target: 'auto',
       run: (g, s) => {
-        const row = s === 'w' ? 7 : 0;
+        const n = g.n || 8;
+        const row = s === 'w' ? n - 1 : 0;
         const cells = [];
-        for (let c = 0; c < 8; c++) if (g.board[row][c]) { cells.push(g.board[row][c]); g.board[row][c] = null; }
+        for (let c = 0; c < n; c++) if (g.board[row][c]) { cells.push(g.board[row][c]); g.board[row][c] = null; }
         const order = [];
-        for (let c = 0; c < 8; c++) order.push(c);
+        for (let c = 0; c < n; c++) order.push(c);
         order.sort(() => Math.random() - 0.5);
         for (let i = 0; i < cells.length && i < order.length; i++) g.board[row][order[i]] = cells[i];
         g.ep = null;
@@ -120,16 +121,18 @@
       flavor: 'Outflank them before they blink.',
       target: 'auto',
       run: (g, s) => {
-        const row = s === 'w' ? 7 : 0;
+        const n = g.n || 8;
+        const h = n >> 1;
+        const row = s === 'w' ? n - 1 : 0;
         const lines = [];
         const flank = (from) => {
           const cell = g.board[row][from];
           if (!cell) return;
-          const dir = from < 4 ? 1 : -1;
+          const dir = from < h ? 1 : -1;
           // sweep toward the center files for the first open square
-          for (let step = 1; step <= 3; step++) {
+          for (let step = 1; step <= h; step++) {
             const c = from + step * dir;
-            if (c < 0 || c > 7) break;
+            if (c < 0 || c >= n) break;
             if (!g.board[row][c]) {
               Fx.relocate(g, row, from, row, c, {});
               lines.push('A piece outflanks to file ' + FILES[c] + '.');
@@ -137,9 +140,9 @@
             }
           }
           // corridor packed: leapfrog with the first piece met on the way in
-          for (let step = 1; step <= 3; step++) {
+          for (let step = 1; step <= h; step++) {
             const c = from + step * dir;
-            if (c < 0 || c > 7) break;
+            if (c < 0 || c >= n) break;
             if (g.board[row][c]) {
               Fx.swapSq(g, { r: row, c: from }, { r: row, c: c });
               lines.push('A piece leapfrogs inward to file ' + FILES[c] + '.');
@@ -147,7 +150,7 @@
             }
           }
         };
-        flank(0); flank(7);
+        flank(0); flank(n - 1);
         return lines.length ? lines : ['The back rank is sealed — no flanking room.'];
       } },
 
@@ -226,10 +229,11 @@
       flavor: 'Some squares are simply booby-trapped.',
       target: 'auto',
       run: (g, s) => {
-        const row = s === 'w' ? 4 : 3;
+        const n = g.n || 8;
+        const row = s === 'w' ? n - 4 : 3;
         let pool = en(g, s).filter(q => q.r === row);
         let t = Fx.rand(pool);
-        let where = 'rank ' + (8 - row);
+        let where = 'rank ' + (n - row);
         if (!t) {
           // no one on the trap rank: the spring snags the most advanced foe
           pool = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
@@ -266,12 +270,13 @@
       flavor: 'Light pours from the throne.',
       target: 'auto',
       run: (g, s) => {
+        const n = g.n || 8;
         const k = E.findKing(g, s);
         if (!k) return [];
         const hit = [];
         for (const [dr, dc] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
           let r = k.r + dr, c = k.c + dc;
-          while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+          while (r >= 0 && r < n && c >= 0 && c < n) {
             const cell = g.board[r][c];
             if (cell && cell.c === O(s) && cell.t !== 'k') hit.push({ r, c });
             else if (cell) break;
@@ -516,15 +521,16 @@
         const k = E.findKing(g, s);
         if (!k) return [];
         const spots = [];
+        const nb = g.n || 8;
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;
           const r = k.r + dr, c = k.c + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+          if (r >= 0 && r < nb && c >= 0 && c < nb && !g.board[r][c]) spots.push({ r, c });
         }
         const lines = [];
         for (const sp of spots.slice(0, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); Fx.mod(g.board[sp.r][sp.c], 's', 1); lines.push('A loyal pawn throws itself before the king.'); }
         if (!lines.length) {
-          const open = Fx.emptySq(g, (r, c) => s === 'w' ? r >= 4 : r <= 3).slice(0, 2);
+          const open = Fx.emptySq(g, (r, c) => Fx.inOwnHalf(g, s, r)).slice(0, 2);
           for (const sp of open) { Fx.place(g, s, 'p', sp.r, sp.c, {}); Fx.mod(g.board[sp.r][sp.c], 's', 1); lines.push('A loyal pawn rushes up to guard the king.'); }
         }
         return lines.length ? lines : ['No loyal pawn can reach the king.'];

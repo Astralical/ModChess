@@ -22,7 +22,7 @@
   const kill = (g, q) => { Fx.removeAt(g, q.r, q.c, {}); };
   const A = [];
   const def = (id, name, rarity, cat, icon, desc, flavor, run) => A.push({ id, name, rarity, cat, icon, desc, flavor, target: 'auto', run });
-  const halfRows = s => (s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7]);
+  const halfRows = (g, s) => Fx.enemyHalfRows(g, s);
 
   def(707, 'Gorgon Gaze', 2, 'Curse', 'eye', 'PETRIFY two random enemy MINOR pieces (knight/bishop): they cannot move or be captured until two of their own turns pass.', 'Look, and be stone.', (g, s) => {
     const pool = foes(g, s).filter(q => q.cell.t === 'n' || q.cell.t === 'b');
@@ -48,12 +48,12 @@
   });
 
   def(710, 'Scorching Field', 3, 'Attack', 'fire', 'Set the enemy\'s half ablaze: turn up to FOUR empty squares into FIRE zones — any piece ending its turn there is burned (poisoned, shield stripped).', 'The field will not forgive a lingering step.', (g, s) => {
-    const n = Fx.layZone(g, 'fire', 4, { rows: halfRows(s) });
+    const n = Fx.layZone(g, 'fire', 4, { rows: halfRows(g, s) });
     return n ? ['Fire spreads across ' + n + ' empty square' + (n > 1 ? 's' : '') + ' of the enemy\'s half.'] : ['No open ground to burn.'];
   });
 
   def(711, 'Brier Thicket', 3, 'Status', 'leaf', 'Grow a THORNS thicket on up to three random empty squares in the enemy\'s half — any piece that ends its turn there is DOOMED.', 'The briar remembers every step.', (g, s) => {
-    const n = Fx.layZone(g, 'thorns', 3, { rows: halfRows(s) });
+    const n = Fx.layZone(g, 'thorns', 3, { rows: halfRows(g, s) });
     return n ? ['A brier thicket claws up through ' + n + ' empty square' + (n > 1 ? 's' : '') + '.'] : ['The briers cannot find soil.'];
   });
 
@@ -74,12 +74,12 @@
   });
 
   def(714, 'Warp Field', 3, 'Chaos', 'void', 'Tear RIFT zones into three random empty squares of the enemy\'s half — any enemy piece that ends its turn there is torn to a random empty square.', 'Space is not as solid as it seems.', (g, s) => {
-    const n = Fx.layZone(g, 'rift', 3, { rows: halfRows(s) });
+    const n = Fx.layZone(g, 'rift', 3, { rows: halfRows(g, s) });
     return n ? ['Rifts gape across ' + n + ' empty square' + (n > 1 ? 's' : '') + ' of the enemy\'s half.'] : ['The fabric of space holds firm.'];
   });
 
   def(715, 'Sludge Mire', 1, 'Status', 'drop', 'Flood a MIRE over three random empty squares in the enemy\'s half — a piece that ends its turn there is stuck and cannot move next turn.', 'Slow, patient, devouring.', (g, s) => {
-    const n = Fx.layZone(g, 'mire', 3, { rows: halfRows(s) });
+    const n = Fx.layZone(g, 'mire', 3, { rows: halfRows(g, s) });
     return n ? ['Mire swallows ' + n + ' empty square' + (n > 1 ? 's' : '') + ' of the field.'] : ['The ground is too dry to mire.'];
   });
 

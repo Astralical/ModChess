@@ -152,8 +152,9 @@
   });
 
   def(623, 'Monsoon', 3, 'storm', 'The sky opens: FREEZE every enemy piece on your two most advanced FILES.', 'The rain turns the field to mud.', (g, s) => {
+    const n6 = g.n || 8;
     const counts = [];
-    for (let c = 0; c < 8; c++) { let sum = 0; for (const q of foes(g, s)) if (q.c === c) sum += (s === 'w' ? q.r : 7 - q.r); counts.push({ c, sum }); }
+    for (let c = 0; c < n6; c++) { let sum = 0; for (const q of foes(g, s)) if (q.c === c) sum += (s === 'w' ? q.r : (n6 - 1) - q.r); counts.push({ c, sum }); }
     const order = counts.sort((a, b) => b.sum - a.sum);
     const files = order.slice(0, 2).map(o => o.c);
     const t = foes(g, s).filter(q => files.includes(q.c));
@@ -246,9 +247,10 @@
 
   def(633, 'Storm God\'s Wrath', 3, 'storm', 'Hurricane winds: every enemy piece on the center RANKS is pushed one square sideways (toward the nearest edge).', 'The sky and sea agree.', (g, s) => {
     let moved = 0;
-    for (const q of foes(g, s).filter(x => x.r === 3 || x.r === 4)) {
-      const nc = q.c < 4 ? q.c - 1 : q.c + 1;
-      if (nc >= 0 && nc < 8 && !g.board[q.r][nc]) { Fx.relocate(g, q.r, q.c, q.r, nc, {}); moved++; }
+    const ng = g.n || 8;
+    for (const q of foes(g, s).filter(x => Fx.inCenterRows(g, x.r))) {
+      const nc = q.c < Fx.half(g) ? q.c - 1 : q.c + 1;
+      if (nc >= 0 && nc < ng && !g.board[q.r][nc]) { Fx.relocate(g, q.r, q.c, q.r, nc, {}); moved++; }
     }
     return moved ? ['The hurricane hurls ' + moved + ' enemy sideways.'] : ['The storm is still offshore.'];
   });
@@ -387,12 +389,12 @@
   });
 
   def(648, 'Stormcaller\'s Tide', 3, 'drop', 'Call the high tide: EVERY enemy piece on your half is pushed to the enemy\'s half (one row at a time if blocked).', 'The sea takes back the shore.', (g, s) => {
-    const home = s === 'w' ? (r => r >= 4) : (r => r <= 3);
+    const nt = g.n || 8;
     let moved = 0;
-    for (const q of foes(g, s).filter(x => home(x.r)).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))) {
+    for (const q of foes(g, s).filter(x => Fx.inOwnHalf(g, s, x.r)).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))) {
       const dir = s === 'w' ? -1 : 1;
       const nr = q.r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
+      if (nr >= 0 && nr < nt && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
     }
     return moved ? ['The tide sweeps ' + moved + ' enemy off your half.'] : ['The water is low.'];
   });

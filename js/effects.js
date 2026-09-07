@@ -654,6 +654,20 @@
   Fx.ownHalfRows = (g, side) => { const n = (g && g.n) || N(); const half = n >> 1; return side === 'w' ? Array.from({ length: n - half }, (_, i) => half + i) : Array.from({ length: half }, (_, i) => i); };
   Fx.promoRow = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? 0 : n - 1; };
   Fx.homeCol = (g) => { const n = (g && g.n) || N(); return n >> 1; };
+  // single-row shorthand: true back rank / pawn home row (front of the back rank)
+  Fx.backRow = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? n - 1 : 0; };
+  Fx.pawnRow = (g, side) => { const n = (g && g.n) || N(); return side === 'w' ? n - 2 : 1; };
+  // "front three ranks toward the enemy" (pawns rallying at the midline)
+  Fx.frontPawnRows = (g, side) => { const n = (g && g.n) || N(); const h = n >> 1; return side === 'w' ? [h - 1, h, h + 1] : [h - 2, h - 1, h]; };
+  // boolean predicates (board-size aware). All boards are even, half = n/2.
+  Fx.half = (g) => { const n = (g && g.n) || N(); return n >> 1; };
+  Fx.inOwnHalf = (g, side, r) => { const h = Fx.half(g); return side === 'w' ? r >= h : r < h; };
+  Fx.inEnemyHalf = (g, side, r) => !Fx.inOwnHalf(g, side, r);
+  Fx.inCenterRows = (g, r) => { const h = Fx.half(g); return r === h - 1 || r === h; };
+  // the "mirror toward the middle pair" step used by fold/gravity abilities
+  Fx.towardMidRow = (g, r) => { const h = Fx.half(g); return r < h - 1 ? 1 : r > h ? -1 : 0; };
+  Fx.towardMidCol = (g, c) => { const h = Fx.half(g); return c < h - 1 ? 1 : c > h ? -1 : 0; };
+  Fx.inLeftHalf = (g, c) => c < Fx.half(g); // push toward the middle file gap
 
   // squares of enemy pieces currently giving check to `side`'s king
   Fx.checkers = function (g, side) {
