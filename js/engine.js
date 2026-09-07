@@ -631,6 +631,17 @@
   }
   E.revokeLeave = revokeLeave;
 
+  // remember that a piece died (for resurrection) — captures already record via
+  // applyMove; spells/poison/doom deaths funnel through here too so a "revive"
+  // can bring back anything lost, not just chess captures. Kings never return.
+  E.noteFallen = function (g, cell) {
+    if (!cell || cell.t === 'k') return;
+    if (!g.lost) g.lost = { w: [], b: [] };
+    const list = g.lost[cell.c] || (g.lost[cell.c] = []);
+    list.push({ t: cell.t, c: cell.c });
+    if (list.length > 24) list.shift();
+  };
+
   function applyMove(g, mv, opts) {
     opts = opts || {};
     const b = g.board;
@@ -861,6 +872,7 @@
     const cell = g.board[r][c];
     if (!cell) return;
     const lines = [];
+    E.noteFallen(g, cell);
     revokeLeave(g, r, c, cell);
     g.board[r][c] = null;
     for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
@@ -869,6 +881,7 @@
       const t = g.board[nr][nc];
       if (t && t.c !== cell.c) {
         lines.push({ r: nr, c: nc, kind: 'destroy' });
+        E.noteFallen(g, t);
         revokeLeave(g, nr, nc, t);
         g.board[nr][nc] = null;
       }
@@ -907,6 +920,7 @@
         if (nr < 0 || nr >= CUR || nc < 0 || nc >= CUR) continue;
         const t = g.board[nr][nc];
         if (t && t.c !== cell.c && t.t !== 'k') {
+          E.noteFallen(g, t);
           revokeLeave(g, nr, nc, t);
           g.board[nr][nc] = null;
           events.push({ kind: 'rattle', r: nr, c: nc, text: 'Death-burst destroys a ' + pieceLabel(t.t) });
@@ -916,6 +930,45 @@
     return events;
   }
   E.deathRattle = deathRattle;
+
+  /* ---- COUNTER trait (data-driven via MD.TROOPS[t].counter) ----
+     A counter piece punishes the unit that CAPTURES it (moves onto it). If you
+     take a counter piece you are "countered":
+       counter: true | 'kill'  -> the capturer is destroyed with it (kings safe)
+       counter: 'poison'       -> capturer is poisoned
+       counter: 'freeze'       -> capturer is frozen
+       counter: 'doom'         -> capturer is death-marked
+     Call after a real capture: attackerCell sits on (ar,ac); victimCell was the
+     piece that was just removed. Returns log lines (empty if nothing to do). */
+  E.counterStrike = function (g, ar, ac, victimCell) {
+    const attacker = g.board[ar] && g.board[ar][ac];
+    if (!attacker || !victimCell) return [];
+    const d = TROOP(victimCell.t);
+    if (!d || !d.counter) return [];
+    const eff = d.counter === true ? 'kill' : String(d.counter);
+    const vname = pieceLabel(victimCell.t);
+    const out = [];
+    const bb = attacker.b || (attacker.b = { f: 0, s: 0, p: 0 });
+    if (eff === 'kill') {
+      if (attacker.t === 'k') {
+        out.push('The ' + vname + ' is destroyed — its counter shatters uselessly against the King.');
+        return out;
+      }
+      out.push('The ' + vname + ' is destroyed, and its deadly counter takes the attacker down too!');
+      E.noteFallen(g, attacker);
+      revokeLeave(g, ar, ac, attacker);
+      g.board[ar][ac] = null;
+      const rattle = deathRattle(g, ar, ac, attacker);
+      if (rattle && rattle.length) out.push(...rattle.map(e => e.text));
+      return out;
+    }
+    if (eff === 'poison') { bb.p = 1; out.push('The ' + vname + ' is destroyed, and its venom poisons the attacker!'); return out; }
+    if (eff === 'freeze') { bb.f = 1; out.push('The ' + vname + ' is destroyed — its counter freezes the attacker in place!'); return out; }
+    if (eff === 'doom') { bb.doom = 1; out.push('The ' + vname + ' is destroyed — the attacker is marked for doom!'); return out; }
+    return out;
+  };
+  E.counterStrike = E.counterStrike;
+
   const pieceLabel = t => { const d = TROOP(t); return d ? d.name : (E.PIECE_LABEL ? E.PIECE_LABEL[t] : t); };
 
   // tick statuses after `mover` has completed their turn
@@ -946,6 +999,7 @@
         if (b.doom > 0) {
           b.doom = 0;
           events.push({ kind: 'doom', r, c, text: sideLabel(cell.c) + ' ' + pieceLabel(cell.t) + ' succumbs to its doom.' });
+          E.noteFallen(g, cell);
           revokeLeave(g, r, c, cell);
           g.board[r][c] = null;
           continue;

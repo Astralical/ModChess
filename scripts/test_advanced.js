@@ -6,7 +6,7 @@ const load = p => eval(fs.readFileSync(p, 'utf8'));
  'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js',
  'js/abilities_8.js', 'js/abilities_9.js', 'js/abilities_10.js', 'js/abilities_11.js',
  'js/abilities_12.js', 'js/abilities_13.js', 'js/abilities_14.js', 'js/abilities_15.js', 'js/abilities_16.js',
- 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
+ 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
 const MD2 = globalThis.MD, E = MD2.Engine;
 
 let pass = 0, fail = 0;

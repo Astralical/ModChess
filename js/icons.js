@@ -122,6 +122,11 @@
     howitzer: F(`<path d="M3 20h6l1-3 4-1 1-4-4 2-1-2-2 1-1-3 3-1 2-3-3 1V4l-1 3-4 2v3H3l-1 5 2 3z"/>`),
     infantry: F(`<path d="M12 2l3 2 1 4-3 1 3 2-1 3-3-1-3 1-1-3 3-2-3-1 1-4 3-2z"/><path d="M12 12v6M10 18h4M9 21l1-3M15 21l-1-3"/>`)
   };
+  // counter-troop glyphs reuse similar existing shapes
+  TROOP['porcupine'] = TROOP['turtle'];
+  TROOP['scorpion'] = TROOP['basilisk'];
+  TROOP['urchin'] = TROOP['seaserpent'];
+  TROOP['plaguebearer'] = TROOP['reaper'];
 
   // ======== build markup helpers ========
   function inner(key) { return B[key] || TROOP[key] || B.spark || ''; }

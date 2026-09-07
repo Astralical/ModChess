@@ -581,5 +581,15 @@
     return lines.length ? lines : ['The wilds hold their breath.'];
   });
 
+  // counter troops: take them and you are COUNTER-ATTACKED
+  def(780, 'Quill Guard', 2, 'Wild', 'leaf', 'Summon a Porcupine to the front line — any enemy that captures it is destroyed along with it.', 'Nature defends her own, quill by quill.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'porcupine', 1, { rows: Fx.frontPawnRows(g, s) });
+    return lines.length ? lines : ['No open ground for a prickly friend.'];
+  });
+  def(781, 'Scorpion Nest', 3, 'Wild', 'skull', 'A Scorpion burrows into the enemy\'s half — capture it and its venom poisons the capturer.', 'Where the sand shifts, stingers wait.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'scorpion', 1, { rows: Fx.enemyHalfRows(g, s) });
+    return lines.length ? lines : ['The nest finds no sand to dig.'];
+  });
+
   MD.AB_7 = A;
 })();

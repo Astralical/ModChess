@@ -29,11 +29,11 @@
   const SIZES = [8, 10, 12];
   const valOf = t => E.val(t);
 
-  // --- economy: gold is VERY scarce — a strong purchase (~200-300) is a
-  // 3-5 round investment. Captures pay a pittance; most income is spoils. ---
-  const goldVal = v => Math.max(1, Math.round(v / 100)); // p1 n3 b3 r5 q10 …
-  const spoilsOf = w => 8 + w * 6;                      // 14 .. (a bit per wave)
-  const chestOf = w => 18 + w * 8;                      // war-chest boon
+  // --- economy: gold is modest — enough that a strong purchase (~120-200) is
+  // a 2-3 round investment and one or two small buys every wave stay possible. ---
+  const goldVal = v => Math.max(1, Math.round(v / 80)); // p1 n3 b3 r6 q10 …
+  const spoilsOf = w => 14 + w * 10;                    // 24 .. (keeps rising)
+  const chestOf = w => 26 + w * 12;                     // war-chest boon
 
   // --- encounter types ---
   //   host  : the classic horde (pawn swarms + support)
@@ -46,8 +46,8 @@
     const r = Math.random();
     return r < 0.55 ? 'host' : (r < 0.8 ? 'raid' : 'ambush');
   }
-  // enemy-value budget grows every wave (endless but fair)
-  function hostBudget(w) { return 320 + w * 190 + (w > 5 ? (w - 5) * 150 : 0); }
+  // enemy-value budget grows every wave (endless but gentle early on)
+  function hostBudget(w) { return 280 + w * 150 + (w > 5 ? (w - 5) * 100 : 0); }
 
   // --- terrain for an n x n board: open at first; later a few scattered
   // walls/rivers in the middle band (lanes always stay open) ---
@@ -346,8 +346,13 @@
   function applyPlayerMove(g, mv) {
     const wasCapture = !!(g.board[mv.r1][mv.c1]);
     const capVal = wasCapture ? valOf(g.board[mv.r1][mv.c1].t) : 0;
+    const victimCell = (g.board[mv.r1] && g.board[mv.r1][mv.c1]) || null; // counter trap check
     const anim = { from: { r: mv.r0, c: mv.c0 }, to: { r: mv.r1, c: mv.c1 } };
     E.applyMove(g, mv);
+    if (victimCell && E.counterStrike) {
+      const cl = E.counterStrike(g, mv.r1, mv.c1, victimCell);
+      if (cl && cl.length) cl.forEach(t => LOG(g, '⚡ ' + t, 'bad', 'skull'));
+    }
     MD.Game.lastAnimate = anim;
     MD.playSfx(wasCapture ? 'capture' : 'move');
     const san = g.lastMove ? g.lastMove.san : '';
@@ -471,8 +476,13 @@
 
   function applyEnemyMove(g, mv) {
     const wasCapture = !!(g.board[mv.r1][mv.c1]);
+    const victimCell = (g.board[mv.r1] && g.board[mv.r1][mv.c1]) || null; // counter trap check
     const anim = { from: { r: mv.r0, c: mv.c0 }, to: { r: mv.r1, c: mv.c1 } };
     E.applyMove(g, mv);
+    if (victimCell && E.counterStrike) {
+      const cl = E.counterStrike(g, mv.r1, mv.c1, victimCell);
+      if (cl && cl.length) cl.forEach(t => LOG(g, '⚡ ' + t, 'bad', 'skull'));
+    }
     MD.Game.lastAnimate = anim;
     MD.playSfx(wasCapture ? 'capture' : 'move');
     const san = g.lastMove ? g.lastMove.san : '';
@@ -544,11 +554,24 @@
     if (!C.active) return;
     const g = C.g;
     if (count(g, 'b') !== 0) return;
-    // spoils of war — scarce, hard-won gold
+    // spoils of war — modest, hard-won gold
     const bonus = spoilsOf(C.run.wave);
     C.run.gold += bonus;
     if (C.run.encounter === 'boss') { C.run.gold += 25; LOG(g, 'A warlord siege broken — spoils of +' + (bonus + 25) + ' gold.', 'sys', 'coin'); }
     else LOG(g, 'Wave ' + C.run.wave + ' repelled — the realm pays ' + bonus + ' gold in spoils.', 'sys', 'coin');
+    // mercy of the realm: cleanse statuses between waves, and if your garrison
+    // has been ground down, peasants take up arms so a bad round can't snowball
+    let cleansed = 0;
+    for (const p of listPieces(g, 'w')) if (p.cell.b && (p.cell.b.f > 0 || p.cell.b.p > 0)) { p.cell.b.f = 0; p.cell.b.p = 0; cleansed++; }
+    if (cleansed) LOG(g, 'Field healers cleanse ' + cleansed + ' afflicted defender' + (cleansed > 1 ? 's' : '') + '.', 'w', 'heart');
+    const nw = (g.n | 0) || 8;
+    if (count(g, 'w') < 7) {
+      const need = 7 - count(g, 'w');
+      let added = 0;
+      const cols2 = Array.from({ length: nw }, (_, i) => i).sort(() => Math.random() - 0.5);
+      for (let k = 0; k < need && k < cols2.length; k++) if (placeRaw(g, 'w', 'p', nw - 2, cols2[k])) added++;
+      if (added) LOG(g, 'Peasants take up arms — ' + added + ' levy pawn' + (added > 1 ? 's' : '') + ' reinforce the Throne.', 'w', 'heart');
+    }
     C.phase = 'reward';
     banner('The host is scattered!', 'good');
     MD.playSfx('win');
@@ -683,7 +706,7 @@
 
     // — gold purchases: pricey mercenaries & royal works —
     opts.push({
-      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 250,
+      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 140,
       desc: 'Hire a champion: a ' + MD.pieceName(hireType()) + ' joins your army.',
       run: () => {
         const q = findFree(g, backRanks, allCols);
@@ -694,7 +717,7 @@
     });
     // — gold purchases: strong abilities, pricey — one every 3-5 rounds —
     opts.push({
-      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 200,
+      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 110,
       desc: 'Field hospitals: cleanse your whole army, revive a fallen pawn, and shield your king.',
       run: () => {
         for (const p of listPieces(g, 'w')) if (p.cell.b && (p.cell.b.f > 0 || p.cell.b.p > 0)) { p.cell.b.f = 0; p.cell.b.p = 0; }
@@ -706,7 +729,7 @@
       }
     });
     opts.push({
-      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 300,
+      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 180,
       desc: 'Promote your most advanced pawn to a QUEEN and shield your two most advanced pieces.',
       run: () => {
         const adv = advPawn();
@@ -730,7 +753,11 @@
     const paidPool = opts.filter(o => o.cost).sort(() => Math.random() - 0.5);
     const picks = [];
     if (freePool.length) picks.push(freePool[Math.floor(Math.random() * freePool.length)]);
-    while (picks.length < 3) {
+    // one paid option is guaranteed early so gold is actually spendable
+    if (picks.length === 1 && paidPool.length && Math.random() < 0.8) {
+      picks.push(paidPool[Math.floor(Math.random() * paidPool.length)]);
+    }
+    while (picks.length < 4) {
       const src = (picks.length === 1 && paidPool.length) ? paidPool : opts;
       const cand = src[Math.floor(Math.random() * src.length)];
       if (cand && !picks.includes(cand)) picks.push(cand); else break;

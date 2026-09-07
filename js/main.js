@@ -351,12 +351,12 @@
         const t = MD.botTarget(Game.g, chosen, side);
         Game.castAbility(chosen, t); // will set phase='move'
       } else {
-        h.used = true;
+        if (h) h.used = true; // a null hand = move-only bonus turn; just move below
         Game.phase = 'move';
       }
     } catch (err) {
       console.error('bot ability error', err);
-      h.used = true;
+      if (h) h.used = true;
       Game.phase = 'move';
     }
     setTimeout(() => {
@@ -392,7 +392,13 @@
     const mover = Game.g.turn;
     const anim = { from: { r: move.r0, c: move.c0 }, to: { r: move.r1, c: move.c1 } };
     const wasCapture = !!(Game.g.board[move.r1][move.c1] || move.ep);
+    const victimCell = (Game.g.board[move.r1] && Game.g.board[move.r1][move.c1]) || null; // counter trap check
     E.applyMove(Game.g, move);
+    // a counter piece punishes the unit that captured it (kings stay safe)
+    if (victimCell && E.counterStrike) {
+      const cl = E.counterStrike(Game.g, move.r1, move.c1, victimCell);
+      if (cl && cl.length) cl.forEach(t => addLog(Game.g, '⚡ ' + t, 'bad', 'skull'));
+    }
     Game.lastAnimate = anim;
     MD.playSfx(wasCapture ? 'capture' : 'move');
     if (E.inCheck(Game.g, opp(mover))) MD.playSfx('check');

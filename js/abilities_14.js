@@ -466,5 +466,29 @@
     return lines.length ? lines : ['The Revenge sails on.'];
   });
 
+  // counter troops: take them and you are COUNTER-ATTACKED
+  def(782, 'Spine Reef', 2, 'drop', 'A Sea Urchin anchors beside your most advanced pawn — anything that captures it is skewered in kind.', 'Sharp patience, hidden in the surf.', (g, s) => {
+    const p = advP(g, s)[0];
+    const lines = [];
+    let placed = false;
+    if (p) {
+      const nb = Fx.bd(g);
+      const near = [];
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+        if (!dr && !dc) continue;
+        const r = p.r + dr, c = p.c + dc;
+        if (r >= 0 && r < nb && c >= 0 && c < nb && !g.board[r][c] && !(E.isTerrain && E.isTerrain(g, r, c))) near.push({ r, c });
+      }
+      if (near.length) {
+        const q = near[Math.floor(Math.random() * near.length)];
+        Fx.place(g, s, 'urchin', q.r, q.c, {});
+        lines.push('A sea urchin anchors at ' + sn(q.r, q.c) + '.');
+        placed = true;
+      }
+    }
+    if (!placed) lines.push(...summon(g, s, 'urchin', 1));
+    return lines.length ? lines : ['The tide brings no urchin.'];
+  });
+
   MD.AB_14 = A;
 })();

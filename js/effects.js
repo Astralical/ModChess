@@ -80,6 +80,7 @@
     if (!onBoard(r, c)) return null;
     const cell = g.board[r][c];
     if (!cell) return null;
+    if (E.noteFallen) E.noteFallen(g, cell); // destroyed pieces can be revived later
     E.revokeLeave(g, r, c, cell);
     g.board[r][c] = null;
     g.ep = null;
