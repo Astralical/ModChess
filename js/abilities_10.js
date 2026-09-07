@@ -17,7 +17,7 @@
   const def = (id, name, rarity, cat, icon, desc, flavor, run) => A.push({ id, name, rarity, cat, icon, desc, flavor, target: 'auto', run });
 
   def(407, 'Crowd Roar', 2, 'Show', 'spark', 'Your most advanced piece puts on a show: it leaps forward, and the applause shields it.', 'The crowd is behind you.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     const r = mine.r + fwd(s);
     if (r >= 0 && r < Fx.bd(g) && !g.board[r][mine.c]) { Fx.relocate(g, mine.r, mine.c, r, mine.c, {}); Fx.mod(g.board[r][mine.c], 's', 1); return ['The star takes a bow one square closer — shielded by applause!']; }
@@ -106,7 +106,7 @@
   });
 
   def(415, 'Sideshow Giant', 3, 'Show', 'spark', 'Upgrade your most advanced pawn into a Rook (the strongman) and shield it.', 'Strong enough for both of you.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     p.cell.t = 'r'; Fx.flash(g, p.r, p.c, 'transform', '');
@@ -223,7 +223,7 @@
       Fx.relocate(g, t.r, t.c, d.r, d.c, {});
       return ['Heads! Your ' + MD.pieceName(t.cell.t) + ' teleports to ' + sn(d.r, d.c) + '.'];
     }
-    const p = en(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const p = en(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!p) return ['Tails — but the enemy has no pawn to drag back.'];
     const row = Fx.backRow(g, s);
     const d = rnd(Fx.emptySq(g, (r, c) => r === row));
@@ -233,7 +233,7 @@
   });
 
   def(426, 'Cakewalk', 2, 'Show', 'swap', 'Your three most advanced pawns each step one square forward in a little parade.', 'Step, step, step.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 3);
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 3);
     let moved = 0;
     for (const p of pawns) {
       const r = p.r + fwd(s);
@@ -269,8 +269,8 @@
 
   def(429, 'Tightrope', 1, 'Show', 'swap', 'Move your most advanced piece one square toward the enemy along the edge of the board, shielded.', 'High above the crowd.', (g, s) => {
     const mw = g.n || 8;
-    const mine = own(g, s).filter(q => q.cell.t !== 'k' && (q.c === 0 || q.c === mw - 1)).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0] ||
-      own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k' && (q.c === 0 || q.c === mw - 1)).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0] ||
+      own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     const r = mine.r + fwd(s);
     if (r >= 0 && r < mw && !g.board[r][mine.c]) { Fx.relocate(g, mine.r, mine.c, r, mine.c, {}); Fx.mod(g.board[r][mine.c], 's', 1); return ['Your star walks the wire forward, shielded.']; }
@@ -358,7 +358,7 @@
   });
 
   def(437, 'Misdirection', 1, 'Show', 'eye', 'Freeze the enemy piece nearest to your most advanced piece — look over there!', 'It\'s behind you.', (g, s) => {
-    const star = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const star = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!star) return [];
     let best = null, bd = 99;
     for (const q of en(g, s)) if (q.cell.t !== 'k') { const d = Math.abs(q.r - star.r) + Math.abs(q.c - star.c); if (d < bd) { bd = d; best = q; } }
@@ -390,7 +390,7 @@
   });
 
   def(440, 'Human Cannonball', 2, 'Show', 'swap', 'Fire your most advanced pawn deep into enemy territory (a random empty square in their back half), then it is shielded.', 'Boom. Ta-da!', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const rows = s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7];
@@ -447,7 +447,7 @@
   });
 
   def(445, 'Gorilla Suit', 1, 'Show', 'paw', 'Your most advanced pawn dresses as a heavy: freeze the enemy in front of it.', 'Rawr.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const r = p.r + fwd(s);
@@ -519,7 +519,7 @@
   });
 
   def(453, 'Kabuki Drop', 2, 'Show', 'spark', 'Summon a pawn on every empty square directly in front of your most advanced pawn line (up to three).', 'The backdrop falls.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const lead = pawns[0];
     if (!lead) return [];
     const r = lead.r + fwd(s);
@@ -558,7 +558,7 @@
     const k = E.findKing(g, s);
     const home = k && k.r === Fx.backRow(g, s) && k.c === Fx.homeCol(g);
     if (home) {
-      const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
+      const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
       const lines = [];
       for (const p of pawns) { p.cell.t = 'r'; Fx.flash(g, p.r, p.c, 'transform', ''); lines.push('A vanguard pawn becomes a Rook.'); }
       Fx.statusOn(g, pawns, 's', 1, 'shield');

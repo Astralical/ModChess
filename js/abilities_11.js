@@ -80,7 +80,7 @@
   });
 
   def(463, 'Hammer of Thor', 3, 'Myth', 'storm', 'Destroy every enemy piece on the same rank as your most advanced piece, then your most advanced piece is shielded.', 'Returning… to you.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     const gone = [];
     for (const q of en(g, s)) if (q.cell.t !== 'k' && q.r === mine.r) { Fx.removeAt(g, q.r, q.c, {}); gone.push(q); }
@@ -101,7 +101,7 @@
       const k = E.findKing(g, s);
       const lines = [];
       if (k) { Fx.mod(g.board[k.r][k.c], 's', 1); Fx.flash(g, k.r, k.c, 'shield', ''); lines.push('The oracle wards your king.'); }
-      const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+      const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
       const p = pawns[0];
       if (p) { p.cell.t = 'n'; Fx.flash(g, p.r, p.c, 'transform', ''); lines.push('Your vanguard is knighted by fate.'); }
       return lines;
@@ -123,7 +123,7 @@
   });
 
   def(467, 'Sword in the Stone', 3, 'Myth', 'spark', 'Your most advanced pawn draws the sword: it becomes a QUEEN. Truly, it was always meant to.', 'Who pulls it, rules.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return ['No worthy hand remains.'];
     p.cell.t = 'q'; Fx.flash(g, p.r, p.c, 'transform', '');
@@ -171,7 +171,7 @@
   });
 
   def(472, 'Golden Fleece', 2, 'Myth', 'spark', 'Shield your three most advanced pieces and freeze the enemy piece threatening your king.', 'Worth the voyage.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 3);
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 3);
     const n = Fx.statusOn(g, mine, 's', 1, 'shield');
     const lines = n ? ['The fleece wards your vanguard.'] : [];
     let threat = null;
@@ -209,7 +209,7 @@
   });
 
   def(477, 'Labors of Heroes', 2, 'Myth', 'swap', 'Your most advanced piece completes a labor: leap it two squares straight in any direction, then shield it.', 'Twelve labors, one turn.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     const spots = [];
     for (const [dr, dc] of [[0, 2], [0, -2], [2, 0], [-2, 0]]) {
@@ -231,7 +231,7 @@
   });
 
   def(479, 'Norse Raiders', 2, 'Myth', 'swap', 'Teleport your two most advanced pawns one file inward (toward the center).', 'They came from the sea.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
     let moved = 0;
     for (const p of pawns) {
       const nc = p.c < Fx.half(g) ? p.c + 1 : p.c - 1;
@@ -301,8 +301,8 @@
   });
 
   def(487, 'Minotaur', 2, 'Myth', 'paw', 'Your most advanced piece charges forward until it hits an enemy, then that enemy is destroyed.', 'The labyrinth echoes.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k' && (q.cell.t === 'r' || q.cell.t === 'p' || E.isTroop(q.cell.t))).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0] ||
-      own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k' && (q.cell.t === 'r' || q.cell.t === 'p' || E.isTroop(q.cell.t))).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0] ||
+      own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     let r = mine.r + fwd(s);
     while (r >= 0 && r < Fx.bd(g)) {
@@ -337,7 +337,7 @@
     const lines = Fx.summonN(g, s, 'griffon', 1);
     const got = own(g, s).filter(q => q.cell.t === 'griffon').slice(-1)[0];
     if (got) Fx.mod(got.cell, 's', 1);
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (p && got) {
       const spots = [];
@@ -362,7 +362,7 @@
   });
 
   def(492, 'Nemean Lion', 2, 'Myth', 'paw', 'Shield your most advanced piece AND freeze the enemy piece directly in front of it.', 'Its hide cannot be pierced.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     Fx.mod(mine.cell, 's', 1); Fx.flash(g, mine.r, mine.c, 'shield', '');
     const r = mine.r + fwd(s);
@@ -374,7 +374,7 @@
   });
 
   def(493, 'River Styx', 2, 'Myth', 'drop', 'Your most advanced pawn crosses the river: it may not be captured next turn (shielded), and every enemy adjacent is frozen.', 'Crossing is one-way.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     Fx.mod(p.cell, 's', 1); Fx.flash(g, p.r, p.c, 'shield', '');
@@ -385,7 +385,7 @@
 
   def(494, 'Prometheus', 3, 'Myth', 'fire', 'Steal fire from the gods: destroy a random enemy piece, then give fire to your most advanced pawn — it is shielded and can\'t be frozen.', 'Gifted flame.', (g, s) => {
     const lines = Fx.destroyN(g, s, 1);
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (p) { Fx.mod(p.cell, 's', 1); Fx.flash(g, p.r, p.c, 'shield', ''); if (p.cell.b) p.cell.b.f = 0; lines.push('Your vanguard bears the stolen fire.'); }
     return lines.length ? lines : ['The fire is not worth the chains.'];
@@ -411,7 +411,7 @@
   });
 
   def(497, 'Staff of Hermes', 2, 'Myth', 'swap', 'Your messenger piece travels: teleport your most advanced piece to the far side of the board (beyond the enemy).', 'Swift as the wind.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!mine) return [];
     const rows = s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7];
     const d = rnd(Fx.emptySq(g, (r, c) => rows.includes(r)));
@@ -421,7 +421,7 @@
   });
 
   def(498, 'Colossus', 2, 'Myth', 'spark', 'Summon a Golem (the colossus) beside your most advanced pawn.', 'A monument that moves.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return Fx.summonN(g, s, 'golem', 1);
     return Fx.summonN(g, s, 'golem', 1, { rows: [p.r] });
@@ -457,7 +457,7 @@
 
   def(502, 'Tyrant Giant', 3, 'Myth', 'paw', 'Upgrade your most advanced pawn into a Golem and a random friendly knight into a Griffon — giants join the war.', 'They were always here.', (g, s) => {
     const lines = [];
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     const n = rnd(own(g, s).filter(q => q.cell.t === 'n'));
     if (p) { p.cell.t = 'golem'; Fx.flash(g, p.r, p.c, 'transform', ''); lines.push('A vanguard becomes a Golem.'); }
@@ -479,7 +479,7 @@
   });
 
   def(504, 'Halo', 2, 'Myth', 'shield', 'Shield every friendly piece adjacent to your most advanced piece — the saint\'s glow.', 'Light spills over.', (g, s) => {
-    const star = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const star = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     if (!star) return [];
     const near = own(g, s).filter(q => q !== star && Math.abs(q.r - star.r) <= 1 && Math.abs(q.c - star.c) <= 1);
     const n = Fx.statusOn(g, near, 's', 1, 'shield');
@@ -498,7 +498,7 @@
     const lines = [];
     lines.push(...Fx.summonN(g, s, 'phoenix', 1));
     lines.push(...Fx.summonN(g, s, 'griffon', 1));
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (p) { p.cell.t = 'q'; Fx.flash(g, p.r, p.c, 'transform', ''); lines.push('Your vanguard is crowned a queen.'); }
     Fx.grantExtra(g, s, 1);

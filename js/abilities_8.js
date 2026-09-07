@@ -240,7 +240,7 @@
   });
 
   def(327, 'Star Chart', 2, 'Void', 'star', 'Your two most advanced pieces gain the ability to leap anywhere: teleport both to random empty squares.', 'The chart shows every path.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
     let moved = 0;
     for (const t of mine) {
       const d = Fx.rand(Fx.emptySq(g));
@@ -273,7 +273,7 @@
   });
 
   def(331, 'Comet', 2, 'Void', 'star', 'Your most advanced pawn streaks across the board to a random empty square in the enemy\'s back half.', 'Borrowed fire, stolen speed.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const rows = s === 'w' ? [0, 1, 2, 3] : [4, 5, 6, 7];
@@ -504,7 +504,7 @@
   });
 
   def(352, 'Solar Cradle', 1, 'Void', 'star', 'Your most advanced pawn is shielded and pushed one square forward.', 'Warm enough to grow.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     Fx.mod(p.cell, 's', 1); Fx.flash(g, p.r, p.c, 'shield', '');

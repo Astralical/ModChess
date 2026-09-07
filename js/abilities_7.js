@@ -131,7 +131,7 @@
   });
 
   def(266, 'Thunderclap', 2, 'Wild', 'storm', 'Destroy a random enemy piece (never the king) on the same rank or file as your most advanced pawn.', 'The sky answers the vanguard.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const lead = pawns[0];
     if (!lead) return [];
     const targets = en(g, s).filter(q => q.cell.t !== 'k' && (q.r === lead.r || q.c === lead.c));
@@ -146,7 +146,7 @@
     for (const q of own(g, s)) if (q.cell.b) {
       if (q.cell.b.p > 0 || q.cell.b.f > 0) { q.cell.b.p = 0; q.cell.b.f = 0; if (q.cell.b.s <= 0) q.cell.b = undefined; n++; }
     }
-    const lead = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+    const lead = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
     const lines = n ? ['The rain washes ' + n + ' curses from your host.'] : ['The rain falls on clean warriors.'];
     if (lead) { Fx.mod(lead.cell, 's', 1); Fx.flash(g, lead.r, lead.c, 'shield', ''); lines.push('Your lead piece is shielded.'); }
     return lines;
@@ -232,7 +232,7 @@
 
   def(274, 'Great Owl', 2, 'Wild', 'paw', 'Summon a Griffin to a random empty square. If one already flies for you, it instead carries your most advanced pawn one file inward.', 'Silent wings, sudden doom.', (g, s) => {
     if (troopOwn(g, s).some(q => q.cell.t === 'griffon')) {
-      const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+      const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
       const p = pawns[0];
       if (!p) return [];
       const toC = p.c < Fx.half(g) ? p.c + 1 : p.c - 1;
@@ -243,7 +243,7 @@
   });
 
   def(275, 'Briar Wall', 2, 'Wild', 'leaf', 'Summon three thorn pawns in a line in front of your most advanced pawn.', 'The hedge grows where you marched.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const lead = pawns[0];
     if (!lead) return [];
     const r = lead.r + fwd(s);
@@ -369,7 +369,7 @@
   });
 
   def(286, 'Nectar', 1, 'Wild', 'drop', 'A random friendly pawn drinks deep and leaps forward one EXTRA square (a bonus advance).', 'Sweet things move fast.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const r = p.r + fwd(s);
@@ -538,7 +538,7 @@
   });
 
   def(303, 'Tidal Surge', 2, 'Wild', 'drop', 'Your most advanced pawn becomes a Hydra\'s kin: summon a Hydra beside your most advanced pawn, then push that pawn one step.', 'The wave comes with teeth.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const lines = Fx.summonN(g, s, 'hydra', 1, { rows: [p.r] });

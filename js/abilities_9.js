@@ -125,7 +125,7 @@
   });
 
   def(368, 'Mecha Frame', 3, 'SciFi', 'spark', 'Upgrade your most advanced pawn into a Golem (a heavy mech) and shield it.', 'Heavy plate, heavier fist.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     p.cell.t = 'golem'; Fx.flash(g, p.r, p.c, 'transform', '');
@@ -165,13 +165,13 @@
   });
 
   def(373, 'Overcharge Battery', 1, 'SciFi', 'bolt', 'Shield your two most advanced pawns — their armor capacitors charge.', 'Always keep them charged.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
     const n = Fx.statusOn(g, pawns, 's', 1, 'shield');
     return n ? ['The vanguard batteries are charged.'] : [];
   });
 
   def(374, 'Gravity Boots', 2, 'SciFi', 'void', 'Swap your two most advanced pawns with any two of your pieces on your back rank.', 'They climb where others can\'t.', (g, s) => {
-    const fwdPawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
+    const fwdPawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
     const back = own(g, s).filter(q => q.cell.t !== 'p' && q.cell.t !== 'k' && (s === 'w' ? q.r >= 6 : q.r <= 1));
     if (!fwdPawns.length || !back.length) return ['Nothing to redeploy.'];
     const n = Math.min(fwdPawns.length, back.length);
@@ -180,7 +180,7 @@
   });
 
   def(375, 'Thermal Lance', 2, 'SciFi', 'fire', 'Destroy the enemy piece in front of your most advanced rook (same file), then freeze the next one behind it.', 'White-hot and then cold.', (g, s) => {
-    const rooks = own(g, s).filter(q => q.cell.t === 'r').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const rooks = own(g, s).filter(q => q.cell.t === 'r').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const rook = rooks[0];
     if (!rook) return [];
     const dir = fwd(s);
@@ -249,7 +249,7 @@
   });
 
   def(380, 'Prototype', 3, 'SciFi', 'spark', 'Your most advanced pawn is rebuilt as a random heavy mech (Golem, Griffon or Hydra) and given a shield.', 'Field-testing: over.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const pool = ['golem', 'griffon', 'hydra'];
@@ -321,7 +321,7 @@
   });
 
   def(387, 'Jump Jets', 2, 'SciFi', 'swap', 'Teleport your most advanced pawn over the enemy line to a random empty square two ranks beyond it, then shield it.', 'Straight up, then down.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const p = pawns[0];
     if (!p) return [];
     const t = p.r + 2 * fwd(s);
@@ -340,7 +340,7 @@
   });
 
   def(389, 'Autopilot', 3, 'SciFi', 'clock', 'Your two most advanced pieces each take a bonus step toward the enemy, then you move again (extra move, no new spell).', 'The fleet flies itself.', (g, s) => {
-    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
+    const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
     let moved = 0;
     for (const q of mine) {
       const r = q.r + fwd(s);
@@ -353,7 +353,7 @@
   });
 
   def(390, 'Particle Beam', 2, 'SciFi', 'fire', 'Destroy the enemy piece directly in front of your most advanced minor piece (same file).', 'A clean surgical cut.', (g, s) => {
-    const minors = own(g, s).filter(q => q.cell.t === 'n' || q.cell.t === 'b').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const minors = own(g, s).filter(q => q.cell.t === 'n' || q.cell.t === 'b').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const m = minors[0];
     if (!m) return ['No minor piece to mount the beam on.'];
     const r = m.r + fwd(s);
@@ -365,7 +365,7 @@
   });
 
   def(391, 'Overclock Reactor', 4, 'SciFi', 'fire', 'Destroy every enemy piece on your two most advanced pawn files, then shield all your pawns.', 'Critical mass. Containment: no.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     if (!pawns.length) return [];
     const files = [...new Set(pawns.slice(0, 2).map(q => q.c))];
     const gone = [];
@@ -445,7 +445,7 @@
   });
 
   def(400, 'Mech Pilot', 2, 'SciFi', 'spark', 'Swap your most advanced pawn with any of your knights or bishops, then upgrade that piece to a rook.', 'Everyone wants the heavy frame.', (g, s) => {
-    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+    const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
     const minor = rnd(own(g, s).filter(q => q.cell.t === 'n' || q.cell.t === 'b'));
     const p = pawns[0];
     if (!p || !minor) return ['No pilot and mech pair found.'];

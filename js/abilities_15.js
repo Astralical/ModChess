@@ -19,8 +19,8 @@
   const val = t => E.val(t);
   const foes = (g, s) => en(g, s).filter(q => q.cell.t !== 'k');
   const mine = (g, s) => own(g, s).filter(q => q.cell.t !== 'k');
-  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
-  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
+  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
   const strong = (g, s) => foes(g, s).sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
   const weak = (g, s) => foes(g, s).sort((a, b) => val(a.cell.t) - val(b.cell.t))[0];
   const kill = (g, q) => { Fx.removeAt(g, q.r, q.c, {}); };
@@ -99,7 +99,7 @@
 
   def(667, 'Enigma Cracked', 2, 'book', 'Read their orders before they act: take an EXTRA move, then FREEZE the enemy piece that would move first (their most advanced).', 'The code is broken.', (g, s) => {
     Fx.grantExtra(g, s, 1);
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     const lines = ['Enigma broken — an extra move is yours.'];
     if (t) { Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', ''); lines.push('Their vanguard is frozen by your foreknowledge.'); }
     return lines;
@@ -199,7 +199,7 @@
   });
 
   def(679, 'Air Superiority', 3, 'storm', 'Clear skies: destroy the enemy\'s most advanced piece, then freeze another enemy on the same file.', 'Wings over the battlefield.', (g, s) => {
-    const lead = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const lead = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!lead) return ['The skies are empty.'];
     const lines = [];
     kill(g, lead);
@@ -210,7 +210,7 @@
   });
 
   def(680, 'Radar Sweep', 1, 'eye', 'Contact: FREEZE the enemy\'s most advanced piece.', 'Beep. Beep. Contact.', (g, s) => {
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!t) return ['The scope is clear.'];
     Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', '');
     return ['Radar locks and freezes the enemy vanguard.'];

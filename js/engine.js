@@ -413,23 +413,26 @@
 
   /* -------- attacks -------- */
   function attacked(g, r, c, by) {
-    // is square (r,c) attacked by 'by'?
+    // is square (r,c) attacked by 'by'? A summon-sick piece (b.z>0) is still
+    // figuring out its legs: it can be captured and can block sight, but it
+    // attacks nothing until it wakes up.
+    const awake = cell => !(cell && cell.b && cell.b.z > 0);
     // pawns
     if (by === 'w') {
       const p1 = g.board[r + 1] && g.board[r + 1][c - 1];
       const p2 = g.board[r + 1] && g.board[r + 1][c + 1];
-      if ((p1 && p1.c === 'w' && p1.t === 'p') || (p2 && p2.c === 'w' && p2.t === 'p')) return true;
+      if ((p1 && awake(p1) && p1.c === 'w' && p1.t === 'p') || (p2 && awake(p2) && p2.c === 'w' && p2.t === 'p')) return true;
     } else {
       const p1 = g.board[r - 1] && g.board[r - 1][c - 1];
       const p2 = g.board[r - 1] && g.board[r - 1][c + 1];
-      if ((p1 && p1.c === 'b' && p1.t === 'p') || (p2 && p2.c === 'b' && p2.t === 'p')) return true;
+      if ((p1 && awake(p1) && p1.c === 'b' && p1.t === 'p') || (p2 && awake(p2) && p2.c === 'b' && p2.t === 'p')) return true;
     }
     // knights
     for (const [dr, dc] of DIRS.n) {
       const nr = r + dr, nc = c + dc;
       if (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR) {
         const k = g.board[nr][nc];
-        if (k && k.c === by && k.t === 'n') return true;
+        if (k && awake(k) && k.c === by && k.t === 'n') return true;
       }
     }
     // king
@@ -438,7 +441,7 @@
       const nr = r + dr, nc = c + dc;
       if (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR) {
         const k = g.board[nr][nc];
-        if (k && k.c === by && k.t === 'k') return true;
+        if (k && awake(k) && k.c === by && k.t === 'k') return true;
       }
     }
     // sliders
@@ -450,7 +453,7 @@
         if (E.terrainAt(g, nr, nc)) break; // walls & rivers block sight
         const cell = g.board[nr][nc];
         if (cell) {
-          if (cell.c === by && (cell.t === 'r' || cell.t === 'q')) return true;
+          if (cell.c === by && awake(cell) && (cell.t === 'r' || cell.t === 'q')) return true;
           break;
         }
         nr += dr; nc += dc;
@@ -462,7 +465,7 @@
         if (E.terrainAt(g, nr, nc)) break; // walls & rivers block sight
         const cell = g.board[nr][nc];
         if (cell) {
-          if (cell.c === by && (cell.t === 'b' || cell.t === 'q')) return true;
+          if (cell.c === by && awake(cell) && (cell.t === 'b' || cell.t === 'q')) return true;
           break;
         }
         nr += dr; nc += dc;
@@ -474,7 +477,7 @@
       if (T) {
         for (let rr = 0; rr < CUR; rr++) for (let cc = 0; cc < CUR; cc++) {
           const cell = g.board[rr][cc];
-          if (cell && cell.c === by && T[cell.t] && troopHits(g, cell.t, rr, cc, r, c)) return true;
+          if (cell && awake(cell) && cell.c === by && T[cell.t] && troopHits(g, cell.t, rr, cc, r, c)) return true;
         }
       }
     }
@@ -961,7 +964,8 @@
         if (b.s > 0) b.s--;
       }
       // owner-turn-end auras: pressure an adjacent foe
-      if (cell.c === mover && def && def.aura && g.board[r][c] === cell) {
+      // (a summon-sick troop is still waking up — no aura on the turn it lands)
+      if (cell.c === mover && !(cell.b && cell.b.z > 0) && def && def.aura && g.board[r][c] === cell) {
         const foes = [];
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;

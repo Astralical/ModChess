@@ -237,7 +237,7 @@
         let where = 'rank ' + (n - row);
         if (!t) {
           // no one on the trap rank: the spring snags the most advanced foe
-          pool = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
+          pool = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
           t = pool[0];
           where = 'their front line';
         }
@@ -542,7 +542,7 @@
       flavor: 'You command. They obey.',
       target: 'auto',
       run: (g, s) => {
-        const foes = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
+        const foes = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
         const t = foes[0];
         if (!t) return [];
         const rows = s === 'w' ? [5, 6, 7] : [0, 1, 2];

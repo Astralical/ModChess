@@ -20,8 +20,8 @@
   const val = t => E.val(t);
   const foes = (g, s) => en(g, s).filter(q => q.cell.t !== 'k');
   const mine = (g, s) => own(g, s).filter(q => q.cell.t !== 'k');
-  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
-  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
+  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
   const strong = (g, s) => foes(g, s).sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
   const weak = (g, s) => foes(g, s).sort((a, b) => val(a.cell.t) - val(b.cell.t))[0];
   const kill = (g, q) => { Fx.removeAt(g, q.r, q.c, {}); };
@@ -114,7 +114,7 @@
     const lines = [];
     const t = rnd(foes(g, s).filter(q => q.cell.t === 'r'));
     if (t) { kill(g, t); lines.push('The first palm shatters an enemy rook.'); }
-    const lead = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const lead = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (lead) { kill(g, lead); lines.push('The last palm crushes the enemy vanguard.'); }
     return lines.length ? lines : ['The palms strike empty air.'];
   });
@@ -177,7 +177,7 @@
   });
 
   def(573, 'Yiyang Zhi', 1, 'target', 'One Yang finger: freeze the enemy\'s most advanced piece.', 'One finger, one point, one truth.', (g, s) => {
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!t) return [];
     Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', '');
     return ['A point-seal freezes the enemy vanguard.'];
@@ -227,7 +227,7 @@
   });
 
   def(578, 'Emperor of Duan: Liumai Shenjian', 2, 'storm', 'Six-Vessel divine sword: fire a beam down a FILE — destroy the enemy\'s most advanced piece.', 'Qi like a sword-beam through a file.', (g, s) => {
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!t) return ['The beam finds no target.'];
     kill(g, t);
     return ['A divine sword-beam pierces the enemy ' + MD.pieceName(t.cell.t) + '.'];

@@ -19,8 +19,8 @@
   const val = t => E.val(t);
   const foes = (g, s) => en(g, s).filter(q => q.cell.t !== 'k');
   const mine = (g, s) => own(g, s).filter(q => q.cell.t !== 'k');
-  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
-  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
+  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
   const strong = (g, s) => foes(g, s).sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
   const weak = (g, s) => foes(g, s).sort((a, b) => val(a.cell.t) - val(b.cell.t))[0];
   const kill = (g, q) => { Fx.removeAt(g, q.r, q.c, {}); };
@@ -287,7 +287,7 @@
 
   def(533, 'Domain Expansion: Self-Embodiment', 3, 'net', 'Your domain warps space around you: swap your king with the enemy\'s most advanced piece — they trade places.', 'In my domain, geometry obeys me.', (g, s) => {
     const k = E.findKing(g, s);
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!k || !t) return [];
     Fx.swapSq(g, { r: k.r, c: k.c }, { r: t.r, c: t.c });
     return ['Your domain bends — the enemy vanguard and your king trade places!'];

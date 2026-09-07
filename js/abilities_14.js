@@ -20,8 +20,8 @@
   const val = t => E.val(t);
   const foes = (g, s) => en(g, s).filter(q => q.cell.t !== 'k');
   const mine = (g, s) => own(g, s).filter(q => q.cell.t !== 'k');
-  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
-  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
+  const adv = (g, s) => mine(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
+  const advP = (g, s) => own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r));
   const strong = (g, s) => foes(g, s).sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
   const weak = (g, s) => foes(g, s).sort((a, b) => val(a.cell.t) - val(b.cell.t))[0];
   const kill = (g, q) => { Fx.removeAt(g, q.r, q.c, {}); };
@@ -258,7 +258,7 @@
 
   def(634, 'Longboat Raid', 2, 'swap', 'Marines hit the beach: relocate your most advanced piece to an empty square BESIDE the enemy\'s most advanced piece.', 'Hit the beach running.', (g, s) => {
     const p = adv(g, s)[0];
-    const lead = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const lead = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!p || !lead) return [];
     const near = [];
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
@@ -273,7 +273,7 @@
   });
 
   def(635, 'Squall', 2, 'wind', 'A sudden squall scatters the vanguard: FREEZE the enemy\'s two most advanced pieces.', 'The wind changes without warning.', (g, s) => {
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r)).slice(0, 2);
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r)).slice(0, 2);
     const n = Fx.statusOn(g, t, 'f', 1, 'freeze');
     return n ? ['The squall freezes ' + n + ' enemy vanguard.'] : ['The wind is calm.'];
   });
@@ -392,7 +392,7 @@
   def(648, 'Stormcaller\'s Tide', 3, 'drop', 'Call the high tide: EVERY enemy piece on your half is pushed to the enemy\'s half (one row at a time if blocked).', 'The sea takes back the shore.', (g, s) => {
     const nt = g.n || 8;
     let moved = 0;
-    for (const q of foes(g, s).filter(x => Fx.inOwnHalf(g, s, x.r)).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))) {
+    for (const q of foes(g, s).filter(x => Fx.inOwnHalf(g, s, x.r)).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))) {
       const dir = s === 'w' ? -1 : 1;
       const nr = q.r + dir;
       if (nr >= 0 && nr < nt && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
@@ -423,7 +423,7 @@
 
   def(652, 'Tide Turner', 3, 'swap', 'Turn the tide: swap your most advanced piece with the enemy\'s most advanced piece.', 'What was theirs is now yours.', (g, s) => {
     const p = adv(g, s)[0];
-    const t = foes(g, s).sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    const t = foes(g, s).sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!p || !t) return [];
     Fx.swapSq(g, p, t);
     return ['The tide turns — the two vanguards trade places!'];
