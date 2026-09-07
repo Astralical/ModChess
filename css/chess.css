@@ -148,6 +148,11 @@ body.theme-dark .an-board .an-sq.light{ background:#b7b9c0 } body.theme-dark .an
 .hazmark{ position:absolute; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:6; opacity:.75 }
 .hazmark svg{ width:46%; height:46%; color:#ff9d5c; filter:drop-shadow(0 0 3px rgba(255,90,20,.6)) }
 
+/* item drops (item mode treasures) */
+.itemmark{ position:absolute; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:6; animation:itembob 1.6s ease-in-out infinite }
+.itemmark svg{ width:44%; height:44%; color:#ffd76f; filter:drop-shadow(0 0 7px rgba(255,215,111,.85)) }
+@keyframes itembob{ 0%,100%{ transform:translateY(0) } 50%{ transform:translateY(-9%) } }
+
 /* terrain tiles (walls & rivers) used on campaign boards */
 .terrain{ position:absolute; z-index:3; pointer-events:none }
 .ter-wall{ background:

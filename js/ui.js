@@ -10,7 +10,7 @@
   const clear = el => { while (el.firstChild) el.removeChild(el.firstChild); };
 
   /* ---------- settings (persisted) ---------- */
-  const DEFAULTS = { premove: true, autoQueen: true, legal: true, lastMove: true, autoCastle: true, sound: true, anim: true, theme: 'green', diff: 2, human: 'w', smode: 'classic' };
+  const DEFAULTS = { premove: true, autoQueen: true, legal: true, lastMove: true, autoCastle: true, sound: true, anim: true, theme: 'green', diff: 2, human: 'w', smode: 'classic', size: 8, items: false };
   MD.Settings = Object.assign({}, DEFAULTS);
   try {
     const saved = JSON.parse(localStorage.getItem('modchess.settings') || '{}');
@@ -329,6 +329,22 @@
       const pos = px(r, c);
       p.style.transform = 'translate(' + pos.x + 'px,' + pos.y + 'px)';
       pieceLayer.appendChild(p);
+    }
+    // claimed item markers (magic treasures waiting to be picked up)
+    if (g.itemEnabled && g.items && g.items.length) {
+      for (const it of g.items) {
+        const idef = MD.itemById ? MD.itemById(it.id) : null;
+        const d = document.createElement('div');
+        d.className = 'itemmark';
+        d.title = idef ? idef.name : 'treasure';
+        d.innerHTML = MD.iconHTML(idef ? idef.icon : 'gem');
+        const pos = px(it.r, it.c);
+        d.style.left = pos.x + 'px';
+        d.style.top = pos.y + 'px';
+        d.style.width = sq + 'px';
+        d.style.height = sq + 'px';
+        pieceLayer.appendChild(d);
+      }
     }
     // animate last chess move (normal move w/o abilities)
     if (MD.Game.lastAnimate && MD.Settings.anim) {
@@ -1001,6 +1017,12 @@
   }
   UI.setSizeRow = setSizeRow;
 
+  function setItemRow() {
+    const on = MD.Settings.items ? 1 : 0;
+    document.querySelectorAll('#itemRow .chip').forEach(c => c.classList.toggle('selected', (+c.dataset.items) === on));
+  }
+  UI.setItemRow = setItemRow;
+
   function wireMenu() {
     document.querySelectorAll('.mode-card').forEach(b => {
       b.addEventListener('click', () => {
@@ -1011,6 +1033,14 @@
         $('#colorRow').style.display = isBot ? '' : 'none';
         $('#smodeRow').style.display = isCamp ? 'none' : '';
         $('#sizeRow').style.display = isCamp ? 'none' : '';
+        $('#itemRow').style.display = isCamp ? 'none' : '';
+      });
+    });
+    document.querySelectorAll('#itemRow .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#itemRow .chip').forEach(x => x.classList.toggle('selected', x === c));
+        MD.Settings.items = (+c.dataset.items) === 1;
+        MD.Settings.save();
       });
     });
     document.querySelectorAll('#sizeRow .chip').forEach(c => {

@@ -47,10 +47,12 @@
     if (UI.setColorRow) UI.setColorRow();
     if (UI.setModeRow) UI.setModeRow();
     if (UI.setSizeRow) UI.setSizeRow();
+    if (UI.setItemRow) UI.setItemRow();
     $('#diffRow').style.display = '';
     $('#colorRow').style.display = '';
     $('#smodeRow').style.display = '';
     $('#sizeRow').style.display = '';
+    $('#itemRow').style.display = '';
   };
 
   Game.start = function (mode, diff, color, spellMode, size) {
@@ -60,6 +62,7 @@
     Game.g.logSeq = 0;
     Game.g.spellLog = [];
     Game.g.spellSeq = 0;
+    if (MD.Settings.items && MD.Items) { Game.g.itemEnabled = 1; Game.g.items = []; Game.g.itemCd = 0; addLog(Game.g, 'Item mode: magic treasures will spawn on the board — land a piece on one to claim it!', 'sys', 'star'); }
     Game.cfg.botMode = !!mode;   // mode is a boolean (true = vs computer)
     Game.cfg.diff = diff || MD.Settings.diff || 2;
     Game.cfg.mode = spellMode || 'classic';
@@ -93,6 +96,8 @@
   Game.startTurn = function (color) {
     if (Game.phase === 'over' || !Game.g || Game.g.over) return;
     Game.g.turn = color;
+    // item drops (if enabled): treasure spawns on a random empty square each turn
+    if (MD.Items && MD.Items.enabled(Game.g)) MD.Items.spawnCheck(Game.g);
     Game.sel = null;
     Game.legalCache = [];
     // a Time Stop can make this whole turn vanish (the enemy simply never moves)
@@ -363,6 +368,11 @@
     if (E.inCheck(Game.g, opp(mover))) MD.playSfx('check');
     const san = Game.g.lastMove ? Game.g.lastMove.san : '';
     logColor(Game.g, mover, (sideOf(mover) + ': ' + san));
+    // claimed an item on the landing square?
+    if (MD.Items && MD.Items.enabled(Game.g)) {
+      const got = MD.Items.tryPickup(Game.g, move.r1, move.c1, mover);
+      if (got && got.length) got.forEach(t => addLog(Game.g, '◆ ' + t, 'w', 'star'));
+    }
     // hidden hazards that sprang as this move landed
     if (Game.g.hazLog && Game.g.hazLog.length) {
       Game.g.hazLog.forEach(t => addLog(Game.g, t, 'bad', 'target'));
