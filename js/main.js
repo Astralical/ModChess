@@ -46,13 +46,16 @@
     document.querySelectorAll('#diffRow .chip').forEach(c => c.classList.toggle('selected', +c.dataset.diff === diff));
     if (UI.setColorRow) UI.setColorRow();
     if (UI.setModeRow) UI.setModeRow();
+    if (UI.setSizeRow) UI.setSizeRow();
     $('#diffRow').style.display = '';
     $('#colorRow').style.display = '';
     $('#smodeRow').style.display = '';
+    $('#sizeRow').style.display = '';
   };
 
-  Game.start = function (mode, diff, color, spellMode) {
-    Game.g = E.newGame();
+  Game.start = function (mode, diff, color, spellMode, size) {
+    const sz = ((size | 0) >= 4 && (size | 0) <= 14) ? (size | 0) : ((MD.Settings && (MD.Settings.size | 0) >= 4) ? MD.Settings.size | 0 : 8);
+    Game.g = E.newGame(sz);
     Game.g.battleLog = [];
     Game.g.logSeq = 0;
     Game.g.spellLog = [];
@@ -60,6 +63,7 @@
     Game.cfg.botMode = !!mode;   // mode is a boolean (true = vs computer)
     Game.cfg.diff = diff || MD.Settings.diff || 2;
     Game.cfg.mode = spellMode || 'classic';
+    Game.cfg.size = sz;
     // local pass-and-play always starts White at the bottom; colour choice is for vs Computer
     const col = mode ? (color || 'w') : 'w';
     Game.cfg.human = col;
@@ -82,7 +86,7 @@
 
   Game.rematch = function () {
     const was = Game.cfg;
-    Game.start(was.botMode, was.diff, was.human, was.mode || 'classic');
+    Game.start(was.botMode, was.diff, was.human, was.mode || 'classic', was.size || 8);
   };
 
   /* ---------------- turn handling ---------------- */

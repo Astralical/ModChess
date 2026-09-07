@@ -68,7 +68,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 }
 .board{
   --sq:64px;
-  width:calc(var(--sq)*8);height:calc(var(--sq)*8);
+  width:calc(var(--sq)*var(--bdn,8));height:calc(var(--sq)*var(--bdn,8));
   border-radius:4px;position:relative;overflow:hidden;
   box-shadow:0 14px 40px rgba(0,0,0,.45), inset 0 0 0 2px rgba(255,255,255,.04);
   user-select:none;background:#769656;

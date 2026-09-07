@@ -53,12 +53,16 @@
   MD.Meta = Meta;
 
   Meta.begin = function (mode, diff, color) {
-    Meta.cur = { id: Date.now(), mode: !!mode ? 'bot' : 'local', diff: diff || 2, color: color || 'w', at: new Date().toISOString(), steps: [], done: false };
+    const g = MD.Game.g;
+    Meta.cur = { id: Date.now(), mode: !!mode ? 'bot' : 'local', diff: diff || 2, color: color || 'w', at: new Date().toISOString(), steps: [], done: false, size: (g && g.n) || 8 };
     Meta.rec('s', 'Opening position');
   };
   Meta.rec = function (kind, label) {
     const cur = Meta.cur;
     if (!cur || !MD.Game.g || cur.done) return;
+    // the history codec is 8x8-only — skip non-standard boards entirely
+    const gn = (MD.Game.g && MD.Game.g.n) | 0;
+    if (gn >= 4 && gn !== 8) return;
     const s = snap(MD.Game.g);
     s.kind = kind; s.label = label;
     cur.steps.push(s);
@@ -80,10 +84,14 @@
     cur.done = true;
     const g = MD.Game.g;
     if (g) {
-      const last = cur.steps[cur.steps.length - 1];
-      const s = snap(g);
-      s.kind = 'e'; s.label = 'Result — ' + (end.reason || 'Game over');
-      if (!last || last.b !== s.b) cur.steps.push(s);
+      const gn = (g.n | 0);
+      const is8 = !(gn >= 4) || gn === 8; // legacy games (no n) are 8x8
+      if (is8) {
+        const last = cur.steps[cur.steps.length - 1];
+        const s = snap(g);
+        s.kind = 'e'; s.label = 'Result — ' + (end.reason || 'Game over');
+        if (!last || last.b !== s.b) cur.steps.push(s);
+      }
     }
     // build a history record
     const rec = {
@@ -104,7 +112,8 @@
       if (P.save) P.save();
       if (UI.toast) UI.toast('Rating ' + (delta >= 0 ? '+' : '') + delta + ' → ' + P.elo, 'sys');
     }
-    Meta.saveHistory(rec);
+    // non-8 games aren't replayable (codec is 8x8) — don't store them
+    if ((cur.size || 8) === 8) Meta.saveHistory(rec);
   };
 
   /* ---------- history (localStorage) ---------- */

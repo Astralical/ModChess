@@ -112,12 +112,15 @@
   /* ================= BOARD ================= */
   let sq = 60, boardEl = null, squareLayer, pieceLayer, hiLayer, fxLayer, premoveLayer, msgEl;
   let ori = 1; // 1 = white bottom (standard)
-  const FILES = 'abcdefgh';
+  const FILES = 'abcdefghijkl';
   UI.ori = () => ori;
+  // current board dimension (default 8) — reads the live game if present
+  function bdim() { const g = MD.Game && MD.Game.g; const nn = (g && g.n) | 0; return nn >= 4 ? nn : 8; }
+  UI.bdim = bdim;
 
-  function dispOf(r, c) { return { x: ori === 1 ? c : 7 - c, y: ori === 1 ? r : 7 - r }; }
-  function fileOfDisp(x) { return ori === 1 ? FILES[x] : FILES[7 - x]; }
-  function rankOfDisp(y) { return ori === 1 ? (8 - y) : (y + 1); }
+  function dispOf(r, c) { const n = bdim(); return { x: ori === 1 ? c : (n - 1 - c), y: ori === 1 ? r : (n - 1 - r) }; }
+  function fileOfDisp(x) { const n = bdim(); return ori === 1 ? FILES[x] : FILES[n - 1 - x]; }
+  function rankOfDisp(y) { const n = bdim(); return ori === 1 ? (n - y) : (y + 1); }
 
   UI.flip = () => { ori = -ori; positionSquares(); UI.buildCoordinates(); UI.boardRefresh(); };
   // put the given colour at the bottom of the board (used when choosing your side)
@@ -128,14 +131,15 @@
     return { x: p.x * sq, y: p.y * sq };
   }
   function toRc(clientX, clientY) {
+    const n = bdim();
     const rect = boardEl.getBoundingClientRect();
-    const S = boardEl.clientWidth / 8;
+    const S = boardEl.clientWidth / n;
     let x = Math.floor((clientX - rect.left) / S);
     let y = Math.floor((clientY - rect.top) / S);
-    if (x < 0) x = 0; if (x > 7) x = 7;
-    if (y < 0) y = 0; if (y > 7) y = 7;
-    const c = ori === 1 ? x : 7 - x;
-    const r = ori === 1 ? y : 7 - y;
+    if (x < 0) x = 0; if (x > n - 1) x = n - 1;
+    if (y < 0) y = 0; if (y > n - 1) y = n - 1;
+    const c = ori === 1 ? x : n - 1 - x;
+    const r = ori === 1 ? y : n - 1 - y;
     return { r, c };
   }
 
@@ -147,13 +151,14 @@
     fxLayer = $('#fxLayer');
     premoveLayer = $('#premoveLayer');
     msgEl = $('#boardMsg');
+    const n = bdim();
     clear(squareLayer);
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const d = document.createElement('div');
       d.className = 'square ' + ((r + c) % 2 ? 'dark' : 'light');
       d.dataset.r = r; d.dataset.c = c;
-      d.style.width = '12.5%';
-      d.style.height = '12.5%';
+      d.style.width = (100 / n) + '%';
+      d.style.height = (100 / n) + '%';
       squareLayer.appendChild(d);
     }
     positionSquares();
@@ -163,10 +168,11 @@
   // lay tiles out according to current orientation (board flips cleanly)
   function positionSquares() {
     if (!squareLayer) return;
+    const n = bdim();
     for (const d of squareLayer.children) {
       const p = dispOf(+d.dataset.r, +d.dataset.c);
-      d.style.left = (p.x * 12.5) + '%';
-      d.style.top = (p.y * 12.5) + '%';
+      d.style.left = (p.x * (100 / n)) + '%';
+      d.style.top = (p.y * (100 / n)) + '%';
     }
   }
   UI.positionSquares = positionSquares;
@@ -176,10 +182,11 @@
     const top = $('#coordsTop'), bot = $('#coordsBottom'), lft = $('#coordsLeft'), rgt = $('#coordsRight');
     if (!boardEl || !top) return;
     clear(top); clear(bot); clear(lft); clear(rgt);
-    const S = boardEl.clientWidth / 8;
+    const n = bdim();
+    const S = boardEl.clientWidth / n;
     const mk = (container, el) => container.appendChild(el);
     // file letters along the top & bottom edges
-    for (let x = 0; x < 8; x++) {
+    for (let x = 0; x < n; x++) {
       for (const box of [top, bot]) {
         const s = document.createElement('span');
         s.textContent = fileOfDisp(x);
@@ -189,7 +196,7 @@
       }
     }
     // rank numbers along the left & right edges
-    for (let y = 0; y < 8; y++) {
+    for (let y = 0; y < n; y++) {
       for (const box of [lft, rgt]) {
         const s = document.createElement('span');
         s.textContent = rankOfDisp(y);
@@ -217,10 +224,14 @@
   // paint board pieces + highlights
   function boardRefresh() {
     if (!boardEl) return;
-    sq = boardEl.clientWidth / 8;
-    clear(pieceLayer); clear(hiLayer); clear(premoveLayer);
     const g = MD.Game.g;
     if (!g) return;
+    const n = bdim();
+    // a new board size between games -> rebuild the tile grid & coordinate labels
+    if (squareLayer && squareLayer.children.length !== n * n) { buildSquares(); buildCoordinates(); }
+    if (document.body) document.body.style.setProperty('--bdn', String(n));
+    sq = boardEl.clientWidth / n;
+    clear(pieceLayer); clear(hiLayer); clear(premoveLayer);
 
     // highlights
     if (MD.Settings.lastMove && g.lastMove) {
@@ -274,7 +285,7 @@
 
     // terrain (walls & rivers) tiles, painted under the pieces
     if (g.blocked) {
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
         const terr = g.blocked[r][c];
         if (!terr) continue;
         const d = document.createElement('div');
@@ -290,7 +301,7 @@
 
     // pieces
     const seen = new Set();
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (!cell) continue;
       const p = document.createElement('div');
@@ -340,7 +351,7 @@
     }
     // hidden hazard terrain markers
     if (g.haz) {
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
         const hz = g.haz[r] && g.haz[r][c];
         if (!hz) continue;
         const icon = hz.kind === 'trap' ? 'target' : hz.kind === 'poison' ? 'skull' : hz.kind === 'freeze' ? 'ice' : hz.kind === 'ward' ? 'shieldup' : 'fire';
@@ -359,7 +370,7 @@
     if (g.zone) {
       const zicon = { fire: 'fire', thorns: 'leaf', mire: 'drop', sanctum: 'shieldup', rift: 'void', fog: 'wind' };
       const zcls = { fire: 'z-fire', thorns: 'z-thorns', mire: 'z-mire', sanctum: 'z-sanctum', rift: 'z-rift', fog: 'z-fog' };
-      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
         const zo = g.zone[r] && g.zone[r][c];
         if (!zo) continue;
         const d = document.createElement('div');
@@ -984,6 +995,12 @@
   }
   UI.setModeRow = setModeRow;
 
+  function setSizeRow() {
+    const s = (MD.Settings.size | 0) >= 4 ? MD.Settings.size | 0 : 8;
+    document.querySelectorAll('#sizeRow .chip').forEach(c => c.classList.toggle('selected', (+c.dataset.size) === s));
+  }
+  UI.setSizeRow = setSizeRow;
+
   function wireMenu() {
     document.querySelectorAll('.mode-card').forEach(b => {
       b.addEventListener('click', () => {
@@ -993,6 +1010,14 @@
         $('#diffRow').style.display = isBot ? '' : 'none';
         $('#colorRow').style.display = isBot ? '' : 'none';
         $('#smodeRow').style.display = isCamp ? 'none' : '';
+        $('#sizeRow').style.display = isCamp ? 'none' : '';
+      });
+    });
+    document.querySelectorAll('#sizeRow .chip').forEach(c => {
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#sizeRow .chip').forEach(x => x.classList.toggle('selected', x === c));
+        MD.Settings.size = +c.dataset.size;
+        MD.Settings.save();
       });
     });
     document.querySelectorAll('#diffRow .chip').forEach(c => {

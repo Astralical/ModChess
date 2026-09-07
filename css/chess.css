@@ -20,7 +20,7 @@
   border:1px solid #3b4048; border-radius:10px;
   padding:7px 10px; display:flex; align-items:center; gap:11px;
   box-shadow:0 5px 14px rgba(0,0,0,.4);
-  width:min(calc(var(--sq)*8 + 6px),100%); box-sizing:border-box;
+  width:min(calc(var(--sq)*var(--bdn,8) + 6px),100%); box-sizing:border-box;
 }
 .player-card.top{ order:0 }
 .player-card.bottom{ order:3 }

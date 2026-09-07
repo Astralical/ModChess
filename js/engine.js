@@ -26,7 +26,7 @@
   const E = {};
 
   const DIRS = { n: [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]] };
-  const FILES = 'abcdefgh';
+  const FILES = 'abcdefghijkl';
 
   // ---- custom troop definitions live in MD.TROOPS (js/troops.js) ----
   function TROOP(t) {
@@ -74,9 +74,9 @@
     if (def.slide) {
       for (const s of def.slide) {
         const dx = s[0], dy = s[1];
-        const mx = s.length > 2 ? s[2] : 8;
+        const mx = s.length > 2 ? s[2] : CUR;
         let nr = pr + dx, nc = pc + dy, k = 1;
-        while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && k <= mx) {
+        while (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR && k <= mx) {
           if (nr === r && nc === c) return true;
           const cell = g.board[nr][nc];
           if (cell) break;
@@ -90,33 +90,59 @@
   E.troopHits = troopHits;
 
   E.opp = c => c === 'w' ? 'b' : 'w';
-  E.sqName = (r, c) => FILES[c] + (8 - r);
+  // ---- board dimension ---- even square boards (6..12, default 8). newGame()
+  // sets CUR and records g.n; every scan/bound below reads CUR. ----
+  let CUR = 8;
+  E.size = () => CUR;
+  E.setSize = n => { const v = n | 0; if (v >= 4 && v <= 14) CUR = v; };
+  E.sqName = (r, c) => FILES[c] + (CUR - r);
   E.FILES = FILES;
 
   function mkCell(color, type) { return { c: color, t: type }; }
 
-  function newGame() {
+  // back-rank composition for an even n x n board. Rooks stay on the edge files
+  // so castling works; knights/bishops then the monarch sit toward the centre
+  // (queen n/2-1, king n/2). Standard 8x8 = rnbqkbnr.
+  function backRank(n) {
+    if (n === 6) return ['r', 'n', 'q', 'k', 'n', 'r'];
+    if (n === 4) return ['r', 'q', 'k', 'r'];
+    const K = n >> 1;
+    const a = new Array(n).fill(null);
+    a[0] = 'r'; a[n - 1] = 'r';
+    a[1] = 'n'; a[n - 2] = 'n';
+    a[2] = 'b'; a[n - 3] = 'b';
+    a[K - 1] = 'q'; a[K] = 'k';
+    return a;
+  }
+  E.backRank = backRank;
+
+  function newGame(size) {
+    const n = ((size | 0) >= 4 && (size | 0) <= 14) ? (size | 0) : 8;
+    CUR = n;
+    const back = backRank(n);
     const b = [];
-    const back = 'rnbqkbnr';
-    for (let r = 0; r < 8; r++) {
+    for (let r = 0; r < n; r++) {
       b.push([]);
-      for (let c = 0; c < 8; c++) {
-        if (r === 0) b[r][c] = mkCell('b', back[c]);
+      for (let c = 0; c < n; c++) {
+        if (r === 0) b[r][c] = back[c] ? mkCell('b', back[c]) : null;
         else if (r === 1) b[r][c] = mkCell('b', 'p');
-        else if (r === 6) b[r][c] = mkCell('w', 'p');
-        else if (r === 7) b[r][c] = mkCell('w', back[c]);
+        else if (r === n - 2) b[r][c] = mkCell('w', 'p');
+        else if (r === n - 1) b[r][c] = back[c] ? mkCell('w', back[c]) : null;
         else b[r][c] = null;
       }
     }
+    // Small boards: keep 8 rows present (padded with empties) so legacy 8x8
+    // ability scans can never hit an undefined row; columns past n read empty.
+    if (n < 8) { while (b.length < 8) b.push(new Array(n).fill(null)); }
+    const grid = () => { const a = []; const rows = n < 8 ? 8 : n; for (let r = 0; r < rows; r++) a.push(new Array(n).fill(null)); return a; };
     return {
-      board: b, turn: 'w', castle: { wk: true, wq: true, bk: true, bq: true },
+      n, board: b, turn: 'w',
+      castle: n >= 8 ? { wk: true, wq: true, bk: true, bq: true } : { wk: false, wq: false, bk: false, bq: false },
       ep: null, half: 0, full: 1, plies: 0,
       capt: { w: [], b: [] }, lost: { w: [], b: [] }, hist: [], lastMove: null,
       extra: { w: 0, b: 0 }, extraCycle: { w: false, b: false },
       anyTroop: false,
-      haz: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
-      blocked: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
-      zone: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
+      haz: grid(), blocked: grid(), zone: grid(),
       moveLimit: { w: null, b: null }, noCap: { w: false, b: false },
       over: false, result: null, reason: null, winner: null,
       silence: { w: false, b: false }, warded: { w: false, b: false },
@@ -135,15 +161,15 @@
   }
   E.clone = clone;
 
-  E.at = (g, r, c) => (r >= 0 && r < 8 && c >= 0 && c < 8) ? g.board[r][c] : null;
+  E.at = (g, r, c) => (r >= 0 && r < CUR && c >= 0 && c < CUR) ? g.board[r][c] : null;
 
   /* ---- hazard / terrain squares ----
      g.haz[r][c] = null | { kind, name }  — a hidden trap on the square.
      When a piece MOVES onto a hazard it springs once (and is consumed).
      kinds: poison|freeze|trap|ward|ember */
-  function hazInit(g) { if (!g.haz) { g.haz = []; for (let r = 0; r < 8; r++) g.haz.push([null, null, null, null, null, null, null, null]); } return g.haz; }
+  function hazInit(g) { if (!g.haz) { g.haz = []; for (let r = 0; r < CUR; r++) g.haz.push(new Array(CUR).fill(null)); } return g.haz; }
   E.setHaz = function (g, r, c, kind, name) {
-    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    if (r < 0 || r >= CUR || c < 0 || c >= CUR) return false;
     const h = hazInit(g);
     if (h[r][c]) return false; // one hazard per square
     h[r][c] = { kind, name: name || kind };
@@ -155,20 +181,20 @@
   /* ---- terrain (walls / rivers) — for special boards & the campaign ----
      g.blocked[r][c] = null | {t:'wall'} | {t:'river'}
      Pieces can never occupy a terrain square; terrain blocks sliding sight. */
-  function terInit(g) { if (!g.blocked) { g.blocked = []; for (let r = 0; r < 8; r++) g.blocked.push([null, null, null, null, null, null, null, null]); } return g.blocked; }
+  function terInit(g) { if (!g.blocked) { g.blocked = []; for (let r = 0; r < CUR; r++) g.blocked.push(new Array(CUR).fill(null)); } return g.blocked; }
   E.setTerrain = function (g, r, c, t) {
-    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    if (r < 0 || r >= CUR || c < 0 || c >= CUR) return false;
     const tb = terInit(g);
     tb[r][c] = t ? { t: t === 'river' ? 'river' : 'wall' } : null;
     return true;
   };
-  E.clearTerrain = function (g) { if (g.blocked) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.blocked[r][c] = null; };
+  E.clearTerrain = function (g) { if (g.blocked) for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) g.blocked[r][c] = null; };
   E.terrainAt = (g, r, c) => (g.blocked && g.blocked[r] && g.blocked[r][c]) || null;
   E.isTerrain = (g, r, c) => !!(g.blocked && g.blocked[r] && g.blocked[r][c]);
   E.terrainList = function (g) {
     terInit(g);
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.blocked[r][c]) out.push({ r, c, t: g.blocked[r][c].t });
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) if (g.blocked[r][c]) out.push({ r, c, t: g.blocked[r][c].t });
     return out;
   };
 
@@ -177,9 +203,9 @@
      g.zone[r][c] = null | { kind, c? }   (c = owning side, for sanctuaries)
      kinds: fire|thorns|mire|sanctum|rift|fog.  FOG is passive: it hides
      (see E.obscured) but never fires at turn-end. */
-  function zoneInit(g) { if (!g.zone) { g.zone = []; for (let r = 0; r < 8; r++) g.zone.push([null, null, null, null, null, null, null, null]); } return g.zone; }
+  function zoneInit(g) { if (!g.zone) { g.zone = []; for (let r = 0; r < CUR; r++) g.zone.push(new Array(CUR).fill(null)); } return g.zone; }
   E.setZone = function (g, r, c, kind, side) {
-    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    if (r < 0 || r >= CUR || c < 0 || c >= CUR) return false;
     if (g.blocked && g.blocked[r] && g.blocked[r][c]) return false; // not on walls/rivers
     zoneInit(g);
     if (g.zone[r][c]) return false;
@@ -188,18 +214,18 @@
   };
   E.zoneAt = (g, r, c) => (g.zone && g.zone[r] && g.zone[r][c]) || null;
   E.clearZone = function (g, r, c) { if (g.zone && g.zone[r]) g.zone[r][c] = null; };
-  E.clearAllZones = function (g) { if (g.zone) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.zone[r][c] = null; };
+  E.clearAllZones = function (g) { if (g.zone) for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) g.zone[r][c] = null; };
   E.zoneList = function (g) {
     zoneInit(g);
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.zone[r][c]) out.push({ r, c, z: g.zone[r][c] });
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) if (g.zone[r][c]) out.push({ r, c, z: g.zone[r][c] });
     return out;
   };
   // called at the end of `mover`'s turn for every piece of that side standing on a zone
   E.tickZones = function (g, mover) {
     const events = [];
     if (!g.zone) return events;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
       const z = g.zone[r][c];
       if (!z) continue;
       const cell = g.board[r][c];
@@ -229,7 +255,7 @@
           // enemies cannot rest on holy ground: shove them back toward their side
           const dir = mover === 'w' ? 1 : -1;
           const nr = r + dir;
-          if (nr >= 0 && nr < 8 && !g.board[nr][c]) {
+          if (nr >= 0 && nr < CUR && !g.board[nr][c]) {
             revokeLeave(g, r, c, cell);
             g.board[nr][c] = cell; g.board[r][c] = null;
             events.push({ kind: 'zone', r: nr, c, text: 'Holy ground pushes the intruder away.' });
@@ -238,7 +264,7 @@
       } else if (z.kind === 'rift') {
         if (cell.t !== 'k') {
           const spots = [];
-          for (let rr = 0; rr < 8; rr++) for (let cc = 0; cc < 8; cc++) {
+          for (let rr = 0; rr < CUR; rr++) for (let cc = 0; cc < CUR; cc++) {
             if ((rr !== r || cc !== c) && !g.board[rr][cc] && !(g.blocked && g.blocked[rr] && g.blocked[rr][cc])) spots.push({ r: rr, c: cc });
           }
           if (spots.length) {
@@ -255,7 +281,7 @@
   E.hazList = function (g) {
     hazInit(g);
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.haz[r][c]) out.push({ r, c, haz: g.haz[r][c] });
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) if (g.haz[r][c]) out.push({ r, c, haz: g.haz[r][c] });
     return out;
   };
   function springHazard(g, r, c, cell) {
@@ -284,7 +310,7 @@
   E.springHazard = springHazard;
 
   function findKing(g, color) {
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
       const cell = g.board[r][c];
       if (cell && cell.c === color && cell.t === 'k') return { r, c };
     }
@@ -311,7 +337,7 @@
     // knights
     for (const [dr, dc] of DIRS.n) {
       const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+      if (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR) {
         const k = g.board[nr][nc];
         if (k && k.c === by && k.t === 'n') return true;
       }
@@ -320,7 +346,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+      if (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR) {
         const k = g.board[nr][nc];
         if (k && k.c === by && k.t === 'k') return true;
       }
@@ -330,7 +356,7 @@
     const diag = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
     for (const [dr, dc] of straight) {
       let nr = r + dr, nc = c + dc;
-      while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+      while (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR) {
         if (E.terrainAt(g, nr, nc)) break; // walls & rivers block sight
         const cell = g.board[nr][nc];
         if (cell) {
@@ -342,7 +368,7 @@
     }
     for (const [dr, dc] of diag) {
       let nr = r + dr, nc = c + dc;
-      while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+      while (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR) {
         if (E.terrainAt(g, nr, nc)) break; // walls & rivers block sight
         const cell = g.board[nr][nc];
         if (cell) {
@@ -356,7 +382,7 @@
     if (g.anyTroop) {
       const T = root.MD && root.MD.TROOPS;
       if (T) {
-        for (let rr = 0; rr < 8; rr++) for (let cc = 0; cc < 8; cc++) {
+        for (let rr = 0; rr < CUR; rr++) for (let cc = 0; cc < CUR; cc++) {
           const cell = g.board[rr][cc];
           if (cell && cell.c === by && T[cell.t] && troopHits(g, cell.t, rr, cc, r, c)) return true;
         }
@@ -402,12 +428,15 @@
   function genPseudo(g, color) {
     const moves = [];
     const b = g.board;
-    const en = color === 'w' ? -1 : 1;   // white moves up (r-1)
-    const home = color === 'w' ? 6 : 1;  // pawn start row
-    const promoRow = color === 'w' ? 0 : 7;
+    const n = g.n || CUR;
+    const en = color === 'w' ? -1 : 1;          // white moves up (r-1)
+    const homeRow = color === 'w' ? n - 2 : 1;  // pawn start row (double push)
+    const promoRow = color === 'w' ? 0 : n - 1; // promotion rank
+    const kRow = color === 'w' ? n - 1 : 0;     // king's home rank
+    const K = n >> 1;                           // king's home file
     const ter = (rr, cc) => !!(g.blocked && g.blocked[rr] && g.blocked[rr][cc]); // terrain = cannot land & blocks sight
 
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = b[r][c];
       if (!cell || cell.c !== color) continue;
       const t = cell.t;
@@ -416,17 +445,17 @@
       if (t === 'p') {
         const fwd = r + en;
         // quiet advance (cannot step into terrain)
-        if (fwd >= 0 && fwd < 8 && !b[fwd][c] && !ter(fwd, c)) {
+        if (fwd >= 0 && fwd < n && !b[fwd][c] && !ter(fwd, c)) {
           if (fwd === promoRow) {
             for (const pt of ['q', 'r', 'b', 'n']) push(fwd, c, { promo: pt });
           } else push(fwd, c, {});
           // double (both squares clear of pieces AND terrain)
-          if (r === home && !b[r + 2 * en][c] && !ter(r + 2 * en, c)) push(r + 2 * en, c, { double: true });
+          if (r === homeRow && !b[r + 2 * en][c] && !ter(r + 2 * en, c)) push(r + 2 * en, c, { double: true });
         }
         // captures (targets only ever sit on non-terrain squares)
         for (const dc of [-1, 1]) {
           const nc = c + dc;
-          if (nc < 0 || nc > 7) continue;
+          if (nc < 0 || nc >= n) continue;
           const target = b[fwd] && b[fwd][nc];
           if (target && target.c !== color) {
             if (fwd === promoRow) for (const pt of ['q', 'r', 'b', 'n']) push(fwd, nc, { promo: pt, capture: true });
@@ -442,7 +471,7 @@
           : TROOP(t).leap;
         for (const [dr, dc] of leaps) {
           const nr = r + dr, nc = c + dc;
-          if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+          if (nr < 0 || nr >= n || nc < 0 || nc >= n) continue;
           if (ter(nr, nc)) continue;
           const target = b[nr][nc];
           if (!target) push(nr, nc, {});
@@ -456,9 +485,9 @@
       if (t === 'r' || t === 'q') slideSets.push([1, 0], [-1, 0], [0, 1], [0, -1]);
       for (const s of slideSets) {
         const dr = s[0], dc = s[1];
-        const mx = s.length > 2 ? s[2] : 8;
+        const mx = s.length > 2 ? s[2] : n;
         let nr = r + dr, nc = c + dc, k = 1;
-        while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && k <= mx) {
+        while (nr >= 0 && nr < n && nc >= 0 && nc < n && k <= mx) {
           if (ter(nr, nc)) break; // walls & rivers end the ray (cannot occupy)
           const target = b[nr][nc];
           if (!target) push(nr, nc, {});
@@ -466,27 +495,30 @@
           nr += dr; nc += dc; k++;
         }
       }
-      // castling (never on terrain boards)
-      if (t === 'k') {
+      // castling (needs at least an 8-wide board)
+      if (t === 'k' && r === kRow && c === K) {
         const opp = E.opp(color);
-        if (color === 'w' && r === 7 && c === 4) {
-          if (g.castle.wk && !b[7][5] && !b[7][6] && b[7][7] && b[7][7].c === 'w' && b[7][7].t === 'r'
-            && !ter(7, 5) && !ter(7, 6)
-            && !attacked(g, 7, 4, opp) && !attacked(g, 7, 5, opp) && !attacked(g, 7, 6, opp))
-            push(7, 6, { castle: 'k' });
-          if (g.castle.wq && !b[7][3] && !b[7][2] && !b[7][1] && b[7][0] && b[7][0].c === 'w' && b[7][0].t === 'r'
-            && !ter(7, 3) && !ter(7, 2) && !ter(7, 1)
-            && !attacked(g, 7, 4, opp) && !attacked(g, 7, 3, opp) && !attacked(g, 7, 2, opp))
-            push(7, 2, { castle: 'q' });
-        } else if (color === 'b' && r === 0 && c === 4) {
-          if (g.castle.bk && !b[0][5] && !b[0][6] && b[0][7] && b[0][7].c === 'b' && b[0][7].t === 'r'
-            && !ter(0, 5) && !ter(0, 6)
-            && !attacked(g, 0, 4, opp) && !attacked(g, 0, 5, opp) && !attacked(g, 0, 6, opp))
-            push(0, 6, { castle: 'k' });
-          if (g.castle.bq && !b[0][3] && !b[0][2] && !b[0][1] && b[0][0] && b[0][0].c === 'b' && b[0][0].t === 'r'
-            && !ter(0, 3) && !ter(0, 2) && !ter(0, 1)
-            && !attacked(g, 0, 4, opp) && !attacked(g, 0, 3, opp) && !attacked(g, 0, 2, opp))
-            push(0, 2, { castle: 'q' });
+        const wk = color === 'w';
+        const cK = wk ? 'wk' : 'bk', cQ = wk ? 'wq' : 'bq';
+        // kingside — clear K+1..n-2, rook on the kingside edge
+        if (g.castle[cK]) {
+          let free = true;
+          for (let cc = K + 1; cc <= n - 2; cc++) { if (b[kRow][cc] || ter(kRow, cc)) { free = false; break; } }
+          const rook = b[kRow][n - 1];
+          if (free && rook && rook.c === color && rook.t === 'r'
+            && !attacked(g, kRow, K, opp) && !attacked(g, kRow, K + 1, opp) && !attacked(g, kRow, K + 2, opp)) {
+            push(kRow, K + 2, { castle: 'k' });
+          }
+        }
+        // queenside — clear 1..K-1, rook on the queenside edge
+        if (g.castle[cQ]) {
+          let free = true;
+          for (let cc = K - 1; cc >= 1; cc--) { if (b[kRow][cc] || ter(kRow, cc)) { free = false; break; } }
+          const rook = b[kRow][0];
+          if (free && rook && rook.c === color && rook.t === 'r'
+            && !attacked(g, kRow, K, opp) && !attacked(g, kRow, K - 1, opp) && !attacked(g, kRow, K - 2, opp)) {
+            push(kRow, K - 2, { castle: 'q' });
+          }
         }
       }
     }
@@ -497,15 +529,12 @@
   function revokeLeave(g, r, c, cell) {
     if (!cell) return;
     const ct = cell.t, cc = cell.c;
-    if (cc === 'w') {
-      if (r === 7 && c === 4 && ct === 'k') { g.castle.wk = false; g.castle.wq = false; }
-      else if (r === 7 && c === 7 && ct === 'r') g.castle.wk = false;
-      else if (r === 7 && c === 0 && ct === 'r') g.castle.wq = false;
-    } else {
-      if (r === 0 && c === 4 && ct === 'k') { g.castle.bk = false; g.castle.bq = false; }
-      else if (r === 0 && c === 7 && ct === 'r') g.castle.bk = false;
-      else if (r === 0 && c === 0 && ct === 'r') g.castle.bq = false;
-    }
+    const n = g.n || CUR;
+    const K = n >> 1;
+    const home = cc === 'w' ? n - 1 : 0;
+    if (ct === 'k' && r === home && c === K) { g.castle[cc + 'k'] = false; g.castle[cc + 'q'] = false; }
+    else if (ct === 'r' && r === home && c === 0) g.castle[cc + 'q'] = false;
+    else if (ct === 'r' && r === home && c === n - 1) g.castle[cc + 'k'] = false;
   }
   E.revokeLeave = revokeLeave;
 
@@ -548,14 +577,17 @@
     if (mv.castle) {
       b[mv.r0][mv.c0] = null;
       b[mv.r1][mv.c1] = moving;
+      const n = g.n || CUR;
+      const K = n >> 1;
       if (mv.castle === 'k') {
-        undo.rookMove = { from: { r: mv.r0, c: 7 }, to: { r: mv.r0, c: 5 }, cell: b[mv.r0][7] };
-        b[mv.r0][7] = null;
-        b[mv.r0][5] = undo.rookMove.cell;
+        const rc = n - 1;
+        undo.rookMove = { from: { r: mv.r0, c: rc }, to: { r: mv.r0, c: K + 1 }, cell: b[mv.r0][rc] };
+        b[mv.r0][rc] = null;
+        b[mv.r0][K + 1] = undo.rookMove.cell;
       } else {
-        undo.rookMove = { from: { r: mv.r0, c: 0 }, to: { r: mv.r0, c: 3 }, cell: b[mv.r0][0] };
+        undo.rookMove = { from: { r: mv.r0, c: 0 }, to: { r: mv.r0, c: K - 1 }, cell: b[mv.r0][0] };
         b[mv.r0][0] = null;
-        b[mv.r0][3] = undo.rookMove.cell;
+        b[mv.r0][K - 1] = undo.rookMove.cell;
       }
     } else {
       b[mv.r1][mv.c1] = moving;
@@ -567,11 +599,12 @@
 
     // --- castling rights ---
     if (!mv.castle) revokeLeave(g, mv.r0, mv.c0, moving);
-    else { g.castle.wk = false; g.castle.wq = false; if (mv.r0 === 0) { g.castle.bk = false; g.castle.bq = false; } }
+    else if (color === 'w') { g.castle.wk = false; g.castle.wq = false; }
+    else { g.castle.bk = false; g.castle.bq = false; }
 
     // --- en passant target for double push ---
     if (mv.double) {
-      const rr = mv.r0 === 1 ? 2 : 5; // row between
+      const rr = (mv.r0 + mv.r1) / 2; // row between
       g.ep = { r: rr, c: mv.c0 };
     }
 
@@ -719,7 +752,7 @@
     if (g.half >= 100) return { over: true, result: '1/2-1/2', winner: null, reason: '50-move rule' };
     // insufficient material draw
     const pieces = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
       const cell = g.board[r][c];
       if (cell && cell.t !== 'k') pieces.push(cell.t);
     }
@@ -739,7 +772,7 @@
     g.board[r][c] = null;
     for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
       const nr = r + dr, nc = c + dc;
-      if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+      if (nr < 0 || nr >= CUR || nc < 0 || nc >= CUR) continue;
       const t = g.board[nr][nc];
       if (t && t.c !== cell.c) {
         lines.push({ r: nr, c: nc, kind: 'destroy' });
@@ -765,7 +798,7 @@
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (!dr && !dc) continue;
         const nr = r + dr, nc = c + dc;
-        if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) near.push({ r: nr, c: nc });
+        if (nr >= 0 && nr < CUR && nc >= 0 && nc < CUR && !g.board[nr][nc]) near.push({ r: nr, c: nc });
       }
       for (const q of near) {
         if (placed >= 2) break;
@@ -778,7 +811,7 @@
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (!dr && !dc) continue;
         const nr = r + dr, nc = c + dc;
-        if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+        if (nr < 0 || nr >= CUR || nc < 0 || nc >= CUR) continue;
         const t = g.board[nr][nc];
         if (t && t.c !== cell.c && t.t !== 'k') {
           revokeLeave(g, nr, nc, t);
@@ -796,7 +829,7 @@
   function tickAfterMove(g, mover) {
     const events = [];
     const bList = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
       const cell = g.board[r][c];
       if (!cell || !cell.b) continue;
       bList.push({ r, c, cell });
@@ -843,7 +876,7 @@
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;
           const nr = r + dr, nc = c + dc;
-          if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+          if (nr < 0 || nr >= CUR || nc < 0 || nc >= CUR) continue;
           const t = g.board[nr][nc];
           if (t && t.c !== cell.c && t.t !== 'k') foes.push({ r: nr, c: nc, cell: t });
         }

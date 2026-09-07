@@ -72,11 +72,13 @@
 
   // static eval from white's perspective (positive = good for white)
   function evaluate(g) {
+    const n = (g.n | 0) >= 4 ? g.n | 0 : 8;
+    const usePST = n === 8; // PST tables are 8x8 only; off-8 use material+mobility
     let score = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (!cell) continue;
-      const pst = PST[cell.t];
+      const pst = usePST ? PST[cell.t] : null;
       const base = V(cell.t) + (pst ? (pst[pstIdx(r, c, cell.c)] || 0) : 0);
       score += cell.c === 'w' ? base : -base;
     }
@@ -90,8 +92,9 @@
     const mat = MD.Fx.material(g, side);
     if (!E.hasKing(g, opp(side))) return mat + 1e6;
     if (!E.hasKing(g, side)) return mat - 1e6;
+    const n = (g.n | 0) >= 4 ? g.n | 0 : 8;
     let extra = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (!cell || !cell.b) continue;
       const owner = cell.c === side;

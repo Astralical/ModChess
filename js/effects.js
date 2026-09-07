@@ -13,12 +13,15 @@
   const Fx = {};
 
   /* ---------- square listing ---------- */
-  const allSq = () => { const a = []; for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) a.push({ r, c }); return a; };
-  const onBoard = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+  // dimension of the live board (E.size() reflects the last newGame)
+  const N = () => { const s = (E && E.size) ? E.size() : 8; return (s | 0) >= 4 ? s | 0 : 8; };
+  const allSq = () => { const n = N(); const a = []; for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) a.push({ r, c }); return a; };
+  const onBoard = (r, c) => { const n = N(); return r >= 0 && r < n && c >= 0 && c < n; };
 
   Fx.squares = (g, pred) => {
+    const n = N();
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (cell && pred(cell, r, c)) out.push({ r, c, cell });
     }
@@ -28,8 +31,9 @@
   Fx.enemy = (g, side) => Fx.color(g, opp(side));
   Fx.own = (g, side) => Fx.color(g, side);
   Fx.emptySq = (g, pred) => {
+    const n = N();
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       if (g.board[r][c]) continue;
       if (E.isTerrain && E.isTerrain(g, r, c)) continue;
       if (!pred || pred(r, c)) out.push({ r, c, cell: null });
@@ -338,7 +342,8 @@
     if (opts.type) pool = pool.filter(p => p.t === opts.type);
     // no corpse of the wanted kind: conjure a fresh creature instead
     if (!pool.length && opts.type) {
-      const rows = side === 'w' ? [3, 4, 5, 6] : [1, 2, 3, 4];
+      const n = N();
+      const rows = side === 'w' ? [Math.floor(n / 2), Math.floor(n / 2) + 1, Math.floor(n / 2) + 2, n - 2] : [1, 2, 3, Math.floor(n / 2) - 1];
       const lines = [];
       for (let i = 0; i < count; i++) {
         let empties = Fx.emptySq(g, (r, c) => rows.includes(r));
@@ -487,14 +492,15 @@
 
   // rotate the entire board 180 (with mirror) — flavor: chaos
   Fx.mirrorBoard = (g) => {
+    const n = N();
     const nb = [];
-    for (let r = 0; r < 8; r++) {
+    for (let r = 0; r < n; r++) {
       nb.push([]);
-      for (let c = 0; c < 8; c++) nb[r].push(null);
+      for (let c = 0; c < n; c++) nb[r].push(null);
     }
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
-      if (cell) { E.revokeLeave(g, r, c, cell); nb[7 - r][7 - c] = cell; }
+      if (cell) { E.revokeLeave(g, r, c, cell); nb[n - 1 - r][n - 1 - c] = cell; }
     }
     g.board = nb;
     g.ep = null;
@@ -516,8 +522,9 @@
     if (!king) return [];
     let empties = Fx.emptySq(g);
     if (preferHalf) {
-      const rows = side === 'w' ? [0, 1, 2, 3, 4] : [3, 4, 5, 6, 7];
-      const p = empties.filter(q => rows.includes(q.r));
+      const n = N();
+      const rows = side === 'w' ? Array.from({ length: (n >> 1) + 1 }, (_, i) => i) : Array.from({ length: n - ((n >> 1) - 1) }, (_, i) => (n >> 1) - 1 + i);
+      const p = empties.filter(q => rows.indexOf(q.r) >= 0);
       if (p.length) empties = p;
     }
     empties = empties.filter(q => !(Math.abs(q.r - king.r) <= 1 && Math.abs(q.c - king.c) <= 1));
@@ -552,7 +559,8 @@
   Fx.layHazards = function (g, kind, n, opts) {
     opts = opts || {};
     const empt = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const nn = N();
+    for (let r = 0; r < nn; r++) for (let c = 0; c < nn; c++) {
       if (g.board[r][c]) continue;
       if (E.hazAt(g, r, c)) continue;
       if (opts.rows && !opts.rows.includes(r)) continue;
@@ -563,15 +571,16 @@
     return picks.length;
   };
   Fx.hazardKinds = ['poison', 'freeze', 'trap', 'ward', 'ember'];
-  Fx.clearAllHaz = function (g) { if (g.haz) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.haz[r][c] = null; };
+  Fx.clearAllHaz = function (g) { if (g.haz) { const n = N(); for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) g.haz[r][c] = null; } };
   // lay a 3x3 ring/zone of hazards centred on (cr,cc) — spells that reshape the ground
   Fx.layHazardZone = function (g, cr, cc, kind, opts) {
     opts = opts || {};
     let n = 0;
+    const nn = N();
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (opts.ring && !dr && !dc) continue;
       const r = cr + dr, c = cc + dc;
-      if (r < 0 || r > 7 || c < 0 || c > 7) continue;
+      if (r < 0 || r >= nn || c < 0 || c >= nn) continue;
       if (E.isTerrain && E.isTerrain(g, r, c)) continue;
       if (E.setHaz(g, r, c, kind, opts.name || kind)) n++;
     }
@@ -589,7 +598,8 @@
   Fx.layZone = function (g, kind, n, opts) {
     opts = opts || {};
     const empt = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const nn = N();
+    for (let r = 0; r < nn; r++) for (let c = 0; c < nn; c++) {
       if (g.board[r][c]) continue;
       if (E.isTerrain && E.isTerrain(g, r, c)) continue;
       if (E.zoneAt(g, r, c)) continue;
@@ -603,10 +613,11 @@
   Fx.layZoneZone = function (g, cr, cc, kind, opts) {
     opts = opts || {};
     let n = 0;
+    const nn = N();
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (opts.ring && !dr && !dc) continue;
       const r = cr + dr, c = cc + dc;
-      if (r < 0 || r > 7 || c < 0 || c > 7) continue;
+      if (r < 0 || r >= nn || c < 0 || c >= nn) continue;
       if (g.board[r][c]) continue;
       if (E.isTerrain && E.isTerrain(g, r, c)) continue;
       if (E.setZone(g, r, c, kind, opts.c || null)) n++;
@@ -618,7 +629,8 @@
   // evaluate raw material balance for side (for bot/effects that use it)
   Fx.material = (g, side) => {
     let v = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    const n = N();
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
       const cell = g.board[r][c];
       if (cell) v += (cell.c === side ? 1 : -1) * Fx.value(cell.t);
     }
@@ -645,10 +657,11 @@
       if (cell && cell.c === opp(side) && cell.t === 'n') out.push({ r: k.r + dr, c: k.c + dc });
     }
     const straight = [[1,0],[-1,0],[0,1],[0,-1]], diag = [[1,1],[1,-1],[-1,1],[-1,-1]];
+    const n = N();
     for (const dirs of [straight, diag]) {
       for (const [dr, dc] of dirs) {
         let r = k.r + dr, c = k.c + dc;
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        while (r >= 0 && r < n && c >= 0 && c < n) {
           const cell = b[r][c];
           if (cell) {
             if (cell.c === opp(side)) {
