@@ -32,6 +32,7 @@
     <button id="btnHistory" class="tb-btn" title="Match history">History</button>
     <button id="btnSettings" class="tb-btn" title="Settings">Settings</button>
     <button id="btnCodex" class="tb-btn" title="Browse all abilities">Ability Codex</button>
+    <button id="btnPedia" class="tb-btn" title="Reference: custom pieces, statuses, items, modes">Pedia</button>
   </div>
 </header>
 
@@ -220,6 +221,16 @@
     <h2>Ability Codex <span class="codex-count" id="codexCount"></span></h2>
     <div class="codex-filter" id="codexFilter"></div>
     <div class="codex-grid" id="codexGrid"></div>
+  </div>
+</div>
+
+<!-- Pedia / reference handbook (pieces · statuses · items · modes) -->
+<div class="modal" id="pediaModal">
+  <div class="modal-inner codex">
+    <div class="modal-close" data-close="pediaModal">✕</div>
+    <h2>Pedia — Reference Handbook</h2>
+    <div class="codex-filter" id="pediaTabs"></div>
+    <div class="pedia-body" id="pediaBody"></div>
   </div>
 </div>
 

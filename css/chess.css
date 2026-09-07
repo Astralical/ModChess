@@ -196,3 +196,18 @@ body.theme-dark .an-board .an-sq.light{ background:#b7b9c0 } body.theme-dark .an
 .piece.veiled{ filter:blur(1.1px) saturate(.55); opacity:.8 }
 .piece.veiled .pbadge{ filter:none }
 .piece .b-vei{ color:#d9e7ff; background:rgba(52,86,138,.9) }
+
+/* ================= Pedia (reference handbook) ================= */
+#pediaTabs .chip{ cursor:pointer; margin:2px }
+.pedia-body{ max-height:62vh; overflow:auto; display:flex; flex-direction:column; gap:6px; padding:4px 2px }
+.pedia-kind{ color:#8fe3a8; font:800 12px 'Roboto Condensed',sans-serif; letter-spacing:.5px; margin:12px 2px 2px }
+.pedia-card{ background:#20242b; border:1px solid #333a44; border-left:3px solid #5f7088; border-radius:8px; padding:7px 10px }
+.pedia-card .pc-top{ display:flex; gap:8px; align-items:center; font-weight:700; color:#eef1f6; font-size:13.5px }
+.pedia-card .pc-glyph{ width:22px; height:22px; color:#ffd76f; flex:none }
+.pedia-card .pc-glyph .ico{ width:22px; height:22px; display:block }
+.pedia-card .pc-sub{ font-size:11px; color:#9aa3b1; margin-top:1px; font-weight:600 }
+.pedia-card .pc-desc{ font-size:12.5px; color:#c7cdd7; margin-top:3px; line-height:1.45 }
+.pedia-tags{ display:flex; flex-wrap:wrap; gap:5px; padding:2px 0 }
+.pedia-tag{ display:inline-flex; align-items:center; gap:5px; background:#2a2f38; border:1px solid #3a414d; color:#cdd3dd; font-size:11.5px; padding:2px 7px; border-radius:999px }
+.pedia-tag .ico{ width:12px; height:12px; color:#ffd76f }
+.pedia-tag.rare{ border-color:#c9a24a }

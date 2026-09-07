@@ -827,6 +827,129 @@
   }
   UI.renderCodex = renderCodex;
 
+  /* ================= PEDIA (reference handbook) ================= */
+  function pediaCard(title, glyph, sub, desc) {
+    const d = document.createElement('div');
+    d.className = 'pedia-card';
+    d.innerHTML = '<div class="pc-top">' + (glyph ? '<span class="pc-glyph">' + glyph + '</span>' : '') + '<span>' + esc(title) + '</span></div>' +
+      (sub ? '<div class="pc-sub">' + esc(sub) + '</div>' : '') +
+      (desc ? '<div class="pc-desc">' + esc(desc) + '</div>' : '');
+    return d;
+  }
+  function pediaHeading(t) {
+    const d = document.createElement('div');
+    d.className = 'pedia-kind';
+    d.textContent = t;
+    return d;
+  }
+  function dirName(dr, dc) {
+    if (!dr && !dc) return '';
+    const dy = dr < 0 ? 'N' : dr > 0 ? 'S' : '';
+    const dx = dc > 0 ? 'E' : dc < 0 ? 'W' : '';
+    return dy + dx || '(' + dr + ',' + dc + ')';
+  }
+  function troopMoveText(d) {
+    const parts = [];
+    if (d.leap && d.leap.length) parts.push('Leaps: ' + d.leap.map(o => dirName(o[0], o[1])).join(' / '));
+    if (d.slide && d.slide.length) parts.push('Slides: ' + d.slide.map(s => {
+      const max = s.length > 2 && s[2] ? s[2] : Infinity;
+      return dirName(s[0], s[1]) + (isFinite(max) ? ' ×' + max : ' any distance');
+    }).join(' / '));
+    const tr = [];
+    if (d.recruit != null) tr.push('slow to summon');
+    if (d.regen) tr.push('regenerates (cleanses poison/frost)');
+    if (d.aura) tr.push('aura: ' + d.aura + 's an adjacent foe each own turn');
+    if (d.onDeath === 'split') tr.push('splits into 2 pawns when slain');
+    if (d.onDeath === 'burst') tr.push('explodes when slain');
+    if (d.hatch) tr.push('arrives as an egg, hatches into ' + (MD.pieceName ? MD.pieceName(d.hatch.type) : d.hatch.type));
+    if (d.growTo) tr.push('grows into ' + (MD.pieceName ? MD.pieceName(d.growTo) : d.growTo));
+    if (tr.length) parts.push('Traits: ' + tr.join(', '));
+    return parts.join(' · ') || 'a mysterious mover';
+  }
+
+  const PEDIA_STATUS = [
+    ['Frozen (f)', 'Cannot move. The countdown passes only at the end of its OWN turns.', 'ice'],
+    ['Shielded (s)', 'Cannot be captured by normal captures for a number of the enemy\'s turns.', 'shield'],
+    ['Poisoned (p)', 'Detonates at the end of its own next turn, blasting every adjacent enemy (kings are safe).', 'skull'],
+    ['Summon-sickness (z)', 'Newly summoned pieces cannot move until they have survived one of their owner\'s turns.', 'clock'],
+    ['Petrified (st)', 'Sealed in stone: cannot move AND cannot be captured. Erodes at the end of its own turns.', 'lock'],
+    ['Doomed (doom)', 'Marked for death — destroyed quietly at the end of its own next turn.', 'target'],
+    ['Frail (frail)', 'Shields do not protect it — it can be captured even while shielded.', 'sword'],
+    ['Veiled (v)', 'Hidden in living mist: only an ADJACENT enemy can capture it (spells still find it).', 'wind'],
+    ['Regenerate (trait)', 'A troop that cleanses its own poison and frost at the end of its owner\'s turn.', 'heart'],
+    ['Aura (trait)', 'At the end of its owner\'s turn, freezes or poisons a random adjacent foe.', 'spark'],
+    ['Growth (mature)', 'An egg or juvenile that transforms into its adult troop after a few of its owner\'s turns.', 'star']
+  ];
+  const PEDIA_ZONES = [
+    ['Fire zone', 'Burns a piece standing there at the end of its own turn: poison + strip shield.', 'fire'],
+    ['Thorns zone', 'Wounds any piece ending its turn there — it becomes DOOMED.', 'leaf'],
+    ['Mire zone', 'Clings: the piece ends its turn there gets frozen (stuck next turn).', 'drop'],
+    ['Sanctum zone', 'Cleanses + shields your pieces; pushes or poisons enemy pieces off it.', 'shieldup'],
+    ['Rift zone', 'Tears any piece ending its turn there to a random empty square.', 'void'],
+    ['Fog zone', 'Passive mist: pieces inside are hidden (only adjacent enemies can capture them).', 'wind'],
+    ['Wall / River (terrain)', 'Impassable and block sliding sight. Campaign maps and some boards use them.', 'void'],
+    ['Hazard (hidden trap)', 'One-shot traps: poison · freeze · trap (destroy) · ward · ember — spring when stepped on.', 'target']
+  ];
+
+  function renderPedia(tab) {
+    const tabs = $('#pediaTabs'), body = $('#pediaBody');
+    clear(tabs); clear(body);
+    const mk = (label, key, active) => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (active ? ' selected' : '');
+      b.textContent = label;
+      b.addEventListener('click', () => renderPedia(key));
+      return b;
+    };
+    [['pieces', 'Custom Pieces'], ['statuses', 'Statuses & Ground'], ['items', 'Items'], ['modes', 'Modes & Board']].forEach(([k, l]) => tabs.appendChild(mk(l, k, tab === k)));
+    const app = el => body.appendChild(el);
+
+    if (tab === 'pieces') {
+      const T = MD.TROOPS || {};
+      const keys = Object.keys(T).sort((a, b) => ((T[b].value || 0) - (T[a].value || 0)) || a.localeCompare(b));
+      if (!keys.length) app(pediaCard('No custom troops', '', '', ''));
+      keys.forEach(k => {
+        const d = T[k];
+        const glyph = (MD.troopGlyph && MD.iconHTML) ? MD.iconHTML(MD.troopGlyph(k)) : '';
+        app(pediaCard(d.name || k, glyph, 'Type “' + k + '” · power ' + (d.value || 0) + (d.letter ? ' · ' + d.letter : ''), troopMoveText(d)));
+      });
+    } else if (tab === 'statuses') {
+      app(pediaHeading('Piece statuses'));
+      PEDIA_STATUS.forEach(s => app(pediaCard(s[0], MD.iconHTML(s[2]), '', s[1])));
+      app(pediaHeading('Ground zones, terrain & traps'));
+      PEDIA_ZONES.forEach(s => app(pediaCard(s[0], MD.iconHTML(s[2]), '', s[1])));
+    } else if (tab === 'items') {
+      const I = MD.ITEMS || [];
+      app(pediaCard('Magic Items', MD.iconHTML('gem'), I.length + ' treasures in the item pool', 'Item drops (when ON) place a random treasure on an empty square each turn. Land ANY piece on it to claim it — both sides can grab them! If items are left unclaimed the next one waits 2^x turns (x = items on the field).'));
+      const byKind = {};
+      I.forEach(it => { (byKind[it.kind] = byKind[it.kind] || []).push(it); });
+      Object.keys(byKind).sort().forEach(kind => {
+        app(pediaHeading('kind: ' + kind + ' (' + byKind[kind].length + ')'));
+        const row = document.createElement('div');
+        row.className = 'pedia-tags';
+        byKind[kind].forEach(it => {
+          const s = document.createElement('span');
+          s.className = 'pedia-tag';
+          s.title = (it.flavor || '') + (it.rarity >= 3 ? '  (rare!)' : '');
+          s.innerHTML = MD.iconHTML(it.icon) + ' ' + esc(it.name);
+          row.appendChild(s);
+        });
+        body.appendChild(row);
+      });
+    } else {
+      const M = [
+        ['Spell modes', 'Classic: pick 1 of 3 spells per turn, then move. · Chaos: fate casts a random spell for you. · Draft: 4 spells, cast exactly 1. · Echo: your spell is copied into the opponent\'s hand next turn.'],
+        ['Board sizes', '6×6 (rapid, no castling) · 8×8 (classic) · 10×10 · 12×12 grand boards. The campaign even grows its board as waves progress.'],
+        ['Item drops', 'A toggle that scatters magic items onto empty squares — grab them for buffs, summons, enemy damage, or the occasional curse.'],
+        ['Campaign', '“Siege of the Crystal Throne”: an endless roguelike where your army persists, the board grows, and every 5th wave is a boss siege. Waves are procedural after the opening ones, with host, raid and ambush encounters. Gold is scarce — spend it on boons.'],
+        ['Custom troops', 'Standard pieces (pawns…king) plus 40+ custom troops — check the “Custom Pieces” tab for every one of them. See “Ability Codex” for all ' + (MD.ABILITIES ? MD.ABILITIES.length : 0) + ' spells.'],
+        ['Statuses', 'Freeze, shield, poison, petrify, doom, frail, veil, summon-sickness — and persistent ground zones & hidden traps. See the “Statuses & Ground” tab.']
+      ];
+      M.forEach(([t, d]) => app(pediaCard(t, '', '', d)));
+    }
+  }
+  UI.renderPedia = renderPedia;
+
   /* ================= THEME / MISC ================= */
   function applyTheme() {
     document.body.classList.remove('theme-green', 'theme-wood', 'theme-dark');
@@ -924,6 +1047,7 @@
       rebuild();
       UI.openModal('codexModal');
     });
+    $('#btnPedia').addEventListener('click', () => { UI.renderPedia('pieces'); UI.openModal('pediaModal'); });
 
     // promo close buttons & modals backdrop
     document.querySelectorAll('[data-close]').forEach(el => {
