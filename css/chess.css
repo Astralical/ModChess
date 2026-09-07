@@ -164,3 +164,20 @@ body.theme-dark .an-board .an-sq.light{ background:#b7b9c0 } body.theme-dark .an
 .cr-cost.free{ color:#9fe3a8; background:#17331d; border-color:#2d6b3a }
 .camp-reward-btn.disabled{ opacity:.5; filter:saturate(.4); cursor:not-allowed }
 .camp-pill{ max-width:280px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+
+/* new status tints & badges: sealed(stone)/doomed/frail */
+.piece.sealed{ filter:grayscale(.85) brightness(.92) }
+.piece.doomed{ filter:sepia(.4) hue-rotate(-55deg) }
+.piece.frail{ filter:contrast(1.15) }
+.piece .b-stn{ color:#cfd6e0; background:rgba(60,66,80,.85) }
+.piece .b-doom{ color:#ff8ad4; background:rgba(90,20,80,.85) }
+.piece .b-fra{ color:#ff8d8d; background:rgba(120,20,20,.85) }
+
+/* ground zones */
+.zonemark{ position:absolute; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:4 }
+.zonemark svg{ width:58%; height:58%; filter:drop-shadow(0 0 4px rgba(0,0,0,.45)) }
+.z-fire{ background:radial-gradient(120% 120% at 50% 60%, rgba(255,120,30,.5), rgba(120,20,0,.42)); color:#ffb14d }
+.z-thorns{ background:radial-gradient(120% 120% at 50% 40%, rgba(60,140,40,.55), rgba(20,70,15,.5)); color:#c6ffa0 }
+.z-mire{ background:radial-gradient(120% 120% at 50% 60%, rgba(60,140,150,.6), rgba(15,60,75,.55)); color:#b7f4ff }
+.z-sanctum{ background:radial-gradient(120% 120% at 50% 50%, rgba(230,190,90,.5), rgba(140,100,20,.45)); color:#fff2c0 }
+.z-rift{ background:radial-gradient(120% 120% at 50% 50%, rgba(140,80,220,.55), rgba(60,20,110,.55)); color:#e2c8ff }

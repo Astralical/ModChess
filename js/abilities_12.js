@@ -107,13 +107,13 @@
     return lines.length ? lines : ['The shrine finds no ground to corrupt.'];
   });
 
-  def(515, 'Domain: Coffin of the Iron Mountain', 3, 'lock', 'Seal the STRONGEST enemy piece in a coffin — it is frozen, and cannot be cleansed this turn (also poison a weaker foe).', 'Iron, then silence.', (g, s) => {
+  def(515, 'Domain: Coffin of the Iron Mountain', 3, 'lock', 'Molten iron seals the STRONGEST enemy in a coffin — it is PETRIFIED: it cannot move or be captured for two of its own turns (and a lesser foe is poisoned).', 'Iron, then silence.', (g, s) => {
     const t = strong(g, s);
     if (!t) return ['The coffin stays empty.'];
-    Fx.mod(t.cell, 'f', 2); Fx.flash(g, t.r, t.c, 'freeze', '');
-    const lines = ['The strongest enemy is coffined (frozen for two turns).'];
+    Fx.mod(t.cell, 'st', 2); Fx.flash(g, t.r, t.c, 'freeze', '');
+    const lines = ['The strongest enemy is sealed in an iron coffin (petrified for two turns).'];
     const u = weak(g, s);
-    if (u && u !== t) { Fx.mod(u.cell, 'p', 1); Fx.flash(g, u.r, u.c, 'poison', ''); lines.push('A lesser foe is poisoned for good measure.'); }
+    if (u && u !== t) { Fx.mod(u.cell, 'p', 1); Fx.flash(g, u.r, u.c, 'poison', ''); lines.push('A lesser foe is poisoned by the molten slag.'); }
     return lines;
   });
 

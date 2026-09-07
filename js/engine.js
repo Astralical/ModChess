@@ -116,6 +116,8 @@
       anyTroop: false,
       haz: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
       blocked: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
+      zone: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
+      moveLimit: { w: null, b: null }, noCap: { w: false, b: false },
       over: false, result: null, reason: null, winner: null,
       silence: { w: false, b: false }, warded: { w: false, b: false },
       skipTurn: { w: false, b: false }, lowHand: { w: false, b: false },
@@ -168,6 +170,86 @@
     const out = [];
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.blocked[r][c]) out.push({ r, c, t: g.blocked[r][c].t });
     return out;
+  };
+
+  /* ---- ground ZONES ---- persistent squares a piece may stand on, that bite
+     at the END of the standing piece's own turn.
+     g.zone[r][c] = null | { kind, c? }   (c = owning side, for sanctuaries)
+     kinds: fire|thorns|mire|sanctum|rift */
+  function zoneInit(g) { if (!g.zone) { g.zone = []; for (let r = 0; r < 8; r++) g.zone.push([null, null, null, null, null, null, null, null]); } return g.zone; }
+  E.setZone = function (g, r, c, kind, side) {
+    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    if (g.blocked && g.blocked[r] && g.blocked[r][c]) return false; // not on walls/rivers
+    zoneInit(g);
+    if (g.zone[r][c]) return false;
+    g.zone[r][c] = { kind, c: side || null };
+    return true;
+  };
+  E.zoneAt = (g, r, c) => (g.zone && g.zone[r] && g.zone[r][c]) || null;
+  E.clearZone = function (g, r, c) { if (g.zone && g.zone[r]) g.zone[r][c] = null; };
+  E.clearAllZones = function (g) { if (g.zone) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.zone[r][c] = null; };
+  E.zoneList = function (g) {
+    zoneInit(g);
+    const out = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.zone[r][c]) out.push({ r, c, z: g.zone[r][c] });
+    return out;
+  };
+  // called at the end of `mover`'s turn for every piece of that side standing on a zone
+  E.tickZones = function (g, mover) {
+    const events = [];
+    if (!g.zone) return events;
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const z = g.zone[r][c];
+      if (!z) continue;
+      const cell = g.board[r][c];
+      if (!cell || cell.c !== mover) continue;
+      if (z.kind === 'fire') {
+        if (cell.t !== 'k') {
+          const b = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+          b.p = Math.max(b.p || 0, 1); b.s = 0;
+          events.push({ kind: 'zone', r, c, text: 'The burning ground sears a piece standing on it!' });
+        }
+      } else if (z.kind === 'thorns') {
+        if (cell.t !== 'k') {
+          const b = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+          b.doom = 1;
+          events.push({ kind: 'zone', r, c, text: 'Thorns open a wound — the piece is doomed.' });
+        }
+      } else if (z.kind === 'mire') {
+        const b = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+        b.f = Math.max(b.f || 0, 1);
+        events.push({ kind: 'zone', r, c, text: 'The mire clings — the piece will be stuck next turn.' });
+      } else if (z.kind === 'sanctum') {
+        if (z.c === mover) {
+          const b = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+          b.f = 0; b.p = 0; b.s = Math.max(b.s || 0, 1);
+          events.push({ kind: 'zone', r, c, text: 'Sanctified ground heals and wards your piece.' });
+        } else {
+          // enemies cannot rest on holy ground: shove them back toward their side
+          const dir = mover === 'w' ? 1 : -1;
+          const nr = r + dir;
+          if (nr >= 0 && nr < 8 && !g.board[nr][c]) {
+            revokeLeave(g, r, c, cell);
+            g.board[nr][c] = cell; g.board[r][c] = null;
+            events.push({ kind: 'zone', r: nr, c, text: 'Holy ground pushes the intruder away.' });
+          } else events.push({ kind: 'zone', r, c, text: 'Holy ground burns the intruder — it is poisoned.' });
+        }
+      } else if (z.kind === 'rift') {
+        if (cell.t !== 'k') {
+          const spots = [];
+          for (let rr = 0; rr < 8; rr++) for (let cc = 0; cc < 8; cc++) {
+            if ((rr !== r || cc !== c) && !g.board[rr][cc] && !(g.blocked && g.blocked[rr] && g.blocked[rr][cc])) spots.push({ r: rr, c: cc });
+          }
+          if (spots.length) {
+            const q = spots[Math.floor(Math.random() * spots.length)];
+            revokeLeave(g, r, c, cell);
+            g.board[r][c] = null; g.board[q.r][q.c] = cell;
+            events.push({ kind: 'zone', r: q.r, c: q.c, text: 'The rift tears the standing piece to ' + E.sqName(q.r, q.c) + '!' });
+          }
+        }
+      }
+    }
+    return events;
   };
   E.hazList = function (g) {
     hazInit(g);
@@ -526,18 +608,28 @@
   function legalMoves(g, color, opts) {
     opts = opts || {};
     color = color || g.turn;
-    const pseudo = genPseudo(g, color);
+    let pseudo = genPseudo(g, color);
+    // global one-turn restrictions (set by abilities): only a given type may move
+    if (g.moveLimit && g.moveLimit[color]) {
+      const only = g.moveLimit[color];
+      if (only === 'none') pseudo = [];
+      else pseudo = pseudo.filter(mv => {
+        const piece = g.board[mv.r0][mv.c0];
+        return piece && piece.t === only;
+      });
+    }
+    if (g.noCap && g.noCap[color]) pseudo = pseudo.filter(mv => !mv.capture && !mv.ep);
     const out = [];
     const w = clone(g);
     for (const mv of pseudo) {
       const piece = w.board[mv.r0][mv.c0];
       if (!piece) continue;
-      // frozen or newly-summoned (recruiting) pieces cannot move
-      if (piece.b && (piece.b.f > 0 || piece.b.z > 0)) continue;
-      // shielded enemy pieces cannot be captured (a shield is a wall)
+      // frozen, newly-summoned, or petrified pieces cannot move
+      if (piece.b && (piece.b.f > 0 || piece.b.z > 0 || piece.b.st > 0)) continue;
+      // shielded or petrified enemy pieces cannot be captured (a frail piece loses this)
       if (mv.capture && !mv.ep) {
         const dest = w.board[mv.r1][mv.c1];
-        if (dest && dest.c !== color && dest.b && dest.b.s > 0) continue;
+        if (dest && dest.c !== color && dest.b && !dest.b.frail && (dest.b.s > 0 || dest.b.st > 0)) continue;
       }
       const und = applyMove(w, mv, { silent: true });
       const k = findKing(w, color);
@@ -692,10 +784,19 @@
       if (cell.c === mover) {
         // owner finished their turn
         if (b.f > 0) b.f--;
+        if (b.st > 0) b.st--; // petrification erodes only as the owner's own turns pass
         // a regenerating troop cleanses itself before poison can bite
         if (def && def.regen && (b.p > 0 || b.f > 0)) {
           b.p = 0; b.f = 0;
           events.push({ kind: 'regen', r, c, text: sideLabel(cell.c) + ' ' + (def.name || cell.t) + ' regenerates' });
+        }
+        // DOOM: the death-mark claims the piece quietly at the end of its own turn
+        if (b.doom > 0) {
+          b.doom = 0;
+          events.push({ kind: 'doom', r, c, text: sideLabel(cell.c) + ' ' + pieceLabel(cell.t) + ' succumbs to its doom.' });
+          revokeLeave(g, r, c, cell);
+          g.board[r][c] = null;
+          continue;
         }
         if (b.p > 0) {
           b.p = 0;
@@ -707,7 +808,7 @@
         // recruit countdown — summoning sickness fades as the owner's turns pass
         if (b.z > 0) b.z--;
       } else {
-        // opponent's shield wears off after this turn
+        // opponent's shield wears off as their turns pass
         if (b.s > 0) b.s--;
       }
       // owner-turn-end auras: pressure an adjacent foe
@@ -743,10 +844,15 @@
       // clean up when every counter is spent
       if (g.board[r][c] === cell) {
         const bb = cell.b;
-        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0);
+        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0) && !(bb.st > 0) && !(bb.doom > 0) && !bb.frail;
         if (spent) cell.b = undefined;
       }
     }
+    // ground zones bite anything left standing at the end of the mover's turn
+    if (E.tickZones) { const zev = E.tickZones(g, mover); if (zev && zev.length) events.push(...zev); }
+    // one-turn global restrictions expire once that side has moved
+    if (g.moveLimit) g.moveLimit[mover] = null;
+    if (g.noCap) g.noCap[mover] = false;
     return events;
   }
   E.tickAfterMove = tickAfterMove;

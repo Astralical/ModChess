@@ -578,6 +578,42 @@
     return n;
   };
 
+  /* ---- statuses & ground zones & turn-modifiers (engine-backed) ---- */
+  Fx.stoneOn = (g, list, n) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'st', 1, 'freeze'); // petrify/seal
+  Fx.doomOn = (g, list, n) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'doom', 1, 'poison'); // death-mark
+  Fx.frailOn = (g, list, n) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'frail', true, 'transform'); // armor-shred
+  Fx.limitMove = function (g, side, type) { g.moveLimit = g.moveLimit || { w: null, b: null }; g.moveLimit[side] = type; };
+  Fx.noCaptures = function (g, side) { g.noCap = g.noCap || { w: false, b: false }; g.noCap[side] = true; };
+  Fx.zoneKind = g => E.zoneAt(g, 0, 0); // (deprecated marker) — use helpers below
+  Fx.layZone = function (g, kind, n, opts) {
+    opts = opts || {};
+    const empt = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      if (g.board[r][c]) continue;
+      if (E.isTerrain && E.isTerrain(g, r, c)) continue;
+      if (E.zoneAt(g, r, c)) continue;
+      if (opts.rows && !opts.rows.includes(r)) continue;
+      empt.push({ r, c });
+    }
+    const picks = Fx.uniqN(empt, n);
+    picks.forEach(q => E.setZone(g, q.r, q.c, kind, opts.c || null));
+    return picks.length;
+  };
+  Fx.layZoneZone = function (g, cr, cc, kind, opts) {
+    opts = opts || {};
+    let n = 0;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if (opts.ring && !dr && !dc) continue;
+      const r = cr + dr, c = cc + dc;
+      if (r < 0 || r > 7 || c < 0 || c > 7) continue;
+      if (g.board[r][c]) continue;
+      if (E.isTerrain && E.isTerrain(g, r, c)) continue;
+      if (E.setZone(g, r, c, kind, opts.c || null)) n++;
+    }
+    return n;
+  };
+  Fx.clearAllZones = function (g) { if (E.clearAllZones) E.clearAllZones(g); };
+
   // evaluate raw material balance for side (for bot/effects that use it)
   Fx.material = (g, side) => {
     let v = 0;

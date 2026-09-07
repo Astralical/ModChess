@@ -204,10 +204,13 @@
   function statusClass(cell) {
     if (!cell || !cell.b) return '';
     const b = cell.b;
+    if (b.st > 0) return 'sealed';
     if (b.z > 0) return 'recruiting';
     if (b.f > 0) return 'frozen';
     if (b.s > 0) return 'shielded';
     if (b.p > 0) return 'poisoned';
+    if (b.doom > 0) return 'doomed';
+    if (b.frail) return 'frail';
     return '';
   }
 
@@ -304,6 +307,9 @@
         };
         if (cell.b.p > 0) addB('b-psn', 'skull');
         if (cell.b.f > 0) addB('b-frz', 'ice');
+        if (cell.b.st > 0) addB('b-stn', 'lock');
+        if (cell.b.doom > 0) addB('b-doom', 'target');
+        if (cell.b.frail) addB('b-fra', 'sword');
         if (cell.b.z > 0) { const r = document.createElement('span'); r.className = 'pbadge b-rec'; r.innerHTML = MD.iconHTML('clock'); r.title = 'Newly summoned — cannot act until its owner\'s next turn'; p.appendChild(r); }
         if (cell.b.mature > 0 && cell.b.growTo) { const r = document.createElement('span'); r.className = 'pbadge b-grow'; r.innerHTML = MD.iconHTML('star'); r.title = 'Growing — will become ' + (MD.pieceName ? MD.pieceName(cell.b.growTo) : cell.b.growTo) + ' after ' + cell.b.mature + ' more move' + (cell.b.mature > 1 ? 's' : ''); p.appendChild(r); }
         if (cell.b.s > 0) addB('b-shd', 'shield');
@@ -340,6 +346,24 @@
         const d = document.createElement('div');
         d.className = 'hazmark';
         d.innerHTML = MD.iconHTML(icon);
+        const pos = px(r, c);
+        d.style.left = pos.x + 'px';
+        d.style.top = pos.y + 'px';
+        d.style.width = sq + 'px';
+        d.style.height = sq + 'px';
+        pieceLayer.appendChild(d);
+      }
+    }
+    // ground zones (persistent terrain effects)
+    if (g.zone) {
+      const zicon = { fire: 'fire', thorns: 'leaf', mire: 'drop', sanctum: 'shieldup', rift: 'void' };
+      const zcls = { fire: 'z-fire', thorns: 'z-thorns', mire: 'z-mire', sanctum: 'z-sanctum', rift: 'z-rift' };
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const zo = g.zone[r] && g.zone[r][c];
+        if (!zo) continue;
+        const d = document.createElement('div');
+        d.className = 'zonemark ' + (zcls[zo.kind] || 'z-mire');
+        d.innerHTML = MD.iconHTML(zicon[zo.kind] || 'fire');
         const pos = px(r, c);
         d.style.left = pos.x + 'px';
         d.style.top = pos.y + 'px';

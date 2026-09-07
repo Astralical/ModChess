@@ -1,7 +1,7 @@
 # ♞ Mod Chess — Ability Chess
 
 A chess web app in the visual spirit of chess.com — **but every turn, both players
-are dealt spells from a pool of 706 unique fantasy abilities** and must
+are dealt spells from a pool of 716 unique fantasy abilities** and must
 cast **one** before moving. Spells can buff your army, curse the enemy, warp the
 board, or reshape reality itself. When a spell is cast, **both sides always see it**
 — a cinematic reveal, an on-screen effect readout, and a running battle log.
@@ -21,7 +21,7 @@ board, or reshape reality itself. When a spell is cast, **both sides always see 
     wave to choose a **boon** — reinforcements, armories, drillmasters, or risky shrine
     **events**. If your King falls, the run is over. Best run is remembered.
 - **The Ability system**
-  - **706 hand-written spells**, each with its own icon, rarity (Common/Rare/
+  - **716 hand-written spells**, each with its own icon, rarity (Common/Rare/
     Epic/Legendary), rules text, and flavor line.
     Browse all of them in the **Ability Codex**.
   - Each turn a player draws spells (Classic/Draft give a choice) and **must cast 1**
