@@ -27,6 +27,25 @@
   };
   const TOTAL_WAVES = 6;
 
+  /* ---------------- terrain board templates ----------------
+     each map: 8 rows x 8 chars from the top (black side) down to the bottom.
+     '.' open · '#' wall (blocks move+sight) · '~' river (blocks move+sight).
+     No map ever fully blocks a lane — there is always a way across. */
+  const MAPS = [
+    { name: 'The Open Field', grid: [
+      '........', '........', '........', '........', '........', '........', '........', '........'] },
+    { name: 'Ruined Keep', grid: [
+      '........', '...#....', '..##....', '....#...', '...#....', '....#...', '...#....', '........'] },
+    { name: 'The Divided River', grid: [
+      '........', '...~....', '...~....', '...~....', '....~...', '....~...', '....~...', '........'] },
+    { name: 'Twin Bastions', grid: [
+      '........', '........', '..##.##.', '........', '........', '..##.##.', '........', '........'] },
+    { name: 'Frozen Shallows', grid: [
+      '..~~....', '........', '....~~..', '........', '..~~....', '........', '....~~..', '........'] },
+    { name: 'Canyon of Bones', grid: [
+      '........', '..#...#.', '..#...#.', '..#...#.', '..#...#.', '..#...#.', '..#...#.', '........'] }
+  ];
+
   /* ---------------- wave recipes (escalating) ---------------- */
   // each recipe lists unit types; the Warlord (black king) is always added
   const WAVES = [
@@ -38,6 +57,47 @@
     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p', 'q', 'q', 'r', 'r', 'b', 'n', 'siren', 'golem'] // wave 6 boss
   ];
   const valOf = t => E.val(t);
+
+  function applyMap(g, map) {
+    if (g.blocked) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.blocked[r][c] = null;
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      const ch = map.grid[r][c];
+      if (ch === '#') E.setTerrain(g, r, c, 'wall');
+      else if (ch === '~') E.setTerrain(g, r, c, 'river');
+    }
+    if (C.run) C.run.mapName = map.name;
+  }
+
+  // re-deploy the surviving defenders into a fresh formation (no spawn-camping)
+  function redeploy(g) {
+    const units = listPieces(g, 'w');
+    const free = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c] && !E.isTerrain(g, r, c);
+    const king = units.find(u => u.cell.t === 'k');
+    const rest = units.filter(u => u !== king).sort(() => Math.random() - 0.5);
+    const clearCell = u => { g.board[u.r][u.c] = null; };
+    // put the king safely on e1 (or the nearest free back square)
+    const backSpots = [];
+    for (const r of [7, 6, 5]) for (let c = 0; c < 8; c++) if (free(r, c)) backSpots.push({ r, c });
+    let si = 0;
+    if (king) {
+      clearCell(king);
+      const sq = (free(7, 4) ? { r: 7, c: 4 } : backSpots[0]) || { r: 6, c: 4 };
+      g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
+    }
+    // array of still-free back squares (recompute after king)
+    const spots = [];
+    for (const r of [7, 6, 5, 4]) for (let c = 0; c < 8; c++) if (free(r, c)) spots.push({ r, c });
+    const anyFree = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (free(r, c)) anyFree.push({ r, c });
+    for (const u of rest) {
+      clearCell(u);
+      let sq = spots[si++];
+      if (!sq) sq = anyFree.length ? anyFree[Math.floor(Math.random() * anyFree.length)] : null;
+      if (sq && free(sq.r, sq.c)) g.board[sq.r][sq.c] = { c: 'w', t: u.cell.t };
+    }
+    // rebuild anyTroop flag
+    g.anyTroop = listPieces(g, 'w').some(p => E.isTroop(p.cell.t));
+  }
 
   /* ---------------- board helpers ---------------- */
   function count(g, color) {
@@ -58,11 +118,12 @@
   }
   function findFree(g, ranks, cols) {
     const order = [];
-    for (const r of ranks) for (const c of cols) if (!g.board[r][c]) order.push({ r, c });
+    for (const r of ranks) for (const c of cols) if (!g.board[r][c] && !E.isTerrain(g, r, c)) order.push({ r, c });
     return order.length ? order[Math.floor(Math.random() * order.length)] : null;
   }
   function placeRaw(g, color, type, r, c) {
     if (r < 0 || r > 7 || c < 0 || c > 7 || g.board[r][c]) return false;
+    if (E.isTerrain(g, r, c)) return false;
     g.board[r][c] = { c: color, t: type };
     if (E.isTroop(type)) g.anyTroop = true;
     return true;
@@ -89,6 +150,7 @@
     const g = buildGame();
     const run = {
       wave: 1, gold: 0, kills: 0, rounds: 0, best: readBest(),
+      mapOff: Math.floor(Math.random() * MAPS.length), mapName: 'The Open Field',
       startPlies: 0
     };
     C.g = g; C.run = run; C.active = true; C.phase = 'player';
@@ -156,9 +218,15 @@
   function playerTurn() {
     if (!C.active) return;
     C.phase = 'player'; C.enemyRunning = false;
-    C.g.turn = 'w';
-    for (const p of listPieces(C.g, 'w')) delete p.cell.moved;
+    const g = C.g;
+    g.turn = 'w';
+    for (const p of listPieces(g, 'w')) delete p.cell.moved;
     C.tokens = 2;
+    // If the defender has NO legal move at all the run is over (checkmate/stalemate)
+    if (E.legalMoves(g, 'w').length === 0) {
+      endRun(false, E.inCheck(g, 'w') ? 'Checkmate — the Throne is surrounded and your king cannot move.' : 'Stalemate — your army is cornered with no legal move.');
+      return;
+    }
     MD.Game.phase = 'move';
     MD.Game.sel = null; MD.Game.legalCache = [];
     UI.render();
@@ -345,10 +413,18 @@
 
   /* ==================== WAVES / REWARDS / END ==================== */
   function spawnWave(g, wave) {
+    C.run.wave = wave;
+    // choose a fresh battlefield (rotate maps per run so no two runs look alike)
+    const map = MAPS[(C.run.mapOff + wave - 1) % MAPS.length];
+    applyMap(g, map);
+    // clear any lingering enemy pieces then raise a fresh defensive formation
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.board[r][c] && g.board[r][c].c === 'b') g.board[r][c] = null;
+    redeploy(g);
+
     const recipe = WAVES[wave - 1] || [];
     const cols = [0, 1, 2, 3, 4, 5, 6, 7].sort(() => Math.random() - 0.5);
-    // the Warlord always at the heart of the host
-    placeRaw(g, 'b', 'k', 0, 4) || placeRaw(g, 'b', 'k', 0, 3) || placeRaw(g, 'b', 'k', 1, 4);
+    // the Warlord always at the heart of the host (skips terrain automatically)
+    placeRaw(g, 'b', 'k', 0, 4) || placeRaw(g, 'b', 'k', 0, 3) || placeRaw(g, 'b', 'k', 1, 4) || placeRaw(g, 'b', 'k', 0, 2);
     const order = recipe.slice();
     for (const type of order) {
       const pawn = type === 'p';
@@ -361,11 +437,10 @@
         if (placed) break;
       }
       if (!placed) {
-        // try literally anywhere free
         for (let r = 0; r < 8 && !placed; r++) for (let c = 0; c < 8; c++) if (placeRaw(g, 'b', type, r, c)) { placed = true; break; }
       }
     }
-    C.run.wave = wave;
+    LOG(g, 'The battle moves to ' + map.name + ' — the Warlord sends wave ' + wave + '.', 'sys', 'flag');
   }
 
   function onWaveCleared() {
@@ -373,6 +448,10 @@
     const g = C.g;
     if (count(g, 'b') !== 0) return;
     if (C.run.wave >= TOTAL_WAVES) { endRun(true, 'All six waves broken! The Crystal Throne stands eternal.'); return; }
+    // spoils of war — the realm pays for holding the line
+    const bonus = 200 + C.run.wave * 80;
+    C.run.gold += bonus;
+    LOG(g, 'Wave ' + C.run.wave + ' repelled — the realm pays ' + bonus + ' gold in spoils.', 'sys', 'coin');
     C.phase = 'reward';
     banner('The host is scattered!', 'good');
     MD.playSfx('win');
@@ -382,23 +461,28 @@
   function showReward(clearedWave) {
     const title = $('campRewardTitle'), sub = $('campRewardSub'), box = $('campRewards');
     title.textContent = 'Wave ' + clearedWave + ' repelled!';
-    sub.textContent = 'The enemy is gone — choose how to strengthen the realm before wave ' + (clearedWave + 1) + '.';
+    sub.textContent = 'Gold: ' + C.run.gold + ' — strengthen the realm before wave ' + (clearedWave + 1) + ' (free boons and mercenary purchases).';
     UI.clearMsg();
     box.innerHTML = '';
     const choices = buildRewards(clearedWave);
     choices.forEach(ch => {
+      const afford = !ch.cost || C.run.gold >= ch.cost;
       const b = document.createElement('button');
-      b.className = 'camp-reward-btn rarity-' + (ch.rarity || 2);
+      b.className = 'camp-reward-btn rarity-' + (ch.rarity || 2) + (afford ? '' : ' disabled');
       b.innerHTML = '<span class="cr-icon">' + MD.iconHTML(ch.icon) + '</span>' +
-        '<span class="cr-name">' + UI.esc(ch.name) + '</span>' +
+        '<span class="cr-name">' + UI.esc(ch.name) + (ch.cost ? ' <em class="cr-cost">' + ch.cost + 'g</em>' : ' <em class="cr-cost free">free</em>') + '</span>' +
         '<span class="cr-desc">' + UI.esc(ch.desc) + '</span>';
       b.addEventListener('click', () => {
+        if (ch.cost) {
+          if (C.run.gold < ch.cost) { UI.toast('Not enough gold for this.', 'bad'); return; }
+          C.run.gold -= ch.cost;
+        }
         UI.closeModal('campRewardModal');
         try { ch.run(); } catch (err) { console.error('reward error', err); }
         C.run.wave++;
         spawnWave(C.g, C.run.wave);
         C.tokens = 2;
-        banner('Wave ' + C.run.wave + ' — the Warlord sends a fiercer host.', 'warn');
+        banner('Wave ' + C.run.wave + ' · ' + (C.run.mapName || 'the field') + ' — a fiercer host marches.', 'warn');
         playerTurn();
       });
       box.appendChild(b);
@@ -411,7 +495,8 @@
     const opts = [];
     const pawns = listPieces(g, 'w').filter(p => p.cell.t === 'p');
     const units = listPieces(g, 'w');
-    const randomType = () => ['imp', 'goblin', 'ranger', 'dwarf', 'warhorse', 'samurai', 'spriggan'][Math.floor(Math.random() * 7)];
+    const randomType = () => ['imp', 'goblin', 'ranger', 'warhorse', 'samurai', 'spriggan', 'divinedog'][Math.floor(Math.random() * 7)];
+    const hireType = () => ['nue', 'qilin', 'siegetank', 'coralqueen', 'seaserpent', 'howitzer', 'jianke', 'divinedog'][Math.floor(Math.random() * 8)];
 
     opts.push({
       name: 'Reinforcements', icon: 'portal', rarity: 2,
@@ -420,7 +505,7 @@
         const near = [];
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           const r = 7 + dr, c = 4 + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) near.push({ r, c });
+          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c] && !E.isTerrain(g, r, c)) near.push({ r, c });
         }
         const q = near.length ? near[Math.floor(Math.random() * near.length)] : findFree(g, [6, 7], [0, 1, 2, 3, 4, 5, 6, 7]);
         const type = randomType();
@@ -494,7 +579,52 @@
       }
     });
 
-    return opts.sort(() => Math.random() - 0.5).slice(0, 3);
+    // — gold purchases: mercenaries & royal works —
+    opts.push({
+      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 320,
+      desc: 'Hire a champion: a ' + MD.pieceName(hireType()) + ' joins your army.',
+      run: () => {
+        const q = findFree(g, [5, 6, 7], [0, 1, 2, 3, 4, 5, 6, 7]);
+        const type = hireType();
+        if (q) { placeRaw(g, 'w', type, q.r, q.c); LOG(g, 'A hired ' + MD.pieceName(type) + ' takes the field.', 'w', 'star'); UI.toast('Hired a ' + MD.pieceName(type) + '.', 'sys'); }
+        else UI.toast('No room to field the mercenary — gold refunded.', 'sys');
+      }
+    });
+    opts.push({
+      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 260,
+      desc: 'Field hospitals: cleanse your whole army, revive a fallen pawn, and shield your king.',
+      run: () => {
+        for (const p of listPieces(g, 'w')) if (p.cell.b && (p.cell.b.f > 0 || p.cell.b.p > 0)) { p.cell.b.f = 0; p.cell.b.p = 0; }
+        Fx.revive(g, 'w', 1, { type: 'p' });
+        const k = E.findKing(g, 'w');
+        if (k) Fx.mod(g.board[k.r][k.c], 's', 1);
+        LOG(g, 'The realm heals its wounds.', 'w', 'heart');
+        UI.toast('Your army is restored.', 'sys');
+      }
+    });
+    opts.push({
+      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 450,
+      desc: 'Promote your most advanced pawn to a QUEEN and shield your two most advanced pieces.',
+      run: () => {
+        const adv = pawns.slice().sort((a, b) => (a.r < b.r ? 1 : -1))[0];
+        if (adv) { adv.cell.t = 'q'; Fx.flash(g, adv.r, adv.c, 'transform', ''); LOG(g, 'The forge crowns a QUEEN.', 'w', 'fire'); }
+        const top2 = listPieces(g, 'w').filter(p => p.cell.t !== 'k').sort((a, b) => (a.r < b.r ? 1 : -1)).slice(0, 2);
+        for (const p of top2) Fx.mod(p.cell, 's', 1);
+        UI.toast('The forge works its wonders.', 'sys');
+      }
+    });
+
+    // always offer at least one free boon, then fill the rest from the pool
+    const freePool = opts.filter(o => !o.cost);
+    const paidPool = opts.filter(o => o.cost).sort(() => Math.random() - 0.5);
+    const picks = [];
+    if (freePool.length) picks.push(freePool[Math.floor(Math.random() * freePool.length)]);
+    while (picks.length < 3) {
+      const src = (picks.length === 1 && paidPool.length) ? paidPool : opts;
+      const cand = src[Math.floor(Math.random() * src.length)];
+      if (cand && !picks.includes(cand)) picks.push(cand); else break;
+    }
+    return picks;
   }
 
   /* ==================== RUN END ==================== */

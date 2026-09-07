@@ -95,17 +95,16 @@
     return lines.length ? lines : ['The beam passes through empty space.'];
   });
 
-  def(514, 'Domain: Malevolent Shrine', 4, 'net', 'Open a sure-hit domain on the enemy\'s three back ranks — every enemy piece there is FREEZED (sealed), then one is destroyed.', 'Within the shrine, there is no escape.', (g, s) => {
-    const rows = s === 'w' ? [0, 1, 2] : [5, 6, 7];
-    const caught = foes(g, s).filter(q => rows.includes(q.r));
-    if (!caught.length) return ['The domain opens on emptiness.'];
+  def(514, 'Domain: Malevolent Shrine', 4, 'net', 'Open a sure-hit domain: carve a 3×3 cursed ground around the enemy king (any piece that steps into those squares is poisoned) and FREEZE the strongest enemy standing inside it.', 'Within the shrine, there is no escape.', (g, s) => {
+    const k = E.findKing(g, O(s));
+    if (!k) return ['The domain opens on emptiness.'];
     const lines = [];
-    const n = Fx.statusOn(g, caught, 'f', 1, 'freeze');
-    lines.push('The domain seals ' + n + ' enemy piece' + (n > 1 ? 's' : '') + '.');
-    const star = caught.sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
-    kill(g, star);
-    lines.push('Cleave dismantles the ' + MD.pieceName(star.cell.t) + '.');
-    return lines;
+    const n = Fx.layHazardZone(g, k.r, k.c, 'poison', { ring: true, name: 'cursed shrine ground' });
+    if (n) lines.push('Cursed ground seeps across ' + n + ' square' + (n > 1 ? 's' : '') + ' around the king.');
+    const inside = foes(g, s).filter(q => Math.abs(q.r - k.r) <= 1 && Math.abs(q.c - k.c) <= 1);
+    const star = inside.sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
+    if (star) { Fx.mod(star.cell, 'f', 1); Fx.flash(g, star.r, star.c, 'freeze', ''); lines.push('Cleave seals the ' + MD.pieceName(star.cell.t) + ' beside the king.'); }
+    return lines.length ? lines : ['The shrine finds no ground to corrupt.'];
   });
 
   def(515, 'Domain: Coffin of the Iron Mountain', 3, 'lock', 'Seal the STRONGEST enemy piece in a coffin — it is frozen, and cannot be cleansed this turn (also poison a weaker foe).', 'Iron, then silence.', (g, s) => {

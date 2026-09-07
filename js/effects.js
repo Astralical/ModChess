@@ -30,7 +30,9 @@
   Fx.emptySq = (g, pred) => {
     const out = [];
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-      if (!g.board[r][c] && (!pred || pred(r, c))) out.push({ r, c, cell: null });
+      if (g.board[r][c]) continue;
+      if (E.isTerrain && E.isTerrain(g, r, c)) continue;
+      if (!pred || pred(r, c)) out.push({ r, c, cell: null });
     }
     return out;
   };
@@ -88,6 +90,7 @@
     opts = opts || {};
     const cell = g.board[r0] && g.board[r0][c0];
     if (!cell) return { moved: false, captured: null };
+    if (E.isTerrain && E.isTerrain(g, r1, c1)) return { moved: false, captured: null, blocked: true };
     const dest = g.board[r1] && g.board[r1][c1];
     let captured = null;
     if (dest) {
@@ -106,6 +109,7 @@
   function place(g, color, type, r, c, opts) {
     opts = opts || {};
     if (!onBoard(r, c)) return null;
+    if (E.isTerrain && E.isTerrain(g, r, c)) return null; // cannot summon onto walls/rivers
     if (g.board[r][c]) { if (opts.overwrite) removeAt(g, r, c); else return null; }
     // adults with `hatch` arrive as their weak egg; eggs grow back into the adult
     const plan = E.spawnPlan ? E.spawnPlan(type) : { type, growTo: null, mature: 0 };
@@ -560,6 +564,19 @@
   };
   Fx.hazardKinds = ['poison', 'freeze', 'trap', 'ward', 'ember'];
   Fx.clearAllHaz = function (g) { if (g.haz) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.haz[r][c] = null; };
+  // lay a 3x3 ring/zone of hazards centred on (cr,cc) — spells that reshape the ground
+  Fx.layHazardZone = function (g, cr, cc, kind, opts) {
+    opts = opts || {};
+    let n = 0;
+    for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+      if (opts.ring && !dr && !dc) continue;
+      const r = cr + dr, c = cc + dc;
+      if (r < 0 || r > 7 || c < 0 || c > 7) continue;
+      if (E.isTerrain && E.isTerrain(g, r, c)) continue;
+      if (E.setHaz(g, r, c, kind, opts.name || kind)) n++;
+    }
+    return n;
+  };
 
   // evaluate raw material balance for side (for bot/effects that use it)
   Fx.material = (g, side) => {

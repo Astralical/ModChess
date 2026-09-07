@@ -269,6 +269,22 @@
       }
     }
 
+    // terrain (walls & rivers) tiles, painted under the pieces
+    if (g.blocked) {
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const terr = g.blocked[r][c];
+        if (!terr) continue;
+        const d = document.createElement('div');
+        d.className = 'terrain ' + (terr.t === 'river' ? 'ter-river' : 'ter-wall');
+        const pos = px(r, c);
+        d.style.left = pos.x + 'px';
+        d.style.top = pos.y + 'px';
+        d.style.width = sq + 'px';
+        d.style.height = sq + 'px';
+        pieceLayer.appendChild(d);
+      }
+    }
+
     // pieces
     const seen = new Set();
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {

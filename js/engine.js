@@ -80,6 +80,7 @@
           if (nr === r && nc === c) return true;
           const cell = g.board[nr][nc];
           if (cell) break;
+          if (g.blocked && g.blocked[nr] && g.blocked[nr][nc]) break; // terrain blocks sight
           nr += dx; nc += dy; k++;
         }
       }
@@ -114,6 +115,7 @@
       extra: { w: 0, b: 0 }, extraCycle: { w: false, b: false },
       anyTroop: false,
       haz: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
+      blocked: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
       over: false, result: null, reason: null, winner: null,
       silence: { w: false, b: false }, warded: { w: false, b: false },
       skipTurn: { w: false, b: false }, lowHand: { w: false, b: false },
@@ -147,6 +149,26 @@
   };
   E.clearHaz = function (g, r, c) { if (g.haz && g.haz[r]) g.haz[r][c] = null; };
   E.hazAt = (g, r, c) => (g.haz && g.haz[r] && g.haz[r][c]) || null;
+
+  /* ---- terrain (walls / rivers) — for special boards & the campaign ----
+     g.blocked[r][c] = null | {t:'wall'} | {t:'river'}
+     Pieces can never occupy a terrain square; terrain blocks sliding sight. */
+  function terInit(g) { if (!g.blocked) { g.blocked = []; for (let r = 0; r < 8; r++) g.blocked.push([null, null, null, null, null, null, null, null]); } return g.blocked; }
+  E.setTerrain = function (g, r, c, t) {
+    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    const tb = terInit(g);
+    tb[r][c] = t ? { t: t === 'river' ? 'river' : 'wall' } : null;
+    return true;
+  };
+  E.clearTerrain = function (g) { if (g.blocked) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.blocked[r][c] = null; };
+  E.terrainAt = (g, r, c) => (g.blocked && g.blocked[r] && g.blocked[r][c]) || null;
+  E.isTerrain = (g, r, c) => !!(g.blocked && g.blocked[r] && g.blocked[r][c]);
+  E.terrainList = function (g) {
+    terInit(g);
+    const out = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.blocked[r][c]) out.push({ r, c, t: g.blocked[r][c].t });
+    return out;
+  };
   E.hazList = function (g) {
     hazInit(g);
     const out = [];
@@ -226,6 +248,7 @@
     for (const [dr, dc] of straight) {
       let nr = r + dr, nc = c + dc;
       while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+        if (E.terrainAt(g, nr, nc)) break; // walls & rivers block sight
         const cell = g.board[nr][nc];
         if (cell) {
           if (cell.c === by && (cell.t === 'r' || cell.t === 'q')) return true;
@@ -237,6 +260,7 @@
     for (const [dr, dc] of diag) {
       let nr = r + dr, nc = c + dc;
       while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+        if (E.terrainAt(g, nr, nc)) break; // walls & rivers block sight
         const cell = g.board[nr][nc];
         if (cell) {
           if (cell.c === by && (cell.t === 'b' || cell.t === 'q')) return true;
@@ -282,6 +306,7 @@
     const en = color === 'w' ? -1 : 1;   // white moves up (r-1)
     const home = color === 'w' ? 6 : 1;  // pawn start row
     const promoRow = color === 'w' ? 0 : 7;
+    const ter = (rr, cc) => !!(g.blocked && g.blocked[rr] && g.blocked[rr][cc]); // terrain = cannot land & blocks sight
 
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
       const cell = b[r][c];
@@ -291,15 +316,15 @@
 
       if (t === 'p') {
         const fwd = r + en;
-        // quiet advance
-        if (fwd >= 0 && fwd < 8 && !b[fwd][c]) {
+        // quiet advance (cannot step into terrain)
+        if (fwd >= 0 && fwd < 8 && !b[fwd][c] && !ter(fwd, c)) {
           if (fwd === promoRow) {
             for (const pt of ['q', 'r', 'b', 'n']) push(fwd, c, { promo: pt });
           } else push(fwd, c, {});
-          // double
-          if (r === home && !b[r + 2 * en][c]) push(r + 2 * en, c, { double: true });
+          // double (both squares clear of pieces AND terrain)
+          if (r === home && !b[r + 2 * en][c] && !ter(r + 2 * en, c)) push(r + 2 * en, c, { double: true });
         }
-        // captures
+        // captures (targets only ever sit on non-terrain squares)
         for (const dc of [-1, 1]) {
           const nc = c + dc;
           if (nc < 0 || nc > 7) continue;
@@ -311,83 +336,58 @@
             push(fwd, nc, { ep: true, capture: true });
           }
         }
-      } else if (t === 'n') {
-        for (const [dr, dc] of DIRS.n) {
+      } else if (t === 'n' || t === 'k' || E.isTroop(t) && (TROOP(t) && TROOP(t).leap)) {
+        // leapers (knights, kings, and every troop leap) may jump walls/rivers but never LAND on them
+        const leaps = t === 'n' ? DIRS.n : t === 'k'
+          ? [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]]
+          : TROOP(t).leap;
+        for (const [dr, dc] of leaps) {
           const nr = r + dr, nc = c + dc;
           if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+          if (ter(nr, nc)) continue;
           const target = b[nr][nc];
           if (!target) push(nr, nc, {});
           else if (target.c !== color) push(nr, nc, { capture: true });
         }
-      } else if (t === 'k') {
-        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
-          if (!dr && !dc) continue;
-          const nr = r + dr, nc = c + dc;
-          if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
+      }
+      // troop & standard sliders
+      const slideSets = [];
+      if (E.isTroop(t) && TROOP(t) && TROOP(t).slide) slideSets.push(...TROOP(t).slide);
+      if (t === 'b' || t === 'q') slideSets.push([1, 1], [1, -1], [-1, 1], [-1, -1]);
+      if (t === 'r' || t === 'q') slideSets.push([1, 0], [-1, 0], [0, 1], [0, -1]);
+      for (const s of slideSets) {
+        const dr = s[0], dc = s[1];
+        const mx = s.length > 2 ? s[2] : 8;
+        let nr = r + dr, nc = c + dc, k = 1;
+        while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && k <= mx) {
+          if (ter(nr, nc)) break; // walls & rivers end the ray (cannot occupy)
           const target = b[nr][nc];
           if (!target) push(nr, nc, {});
-          else if (target.c !== color) push(nr, nc, { capture: true });
+          else { if (target.c !== color) push(nr, nc, { capture: true }); break; }
+          nr += dr; nc += dc; k++;
         }
-        // castling
+      }
+      // castling (never on terrain boards)
+      if (t === 'k') {
         const opp = E.opp(color);
         if (color === 'w' && r === 7 && c === 4) {
           if (g.castle.wk && !b[7][5] && !b[7][6] && b[7][7] && b[7][7].c === 'w' && b[7][7].t === 'r'
+            && !ter(7, 5) && !ter(7, 6)
             && !attacked(g, 7, 4, opp) && !attacked(g, 7, 5, opp) && !attacked(g, 7, 6, opp))
             push(7, 6, { castle: 'k' });
           if (g.castle.wq && !b[7][3] && !b[7][2] && !b[7][1] && b[7][0] && b[7][0].c === 'w' && b[7][0].t === 'r'
+            && !ter(7, 3) && !ter(7, 2) && !ter(7, 1)
             && !attacked(g, 7, 4, opp) && !attacked(g, 7, 3, opp) && !attacked(g, 7, 2, opp))
             push(7, 2, { castle: 'q' });
         } else if (color === 'b' && r === 0 && c === 4) {
           if (g.castle.bk && !b[0][5] && !b[0][6] && b[0][7] && b[0][7].c === 'b' && b[0][7].t === 'r'
+            && !ter(0, 5) && !ter(0, 6)
             && !attacked(g, 0, 4, opp) && !attacked(g, 0, 5, opp) && !attacked(g, 0, 6, opp))
             push(0, 6, { castle: 'k' });
           if (g.castle.bq && !b[0][3] && !b[0][2] && !b[0][1] && b[0][0] && b[0][0].c === 'b' && b[0][0].t === 'r'
+            && !ter(0, 3) && !ter(0, 2) && !ter(0, 1)
             && !attacked(g, 0, 4, opp) && !attacked(g, 0, 3, opp) && !attacked(g, 0, 2, opp))
             push(0, 2, { castle: 'q' });
-        }
-      } else if (E.isTroop(t)) {
-        // custom summoned creatures
-        const def = TROOP(t);
-        if (def) {
-          if (def.leap) {
-            for (const [dr, dc] of def.leap) {
-              const nr = r + dr, nc = c + dc;
-              if (nr < 0 || nr > 7 || nc < 0 || nc > 7) continue;
-              const target = b[nr][nc];
-              if (!target) push(nr, nc, {});
-              else if (target.c !== color) push(nr, nc, { capture: true });
-            }
-          }
-          if (def.slide) {
-            for (const s of def.slide) {
-              const dr = s[0], dc = s[1];
-              const mx = s.length > 2 ? s[2] : 8;
-              let nr = r + dr, nc = c + dc, k = 1;
-              while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && k <= mx) {
-                const target = b[nr][nc];
-                if (!target) push(nr, nc, {});
-                else { if (target.c !== color) push(nr, nc, { capture: true }); break; }
-                nr += dr; nc += dc; k++;
-              }
-            }
-          }
-        }
-      } else {
-        // bishop, rook, queen rays
-        const dirs = [];
-        if (t === 'b' || t === 'q') dirs.push([1, 1], [1, -1], [-1, 1], [-1, -1]);
-        if (t === 'r' || t === 'q') dirs.push([1, 0], [-1, 0], [0, 1], [0, -1]);
-        for (const [dr, dc] of dirs) {
-          let nr = r + dr, nc = c + dc;
-          while (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
-            const target = b[nr][nc];
-            if (!target) push(nr, nc, {});
-            else {
-              if (target.c !== color) push(nr, nc, { capture: true });
-              break;
-            }
-            nr += dr; nc += dc;
-          }
         }
       }
     }
