@@ -56,6 +56,9 @@
   };
 
   Game.start = function (mode, diff, color, spellMode, size) {
+    // A normal match must never inherit an active campaign (its patched hooks
+    // and HUD would otherwise "merge" into the standard game).
+    if (root.MD.Campaign && root.MD.Campaign.active) root.MD.Campaign.stop(false);
     const sz = ((size | 0) >= 4 && (size | 0) <= 14) ? (size | 0) : ((MD.Settings && (MD.Settings.size | 0) >= 4) ? MD.Settings.size | 0 : 8);
     Game.g = E.newGame(sz);
     Game.g.battleLog = [];

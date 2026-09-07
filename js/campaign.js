@@ -300,7 +300,8 @@
     const g = C.g;
     g.turn = 'w';
     for (const p of listPieces(g, 'w')) delete p.cell.moved;
-    C.tokens = 2;
+    C.tokens = C._nextTokens || 2; // boons can grant a 3rd move
+    C._nextTokens = 0;
     // If the defender has NO legal move at all the run is over (checkmate/stalemate)
     if (E.legalMoves(g, 'w').length === 0) {
       endRun(false, E.inCheck(g, 'w') ? 'Checkmate — the Throne is surrounded and your king cannot move.' : 'Stalemate — your army is cornered with no legal move.');
@@ -717,6 +718,14 @@
     });
 
     // always offer at least one free boon, then fill the rest from the pool
+    // (+105 unique extra boons layered on top — see campaign_boons.js)
+    if (MD.CampaignExtraBoons) {
+      const ex = MD.CampaignExtraBoons(g, wave) || [];
+      ex.forEach(b => opts.push({
+        name: b.name, icon: b.icon, rarity: b.rarity || 2, cost: b.cost, desc: b.desc,
+        run: () => { try { b.run(g); } catch (e) { console.error('boon error', b.name, e); } }
+      }));
+    }
     const freePool = opts.filter(o => !o.cost);
     const paidPool = opts.filter(o => o.cost).sort(() => Math.random() - 0.5);
     const picks = [];
