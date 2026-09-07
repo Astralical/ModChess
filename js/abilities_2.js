@@ -2,6 +2,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = MD.Fx.opp, pick = MD.pick;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -257,13 +258,13 @@
       target: 'auto',
       run: (g, s) => {
         const pieces = [];
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
           const cell = g.board[r][c];
           if (cell && cell.t !== 'k') { pieces.push({ cell }); E.revokeLeave(g, r, c, cell); g.board[r][c] = null; }
         }
         pieces.sort(() => Math.random() - 0.5);
         const empties = [];
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (!g.board[r][c]) empties.push({ r, c });
+        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) if (!g.board[r][c]) empties.push({ r, c });
         pieces.sort(() => Math.random() - 0.5);
         for (let i = 0; i < pieces.length && i < empties.length; i++) {
           const dest = empties[i]; const p = pieces[i];
@@ -302,7 +303,7 @@
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;
           const r = k.r + dr, c = k.c + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+          if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
         }
         const lines = [];
         for (const sp of spots.slice(0, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A guard pawn appears at ' + sn(sp.r, sp.c) + '.'); }

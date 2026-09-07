@@ -86,7 +86,7 @@
     coralqueen:{ name: 'Coral Queen',  icon: '🪸', letter: 'C', value: 1100, leap: WAZIR, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], aura: 'freeze' },
     // — World War II: iron engines of war —
     siegetank: { name: 'Siege Tank',   icon: '🛡️', letter: 'T', value: 1000, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4]], onDeath: 'burst', artillery: { range: 3, radius: 1, cd: 3 } },
-    zeppelin:  { name: 'War Zeppelin', icon: '🎈', letter: 'Z', value: 1150, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], recruit: 2, artillery: { range: 5, radius: 0, cd: 2 } },
+    zeppelin:  { name: 'War Zeppelin', icon: '🎈', letter: 'Z', value: 1150, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], artillery: { range: 5, radius: 0, cd: 2 } },
     howitzer:  { name: 'Howitzer',     icon: '💣', letter: 'H', value: 880, leap: CAMEL, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], artillery: { range: 4, radius: 1, cd: 2 } },
     infantry:  { name: 'Rifleman',     icon: '🎖️', letter: 'I', value: 260,  leap: WAZIR }
   };

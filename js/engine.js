@@ -39,12 +39,14 @@
   E.val = t => (E.PIECE_VAL[t] || (TROOP(t) && TROOP(t).value) || 0);
 
   // how many of the OWNER's own turn-ends a freshly placed piece must wait
-  // before it may move/capture (summoning sickness, scaled by strength)
+  // before it may move/capture (summoning sickness). A piece summoned on your
+  // turn is ready on your NEXT turn: 1 own turn-end (the summoning turn's)
+  // must pass, so the delay is 1 for every troop unless a def opts in higher.
   E.recruitDelay = function (t) {
     const d = TROOP(t);
     if (!d) return 1;
     if (d.recruit != null) return Math.max(1, d.recruit);
-    return (d.value || 0) >= 1000 ? 2 : 1;
+    return 1;
   };
   // resolve what actually lands on the board when type is summoned
   // (an adult with `hatch` places its weaker egg, which later matures)

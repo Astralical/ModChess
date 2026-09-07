@@ -11,6 +11,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -25,13 +26,13 @@
   const weak = (g, s) => foes(g, s).sort((a, b) => val(a.cell.t) - val(b.cell.t))[0];
   const kill = (g, q) => { Fx.removeAt(g, q.r, q.c, {}); };
   const summon = (g, s, t, n, rows) => Fx.summonN(g, s, t, n, rows ? { rows } : {});
-  const shore = q => q.c === 0 || q.c === 7;
+  const shore = (g, q) => q.c === 0 || q.c === Fx.bd(g) - 1;
   const A = [];
   const def = (id, name, rarity, icon, desc, flavor, run) => A.push({ id, name, rarity, cat: 'Ocean', icon, desc, flavor, target: 'auto', run });
 
   def(607, 'Sea Serpent Rising', 3, 'drop', 'The great serpent breaches: summon a Sea Serpent, and drag one random enemy piece from an EDGE file into the deep (destroy it).', 'The water bulges, then it strikes.', (g, s) => {
     const lines = summon(g, s, 'seaserpent', 1);
-    const t = rnd(foes(g, s).filter(q => shore(q)));
+    const t = rnd(foes(g, s).filter(q => shore(g, q)));
     if (t) { kill(g, t); lines.push('A serpent drags the edge sentry below.'); }
     return lines.length ? lines : ['The deep is quiet.'];
   });
@@ -72,7 +73,7 @@
     let moved = 0;
     for (const q of foes(g, s)) {
       const nr = q.r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
     }
     return moved ? ['The tide shoves ' + moved + ' enemy' + (moved > 1 ? 's' : '') + ' back.'] : ['The wave breaks on a wall.'];
   });
@@ -129,7 +130,7 @@
     const p = advP(g, s)[0];
     if (p) {
       const nr = p.r + (s === 'w' ? -1 : 1);
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); lines.push('The line hauls your vanguard forward.'); }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); lines.push('The line hauls your vanguard forward.'); }
     }
     return lines.length ? lines : ['The harpoon finds open water.'];
   });
@@ -198,7 +199,7 @@
     const p = advP(g, s)[0];
     if (p) {
       const nr = p.r + (s === 'w' ? -1 : 1);
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); lines.push('Your vanguard scurries forward.'); }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); lines.push('Your vanguard scurries forward.'); }
     }
     return lines.length ? lines : ['The rats have fled.'];
   });
@@ -210,7 +211,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = p.r + dr, c = p.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const q = rnd(spots);
     if (!q) return ['No sea room to roll.'];
@@ -263,7 +264,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = lead.r + dr, c = lead.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) near.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) near.push({ r, c });
     }
     const q = rnd(near);
     if (!q) return ['No beach to land on.'];
@@ -306,7 +307,7 @@
     if (!p) return [];
     const nr = p.r + (s === 'w' ? -1 : 1);
     let moved = false;
-    if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved = true; }
+    if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved = true; }
     const r2 = moved ? nr : p.r;
     if (!g.board[r2] || !g.board[r2][p.c]) return [];
     Fx.mod(g.board[r2][p.c], 's', 1);
@@ -351,7 +352,7 @@
     let r = p.r, moved = 0;
     while (moved < 2) {
       const nr = r + dr;
-      if (nr < 0 || nr > 7 || g.board[nr][p.c]) break;
+      if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][p.c]) break;
       Fx.relocate(g, r, p.c, nr, p.c, {}); r = nr; moved++;
     }
     return moved ? ['Your vanguard stumps ' + moved + ' square' + (moved > 1 ? 's' : '') + ' forward.'] : ['The peglegged one is stuck.'];
@@ -406,7 +407,7 @@
   });
 
   def(650, 'Crew Discipline', 2, 'shield', 'A sharp word and a sharper blade: shield every friendly piece standing on an EDGE file (the bulwarks).', 'The rails are where discipline lives.', (g, s) => {
-    const edge = own(g, s).filter(q => shore(q));
+    const edge = own(g, s).filter(q => shore(g, q));
     const n = Fx.statusOn(g, edge, 's', 1, 'shield');
     return n ? ['The bulwarks shield ' + n + ' of your crew on the edges.'] : ['No crew on the rails.'];
   });
@@ -448,7 +449,7 @@
 
   def(655, 'Kraken Rises', 4, 'drop', 'THE KRAKEN: summon a Leviathan AND freeze every enemy piece on an edge file.', 'Tentacles eclipse the sun.', (g, s) => {
     const lines = summon(g, s, 'leviathan', 1);
-    const edge = foes(g, s).filter(q => shore(q));
+    const edge = foes(g, s).filter(q => shore(g, q));
     const n = Fx.statusOn(g, edge, 'f', 1, 'freeze');
     if (n) lines.push('The Kraken\'s shadow freezes ' + n + ' edge enemy.');
     return lines.length ? lines : ['The deep stays quiet.'];

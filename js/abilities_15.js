@@ -10,6 +10,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -58,7 +59,7 @@
     let moved = 0;
     for (const p of ps) {
       const nr = p.r + dr;
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
     }
     Fx.grantExtra(g, s, 1);
     return ['Blitzkrieg! ' + moved + ' pawn' + (moved > 1 ? 's surge' : ' surges') + ', and you move again.'];
@@ -112,14 +113,14 @@
   });
 
   def(669, 'Katyusha', 3, 'storm', 'Rockets scream: destroy one random enemy piece on EACH of two random files.', 'The stalin organ plays.', (g, s) => {
-    const c1 = Math.floor(Math.random() * 8);
-    let c2 = Math.floor(Math.random() * 8);
-    while (c2 === c1) c2 = Math.floor(Math.random() * 8);
+    const c1 = Math.floor(Math.random() * Fx.bd(g));
+    let c2 = Math.floor(Math.random() * Fx.bd(g));
+    while (c2 === c1) c2 = Math.floor(Math.random() * Fx.bd(g));
     const lines = [];
     const t1 = rnd(foes(g, s).filter(q => q.c === c1));
-    if (t1) { kill(g, t1); lines.push('Rockets obliterate an enemy on file ' + 'abcdefgh'[c1] + '.'); }
+    if (t1) { kill(g, t1); lines.push('Rockets obliterate an enemy on file ' + 'abcdefghijkl'[c1] + '.'); }
     const t2 = rnd(foes(g, s).filter(q => q.c === c2));
-    if (t2) { kill(g, t2); lines.push('More rockets strike file ' + 'abcdefgh'[c2] + '.'); }
+    if (t2) { kill(g, t2); lines.push('More rockets strike file ' + 'abcdefghijkl'[c2] + '.'); }
     return lines.length ? lines : ['The rockets land on empty steppe.'];
   });
 
@@ -233,7 +234,7 @@
     const p = advP(g, s)[0];
     if (!p) return [];
     const nr = p.r + (s === 'w' ? -1 : 1);
-    if (nr < 0 || nr > 7) return [];
+    if (nr < 0 || nr >= Fx.bd(g)) return [];
     const cell = g.board[nr][p.c];
     if (!cell || cell.c !== O(s) || cell.t === 'k') return ['No enemy holds the square ahead.'];
     kill(g, { r: nr, c: p.c });
@@ -249,9 +250,9 @@
   });
 
   def(685, 'Recon Plane', 2, 'eye', 'Eyes above: FREEZE the enemy piece on their most crowded file.', 'The plane sees everything.', (g, s) => {
-    const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+    const counts = Array.from({ length: Fx.bd(g) }, () => 0);
     for (const q of foes(g, s)) counts[q.c]++;
-    let best = 0; for (let c = 1; c < 8; c++) if (counts[c] > counts[best]) best = c;
+    let best = 0; for (let c = 1; c < Fx.bd(g); c++) if (counts[c] > counts[best]) best = c;
     const t = rnd(foes(g, s).filter(q => q.c === best));
     if (!t) return ['The plane sees nothing.'];
     Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', '');
@@ -276,7 +277,7 @@
   });
 
   def(688, 'Naval Bombardment', 3, 'drop', 'The fleet opens from the coast: destroy a random enemy piece on an EDGE file, then push another edge piece inward.', 'From sea to shining sea.', (g, s) => {
-    const edge = foes(g, s).filter(q => q.c === 0 || q.c === 7);
+    const edge = foes(g, s).filter(q => q.c === 0 || q.c === Fx.bd(g) - 1);
     const lines = [];
     const t = rnd(edge);
     if (t) { kill(g, t); lines.push('Naval guns destroy an enemy ' + MD.pieceName(t.cell.t) + ' on the coast.'); }
@@ -295,7 +296,7 @@
     for (const p of ps) {
       if (!g.board[p.r][p.c]) continue;
       const nr = p.r + dr;
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
     }
     Fx.clearAllHaz(g);
     return ['Engineers push ' + moved + ' pawn' + (moved > 1 ? 's' : '') + ' forward and sweep every hazard from the field.'];
@@ -355,7 +356,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const lines = [];
     for (const q of Fx.uniqN(spots, 3)) { Fx.place(g, s, 'p', q.r, q.c, {}); lines.push('A fresh pawn takes the line at ' + sn(q.r, q.c) + '.'); }
@@ -371,14 +372,14 @@
   });
 
   def(697, 'Carpet Bombing', 4, 'fire', 'Bombers blot out the sun: destroy a random enemy piece on EACH of two random files, then freeze one more.', 'The earth shakes for miles.', (g, s) => {
-    const c1 = Math.floor(Math.random() * 8);
-    let c2 = Math.floor(Math.random() * 8);
-    while (c2 === c1) c2 = Math.floor(Math.random() * 8);
+    const c1 = Math.floor(Math.random() * Fx.bd(g));
+    let c2 = Math.floor(Math.random() * Fx.bd(g));
+    while (c2 === c1) c2 = Math.floor(Math.random() * Fx.bd(g));
     const lines = [];
     const t1 = rnd(foes(g, s).filter(q => q.c === c1));
-    if (t1) { kill(g, t1); lines.push('Carpet bombs destroy an enemy on file ' + 'abcdefgh'[c1] + '.'); }
+    if (t1) { kill(g, t1); lines.push('Carpet bombs destroy an enemy on file ' + 'abcdefghijkl'[c1] + '.'); }
     const t2 = rnd(foes(g, s).filter(q => q.c === c2));
-    if (t2) { kill(g, t2); lines.push('More bombs fall on file ' + 'abcdefgh'[c2] + '.'); }
+    if (t2) { kill(g, t2); lines.push('More bombs fall on file ' + 'abcdefghijkl'[c2] + '.'); }
     const u = rnd(foes(g, s).filter(q => q !== t1 && q !== t2));
     if (u) { Fx.mod(u.cell, 'f', 1); lines.push('A straggler is frozen by the shockwave.'); }
     return lines.length ? lines : ['The bombers release over empty fields.'];
@@ -413,7 +414,7 @@
     const pool = [];
     for (let dc = -2; dc <= 2; dc++) {
       const r = p.r + dr * 2, c = p.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) pool.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) pool.push({ r, c });
     }
     const d = rnd(pool);
     if (!d) return ['No cover for the hit-and-run.'];
@@ -452,7 +453,7 @@
     let r = p.r, moved = 0;
     while (moved < 2) {
       const nr = r + dr;
-      if (nr < 0 || nr > 7 || g.board[nr][p.c]) break;
+      if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][p.c]) break;
       Fx.relocate(g, r, p.c, nr, p.c, {}); r = nr; moved++;
     }
     Fx.mod(g.board[r][p.c], 's', 1);
@@ -465,7 +466,7 @@
     let moved = 0;
     for (const p of ps) {
       const nr = p.r + dr;
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
     }
     const eps = foes(g, s).filter(q => q.cell.t === 'p');
     const n = Fx.statusOn(g, eps, 'p', 1, 'poison');

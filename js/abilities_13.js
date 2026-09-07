@@ -11,6 +11,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -33,7 +34,7 @@
     const j = own(g, s).filter(q => q.cell.t === 'jianke').slice(-1)[0];
     if (j) {
       const nr = j.r + (s === 'w' ? -1 : 1);
-      if (nr >= 0 && nr < 8) { const t = g.board[nr][j.c]; if (t && t.c === O(s) && t.t !== 'k') { kill(g, { r: nr, c: j.c }); lines.push('A single cut fells the enemy before it.'); } }
+      if (nr >= 0 && nr < Fx.bd(g)) { const t = g.board[nr][j.c]; if (t && t.c === O(s) && t.t !== 'k') { kill(g, { r: nr, c: j.c }); lines.push('A single cut fells the enemy before it.'); } }
     }
     return lines.length ? lines : ['The immortal waits for a worthy foe.'];
   });
@@ -55,11 +56,11 @@
     if (!p) return [];
     const dr = s === 'w' ? -1 : 1;
     const over = p.r + dr, land = p.r + dr * 2;
-    if (land >= 0 && land < 8 && g.board[over] && g.board[over][p.c] && !g.board[land][p.c]) {
+    if (land >= 0 && land < Fx.bd(g) && g.board[over] && g.board[over][p.c] && !g.board[land][p.c]) {
       Fx.relocate(g, p.r, p.c, land, p.c, {});
       return ['Your vanguard vaults clean over the piece ahead!'];
     }
-    if (over >= 0 && over < 8 && !g.board[over][p.c]) { Fx.relocate(g, p.r, p.c, over, p.c, {}); return ['Light steps carry your vanguard forward.']; }
+    if (over >= 0 && over < Fx.bd(g) && !g.board[over][p.c]) { Fx.relocate(g, p.r, p.c, over, p.c, {}); return ['Light steps carry your vanguard forward.']; }
     return ['No wall to vault.'];
   });
 
@@ -138,7 +139,7 @@
       const spots = [];
       for (const [dr, dc] of dirs) {
         const r = k.r + dr, c = k.c + dc;
-        if (r < 0 || r > 7 || c < 0 || c > 7 || g.board[r][c]) continue;
+        if (r < 0 || r >= Fx.bd(g) || c < 0 || c >= Fx.bd(g) || g.board[r][c]) continue;
         spots.push({ r, c });
       }
       const pick = rnd(spots);
@@ -155,7 +156,7 @@
       let r = p.r, moved = 0;
       while (moved < 3) {
         const nr = r + dr;
-        if (nr < 0 || nr > 7 || g.board[nr][p.c]) break;
+        if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][p.c]) break;
         Fx.relocate(g, r, p.c, nr, p.c, {});
         r = nr; moved++;
       }
@@ -189,7 +190,7 @@
     let moved = 0;
     for (const q of foes(g, s).filter(x => Math.abs(x.r - k.r) <= 1 && Math.abs(x.c - k.c) <= 1)) {
       const nr = q.r + dir;
-      if (nr < 0 || nr > 7 || g.board[nr][q.c]) continue;
+      if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][q.c]) continue;
       Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++;
     }
     return moved ? ['Taiji repels ' + moved + ' attacker' + (moved > 1 ? 's' : '') + ' from the king.'] : ['Nothing presses the king.'];
@@ -302,7 +303,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const lines = [];
     for (const q of spots) { Fx.place(g, s, 'p', q.r, q.c, {}); lines.push('A thorned hand rises at ' + sn(q.r, q.c) + '.'); }
@@ -326,7 +327,7 @@
     const p = advP(g, s)[0];
     if (p) {
       const nr = p.r + (s === 'w' ? -1 : 1);
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); lines.push('Your vanguard surges forward.'); }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); lines.push('Your vanguard surges forward.'); }
     }
     return lines.length ? lines : ['The old beggar has nowhere to sit.'];
   });
@@ -417,7 +418,7 @@
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (!dr && !dc) continue;
         const r = p.r + dr, c = p.c + dc;
-        if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+        if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
       }
       const q = rnd(spots);
       if (q) { Fx.relocate(g, p.r, p.c, q.r, q.c, {}); moved++; }
@@ -448,7 +449,7 @@
   });
 
   def(602, 'Sect Ambush', 2, 'target', 'An ambush on the road: destroy a random enemy piece on an edge file, then lay a trap HAZARD on an empty adjacent square.', 'The ambush never happened. That is the point.', (g, s) => {
-    const edge = foes(g, s).filter(q => q.c === 0 || q.c === 7);
+    const edge = foes(g, s).filter(q => q.c === 0 || q.c === Fx.bd(g) - 1);
     const t = rnd(edge);
     if (!t) return ['No traveler walks the edge.'];
     kill(g, t);
@@ -456,7 +457,7 @@
     const near = [];
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       const r = t.r + dr, c = t.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) near.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) near.push({ r, c });
     }
     const q = rnd(near);
     if (q) { E.setHaz(g, q.r, q.c, 'trap', 'sect ambush'); lines.push('A hidden blade-trap is set on the road behind.'); }
@@ -470,7 +471,7 @@
     let r = p.r, moved = 0;
     while (moved < 2) {
       const nr = r + dr;
-      if (nr < 0 || nr > 7 || g.board[nr][p.c]) break;
+      if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][p.c]) break;
       Fx.relocate(g, r, p.c, nr, p.c, {}); r = nr; moved++;
     }
     return moved ? ['A perfect thrust carries your piece ' + moved + ' square' + (moved > 1 ? 's' : '') + ' forward.'] : ['The thrust is blocked.'];
@@ -488,7 +489,7 @@
     let moved = 0;
     for (const p of ps) {
       const nr = p.r + dr;
-      if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); moved++; }
     }
     Fx.grantExtra(g, s, 1);
     return ['The lonely peak presses ' + moved + ' pawn' + (moved > 1 ? 's' : '') + ' forward, and you move again.'];

@@ -7,6 +7,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -16,7 +17,7 @@
   const fwd = s => (s === 'w' ? -1 : 1);
   const ring = (g, r, c, rad) => {
     const out = [];
-    for (let rr = 0; rr < 8; rr++) for (let cc = 0; cc < 8; cc++) {
+    for (let rr = 0; rr < Fx.bd(g); rr++) for (let cc = 0; cc < Fx.bd(g); cc++) {
       const d = Math.max(Math.abs(rr - r), Math.abs(cc - c));
       if (d === rad && g.board[rr][cc]) out.push({ r: rr, c: cc, cell: g.board[rr][cc] });
     }
@@ -46,7 +47,7 @@
     const k = E.findKing(g, s);
     if (!k) return [];
     const gone = [];
-    for (let rr = 0; rr < 8; rr++) for (let cc = 0; cc < 8; cc++) {
+    for (let rr = 0; rr < Fx.bd(g); rr++) for (let cc = 0; cc < Fx.bd(g); cc++) {
       const cell = g.board[rr][cc];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
       const d = Math.max(Math.abs(rr - k.r), Math.abs(cc - k.c));
@@ -58,20 +59,20 @@
   def(310, 'Redshift', 2, 'Void', 'star', 'Every enemy piece slides one square toward the far edge (their own side is retreating away from you).', 'The universe is expanding — away from you.', (g, s) => {
     const dir = s === 'w' ? -1 : 1;
     let moved = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
       const cell = g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
       const nr = r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
     }
     return moved ? ['The enemy recedes as the cosmos expands.'] : ['The universe holds its ground.'];
   });
 
   def(311, 'Cosmic Ray', 1, 'Void', 'star', 'Destroy a random enemy piece on a random file, then burn a random file: all enemy pieces there are poisoned.', 'Radiation has no favorites.', (g, s) => {
-    const file = Math.floor(Math.random() * 8);
+    const file = Math.floor(Math.random() * Fx.bd(g));
     const t = rnd(en(g, s).filter(q => q.c === file && q.cell.t !== 'k'));
     const lines = [];
-    if (t) { Fx.removeAt(g, t.r, t.c, {}); lines.push('A ray vaporizes the ' + MD.pieceName(t.cell.t) + ' on file ' + 'abcdefgh'[file] + '.'); }
+    if (t) { Fx.removeAt(g, t.r, t.c, {}); lines.push('A ray vaporizes the ' + MD.pieceName(t.cell.t) + ' on file ' + 'abcdefghijkl'[file] + '.'); }
     const hurt = en(g, s).filter(q => q.c === file && q.cell.t !== 'k');
     const n = Fx.statusOn(g, hurt, 'p', 1, 'poison');
     if (n) lines.push('Radiation lingers on the file.');
@@ -98,7 +99,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = t.r + dr, c = t.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
     }
     if (!g.board[t.r][t.c]) Fx.place(g, s, 'p', t.r, t.c, {});
     return ['The nova claims ' + gone + ' enemy piece' + (gone > 1 ? 's' : '') + ', and new life sparks in the ashes.'];
@@ -116,7 +117,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === s) near.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c] && g.board[r][c].c === s) near.push({ r, c });
     }
     if (near.length < 2) return [];
     const ord = near.slice(0, 4);
@@ -126,7 +127,7 @@
     let placed = 0;
     for (let i = 0; i < ord.length; i++) {
       const t = back[i];
-      if (t.r >= 0 && t.r < 8 && t.c >= 0 && t.c < 8 && !g.board[t.r][t.c]) { g.board[t.r][t.c] = cells[i]; Fx.flash(g, t.r, t.c, 'move', ''); placed++; }
+      if (t.r >= 0 && t.r < Fx.bd(g) && t.c >= 0 && t.c < Fx.bd(g) && !g.board[t.r][t.c]) { g.board[t.r][t.c] = cells[i]; Fx.flash(g, t.r, t.c, 'move', ''); placed++; }
       else { g.board[ord[i].r][ord[i].c] = cells[i]; }
     }
     Fx.clearEp(g);
@@ -209,7 +210,7 @@
     if (!best) return [];
     const dr = Math.sign(k.r - best.r), dc = Math.sign(k.c - best.c);
     const r = best.r + dr, c = best.c + dc;
-    if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) { Fx.relocate(g, best.r, best.c, r, c, {}); return ['The enemy ' + MD.pieceName(best.cell.t) + ' is dragged closer.']; }
+    if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) { Fx.relocate(g, best.r, best.c, r, c, {}); return ['The enemy ' + MD.pieceName(best.cell.t) + ' is dragged closer.']; }
     return ['The graviton cannot find purchase.'];
   });
 
@@ -233,7 +234,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = dest.r + dr, c = dest.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c] !== t && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c] !== t && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
     }
     return ['The ' + MD.pieceName(t.cell.t) + ' crash-lands at ' + sn(dest.r, dest.c) + (gone ? ', crushing ' + gone + ' allies!' : '.')];
   });
@@ -285,11 +286,11 @@
   def(332, 'Solar Wind', 1, 'Void', 'star', 'Push every enemy pawn one square forward (toward you) — the wind blows them into your trap.', 'The gale herds them in.', (g, s) => {
     const dir = s === 'w' ? 1 : -1;
     let moved = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
       const cell = g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t !== 'p') continue;
       const nr = r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
     }
     return moved ? ['The solar wind drives enemy pawns forward.'] : ['The wind pushes against a wall.'];
   });
@@ -359,7 +360,7 @@
     for (const rook of rooks) {
       for (const [dr, dc] of [[0, 1], [0, -1]]) {
         let r = rook.r + dr, c = rook.c + dc;
-        while (r >= 0 && r < 8 && c >= 0 && c < 8) {
+        while (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g)) {
           if (g.board[r][c]) { if (g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); lines.push('A rook beam strikes ' + sn(r, c) + '.'); } break; }
           r += dr; c += dc;
         }
@@ -406,9 +407,9 @@
   });
 
   def(344, 'Black Ice', 2, 'Void', 'drop', 'Freeze every enemy piece on the two most crowded enemy files.', 'It is black, it is cold, it is everywhere they stand.', (g, s) => {
-    const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+    const counts = Array.from({ length: Fx.bd(g) }, () => 0);
     for (const q of en(g, s)) counts[q.c]++;
-    const files = [0, 1, 2, 3, 4, 5, 6, 7].sort((a, b) => counts[b] - counts[a]).slice(0, 2);
+    const files = Array.from({ length: Fx.bd(g) }, (_, i) => i).sort((a, b) => counts[b] - counts[a]).slice(0, 2);
     const targets = en(g, s).filter(q => files.includes(q.c));
     const n = Fx.statusOn(g, targets, 'f', 1, 'freeze');
     return n ? ['Black ice forms where the enemy clusters.'] : [];
@@ -416,12 +417,12 @@
 
   def(345, 'Singularity', 4, 'Void', 'void', 'Pull every piece (both sides) one square toward the center square d4/e5, then destroy any piece that cannot move.', 'All roads lead to the center.', (g, s) => {
     let moved = 0, crushed = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
       const cell = g.board[r][c];
       if (!cell || cell.t === 'k') continue;
       const dr = Math.sign(3.5 - r), dc = Math.sign(3.5 - c);
       const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
     }
     // after the pull, destroy pieces sitting on the central four squares that are now overloaded
     for (const [r, c] of [[3, 3], [3, 4], [4, 3], [4, 4]]) {
@@ -451,7 +452,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const sp = rnd(spots);
     if (sp) Fx.place(g, s, 'p', sp.r, sp.c, {});
@@ -486,7 +487,7 @@
       const cell = g.board[r] && g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
       const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
     }
     return moved ? ['The enemy crowding your king is shoved back.'] : ['No one dares crowd the throne.'];
   });
@@ -508,7 +509,7 @@
     if (!p) return [];
     Fx.mod(p.cell, 's', 1); Fx.flash(g, p.r, p.c, 'shield', '');
     const r = p.r + fwd(s);
-    if (r >= 0 && r < 8 && !g.board[r][p.c]) Fx.relocate(g, p.r, p.c, r, p.c, {});
+    if (r >= 0 && r < Fx.bd(g) && !g.board[r][p.c]) Fx.relocate(g, p.r, p.c, r, p.c, {});
     return ['The cradle sun shields and urges your vanguard onward.'];
   });
 

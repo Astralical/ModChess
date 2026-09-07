@@ -5,6 +5,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -66,7 +67,7 @@
   });
 
   def(462, 'Trident of Poseidon', 2, 'Myth', 'drop', 'Push every enemy piece on the edge files (a and h) one square inward, then poison one of them.', 'The sea takes the shore.', (g, s) => {
-    const shore = en(g, s).filter(q => q.cell.t !== 'k' && (q.c === 0 || q.c === 7));
+    const shore = en(g, s).filter(q => q.cell.t !== 'k' && (q.c === 0 || q.c === Fx.bd(g) - 1));
     let moved = 0;
     for (const q of shore) {
       const nc = q.c === 0 ? 1 : 6;
@@ -162,7 +163,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const lines = [];
     for (const sp of Fx.uniqN(spots, 3)) { Fx.place(g, s, 'imp', sp.r, sp.c, {}); lines.push('A head-imp guards ' + sn(sp.r, sp.c) + '.'); }
@@ -195,7 +196,7 @@
   });
 
   def(475, 'Sirens', 2, 'Myth', 'drop', 'Freeze every enemy piece on the edge of the board — their ships are lured in.', 'Come closer…', (g, s) => {
-    const foes = en(g, s).filter(q => q.cell.t !== 'k' && (q.r === 0 || q.r === 7 || q.c === 0 || q.c === 7));
+    const foes = en(g, s).filter(q => q.cell.t !== 'k' && (q.r === 0 || q.r === Fx.bd(g) - 1 || q.c === 0 || q.c === Fx.bd(g) - 1));
     const n = Fx.statusOn(g, foes, 'f', 1, 'freeze');
     return n ? ['The sirens\' song freezes the enemy fleet on the rim.'] : ['No enemies sail the rim.'];
   });
@@ -213,7 +214,7 @@
     const spots = [];
     for (const [dr, dc] of [[0, 2], [0, -2], [2, 0], [-2, 0]]) {
       const r = mine.r + dr, c = mine.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const d = rnd(spots);
     if (d) { Fx.relocate(g, mine.r, mine.c, d.r, d.c, {}); Fx.mod(g.board[d.r][d.c], 's', 1); return ['Your hero leaps two squares and is shielded!']; }
@@ -288,7 +289,7 @@
 
   def(485, 'Kraken', 4, 'Myth', 'drop', 'Destroy every enemy piece on the two edge files (a & h) — the leviathan takes the coast.', 'From the deep.', (g, s) => {
     const gone = [];
-    for (const q of en(g, s)) if (q.cell.t !== 'k' && (q.c === 0 || q.c === 7)) { Fx.removeAt(g, q.r, q.c, {}); gone.push(q); }
+    for (const q of en(g, s)) if (q.cell.t !== 'k' && (q.c === 0 || q.c === Fx.bd(g) - 1)) { Fx.removeAt(g, q.r, q.c, {}); gone.push(q); }
     return gone.length ? ['The kraken drags ' + gone.length + ' enemy unit' + (gone.length > 1 ? 's' : '') + ' from the shores!'] : ['The kraken finds no coast to raid.'];
   });
 
@@ -304,7 +305,7 @@
       own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!mine) return [];
     let r = mine.r + fwd(s);
-    while (r >= 0 && r < 8) {
+    while (r >= 0 && r < Fx.bd(g)) {
       const cell = g.board[r] && g.board[r][mine.c];
       if (cell) {
         if (cell.c === O(s) && cell.t !== 'k') { Fx.removeAt(g, r, mine.c, {}); return ['The minotaur charges down the ' + MD.pieceName(cell.t) + '!']; }
@@ -343,7 +344,7 @@
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (!dr && !dc) continue;
         const r = got.r + dr, c = got.c + dc;
-        if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+        if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
       }
       const d = rnd(spots);
       if (d) { Fx.relocate(g, p.r, p.c, d.r, d.c, {}); lines.push('A pawn rides up beside it.'); }
@@ -365,7 +366,7 @@
     if (!mine) return [];
     Fx.mod(mine.cell, 's', 1); Fx.flash(g, mine.r, mine.c, 'shield', '');
     const r = mine.r + fwd(s);
-    if (r >= 0 && r < 8 && g.board[r] && g.board[r][mine.c] && g.board[r][mine.c].c === O(s) && g.board[r][mine.c].t !== 'k') {
+    if (r >= 0 && r < Fx.bd(g) && g.board[r] && g.board[r][mine.c] && g.board[r][mine.c].c === O(s) && g.board[r][mine.c].t !== 'k') {
       Fx.mod(g.board[r][mine.c], 'f', 1); Fx.flash(g, r, mine.c, 'freeze', '');
       return ['The lion\'s roar shields your vanguard and freezes the foe in front.'];
     }
@@ -431,7 +432,7 @@
     let moved = 0;
     for (const q of en(g, s).filter(x => x.cell.t !== 'k' && (s === 'w' ? x.r >= 4 : x.r <= 3)).slice()) {
       const nr = q.r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
     }
     const lead = en(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     const lines = [];

@@ -5,6 +5,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -19,7 +20,7 @@
     const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
     if (!mine) return [];
     const r = mine.r + fwd(s);
-    if (r >= 0 && r < 8 && !g.board[r][mine.c]) { Fx.relocate(g, mine.r, mine.c, r, mine.c, {}); Fx.mod(g.board[r][mine.c], 's', 1); return ['The star takes a bow one square closer — shielded by applause!']; }
+    if (r >= 0 && r < Fx.bd(g) && !g.board[r][mine.c]) { Fx.relocate(g, mine.r, mine.c, r, mine.c, {}); Fx.mod(g.board[r][mine.c], 's', 1); return ['The star takes a bow one square closer — shielded by applause!']; }
     Fx.mod(mine.cell, 's', 1); Fx.flash(g, mine.r, mine.c, 'shield', '');
     return ['No room to advance — the crowd shields the star instead.'];
   });
@@ -99,7 +100,7 @@
       const cell = g.board[r] && g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
       const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
     }
     return moved ? ['Smoke scatters the pieces crowding your king.'] : ['Nothing pressing to smoke out.'];
   });
@@ -139,7 +140,7 @@
     const spots = [];
     for (const [dr, dc] of leaps) {
       const r = t.r + dr, c = t.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const d = rnd(spots);
     if (!d) return [];
@@ -204,7 +205,7 @@
     const t = rnd(own(g, s).filter(q => q.cell.t !== 'k'));
     if (!t) return [];
     const spots = [];
-    for (const dc of [1, -1]) { const c = t.c + dc; if (c >= 0 && c < 8 && !g.board[t.r][c]) spots.push({ r: t.r, c }); }
+    for (const dc of [1, -1]) { const c = t.c + dc; if (c >= 0 && c < Fx.bd(g) && !g.board[t.r][c]) spots.push({ r: t.r, c }); }
     const d = rnd(spots);
     if (d) { Fx.relocate(g, t.r, t.c, d.r, d.c, {}); }
     const ally = own(g, s).filter(q => q !== t && Math.abs(q.r - (d ? d.r : t.r)) <= 1 && Math.abs(q.c - (d ? d.c : t.c)) <= 1);
@@ -258,7 +259,7 @@
     if (k) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const d = rnd(spots) || rnd(Fx.emptySq(g, (r, c) => Fx.inOwnHalf(g, s, r)));
     if (!d) return [];
@@ -299,7 +300,7 @@
     for (const q of near) {
       const dr = Math.sign(q.r - k.r), dc = Math.sign(q.c - k.c);
       const r = q.r + dr, c = q.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) { Fx.relocate(g, q.r, q.c, r, c, {}); moved++; }
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) { Fx.relocate(g, q.r, q.c, r, c, {}); moved++; }
     }
     return (n || moved) ? ['The ringmaster summons the troupe — shielded and stepping out.'] : ['No troupe around the king.'];
   });
@@ -373,7 +374,7 @@
       const spots = [];
       for (const [dr, dc] of [[1, 2], [1, -2], [-1, 2], [-1, -2], [2, 1], [2, -1], [-2, 1], [-2, -1]]) {
         const r = q.r + dr, c = q.c + dc;
-        if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+        if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
       }
       const d = rnd(spots);
       if (d) { Fx.relocate(g, q.r, q.c, d.r, d.c, {}); moved++; }
@@ -423,7 +424,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = q.r + dr, c = q.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const lines = [];
     for (const sp of Fx.uniqN(spots, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A pawn blooms beside the queen.'); }
@@ -450,7 +451,7 @@
     const p = pawns[0];
     if (!p) return [];
     const r = p.r + fwd(s);
-    if (r < 0 || r > 7 || !g.board[r] || !g.board[r][p.c] || g.board[r][p.c].c !== O(s) || g.board[r][p.c].t === 'k') return ['The gorilla finds no one to scare.'];
+    if (r < 0 || r >= Fx.bd(g) || !g.board[r] || !g.board[r][p.c] || g.board[r][p.c].c !== O(s) || g.board[r][p.c].t === 'k') return ['The gorilla finds no one to scare.'];
     Fx.mod(g.board[r][p.c], 'f', 1); Fx.flash(g, r, p.c, 'freeze', '');
     return ['The enemy in front is scared stiff!'];
   });
@@ -465,7 +466,7 @@
     const minor = rnd(own(g, s).filter(q => q.cell.t === 'n' || q.cell.t === 'b' || q.cell.t === 'r'));
     if (!minor) return [];
     const r = minor.r + fwd(s);
-    if (r >= 0 && r < 8 && !g.board[r][minor.c]) { Fx.relocate(g, minor.r, minor.c, r, minor.c, {}); Fx.mod(g.board[r][minor.c], 's', 1); return ['Your ' + MD.pieceName(minor.cell.t) + ' steps forward, shielded.']; }
+    if (r >= 0 && r < Fx.bd(g) && !g.board[r][minor.c]) { Fx.relocate(g, minor.r, minor.c, r, minor.c, {}); Fx.mod(g.board[r][minor.c], 's', 1); return ['Your ' + MD.pieceName(minor.cell.t) + ' steps forward, shielded.']; }
     Fx.mod(minor.cell, 's', 1);
     return ['No room forward — your piece is shielded in place.'];
   });
@@ -501,7 +502,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = t.r + dr, c = t.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const d = rnd(spots);
     if (!d) return [];
@@ -522,10 +523,10 @@
     const lead = pawns[0];
     if (!lead) return [];
     const r = lead.r + fwd(s);
-    if (r < 0 || r > 7) return [];
+    if (r < 0 || r >= Fx.bd(g)) return [];
     const lines = [];
     for (const c of [lead.c - 1, lead.c, lead.c + 1]) {
-      if (c >= 0 && c <= 7 && !g.board[r][c]) { Fx.place(g, s, 'p', r, c, {}); lines.push('A pawn drops in at ' + sn(r, c) + '.'); }
+      if (c >= 0 && c < Fx.bd(g) && !g.board[r][c]) { Fx.place(g, s, 'p', r, c, {}); lines.push('A pawn drops in at ' + sn(r, c) + '.'); }
     }
     return lines.length ? lines : ['The backdrop finds no landing spots.'];
   });

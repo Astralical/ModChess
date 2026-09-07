@@ -94,6 +94,7 @@
     opts = opts || {};
     const cell = g.board[r0] && g.board[r0][c0];
     if (!cell) return { moved: false, captured: null };
+    if (!onBoard(r1, c1)) return { moved: false, captured: null }; // never park on a padded off-board row
     if (E.isTerrain && E.isTerrain(g, r1, c1)) return { moved: false, captured: null, blocked: true };
     const dest = g.board[r1] && g.board[r1][c1];
     let captured = null;
@@ -407,6 +408,7 @@
 
   // swap contents of two squares
   Fx.swapSq = (g, a, b) => {
+    if (!onBoard(a.r, a.c) || !onBoard(b.r, b.c)) return [];
     const ca = g.board[a.r] && g.board[a.r][a.c];
     const cb = g.board[b.r] && g.board[b.r][b.c];
     if (ca) E.revokeLeave(g, a.r, a.c, ca);
@@ -661,6 +663,8 @@
   Fx.frontPawnRows = (g, side) => { const n = (g && g.n) || N(); const h = n >> 1; return side === 'w' ? [h - 1, h, h + 1] : [h - 2, h - 1, h]; };
   // boolean predicates (board-size aware). All boards are even, half = n/2.
   Fx.half = (g) => { const n = (g && g.n) || N(); return n >> 1; };
+  // board size of the live game (helper used across ability files for scans)
+  Fx.bd = (g) => ((g && g.n) || N());
   Fx.inOwnHalf = (g, side, r) => { const h = Fx.half(g); return side === 'w' ? r >= h : r < h; };
   Fx.inEnemyHalf = (g, side, r) => !Fx.inOwnHalf(g, side, r);
   Fx.inCenterRows = (g, r) => { const h = Fx.half(g); return r === h - 1 || r === h; };

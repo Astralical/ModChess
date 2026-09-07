@@ -7,6 +7,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp, pick = MD.pick;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -18,7 +19,7 @@
   const troopEn = (g, s) => en(g, s).filter(q => E.isTroop(q.cell.t));
   const allTroops = g => {
     const out = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
       const cell = g.board[r][c];
       if (cell && E.isTroop(cell.t)) out.push({ r, c, cell });
     }
@@ -38,7 +39,7 @@
       const reach = [];
       for (const [dr, dc] of dirs) for (let k = 1; k <= 3; k++) {
         const r = beast.r + dr * k, c = beast.c + dc * k;
-        if (r < 0 || r > 7 || c < 0 || c > 7) break;
+        if (r < 0 || r >= Fx.bd(g) || c < 0 || c >= Fx.bd(g)) break;
         if (g.board[r][c]) { if (g.board[r][c].c !== s) reach.push({ r, c }); break; }
         reach.push({ r, c });
       }
@@ -56,7 +57,7 @@
     const got = troopOwn(g, s).slice(-2);
     for (const h of got) {
       const r = h.r + fwd(s), c = h.c;
-      if (r >= 0 && r < 8 && !g.board[r][c]) Fx.relocate(g, h.r, h.c, r, c, {});
+      if (r >= 0 && r < Fx.bd(g) && !g.board[r][c]) Fx.relocate(g, h.r, h.c, r, c, {});
     }
     return lines.length ? lines : ['The wolves find no ground to stand on.'];
   });
@@ -91,7 +92,7 @@
       for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
         if (!dr && !dc) continue;
         const r = h.r + dr, c = h.c + dc;
-        if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+        if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
       }
       const lines = [];
       for (const sp of Fx.uniqN(spots, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A new head-pawn sprouts beside your hydra.'); }
@@ -122,7 +123,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = pick.r + dr, c = pick.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     let grew = 0;
     for (const sp of Fx.uniqN(spots, 3)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); grew++; }
@@ -183,7 +184,7 @@
     if (!heavies.length) return ['No walking trees yet.'];
     for (const h of heavies) {
       const r = h.r + fwd(s);
-      if (r >= 0 && r < 8 && !g.board[r][h.c]) Fx.relocate(g, h.r, h.c, r, h.c, {});
+      if (r >= 0 && r < Fx.bd(g) && !g.board[r][h.c]) Fx.relocate(g, h.r, h.c, r, h.c, {});
     }
     return ['The treants march forward, slow and unstoppable.'];
   });
@@ -211,7 +212,7 @@
       if (!best) continue;
       const dr = Math.sign(best.r - b.r), dc = Math.sign(best.c - b.c);
       const r = b.r + dr, c = b.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) { Fx.relocate(g, b.r, b.c, r, c, {}); moved++; }
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) { Fx.relocate(g, b.r, b.c, r, c, {}); moved++; }
     }
     return moved ? ['Your beasts close in, ' + moved + ' of them baring fangs!'] : ['The beasts are already in your face.'];
   });
@@ -246,10 +247,10 @@
     const lead = pawns[0];
     if (!lead) return [];
     const r = lead.r + fwd(s);
-    if (r < 0 || r > 7) return [];
+    if (r < 0 || r >= Fx.bd(g)) return [];
     const lines = [];
     for (const c of [lead.c - 1, lead.c, lead.c + 1]) {
-      if (c >= 0 && c <= 7 && !g.board[r][c]) { Fx.place(g, s, 'p', r, c, {}); lines.push('A thorn pawn rises at ' + sn(r, c) + '.'); }
+      if (c >= 0 && c < Fx.bd(g) && !g.board[r][c]) { Fx.place(g, s, 'p', r, c, {}); lines.push('A thorn pawn rises at ' + sn(r, c) + '.'); }
     }
     return lines.length ? lines : ['No room for the briar wall.'];
   });
@@ -257,7 +258,7 @@
   def(276, 'Stampede', 3, 'Wild', 'paw', 'All enemy pawns flee BACKWARD two squares — they scatter to their own side but trample NOTHING; nothing is destroyed.', 'The herd runs, the field survives.', (g, s) => {
     const back = s === 'w' ? -1 : 1; // from the caster's view, enemy flees toward their own back rank
     const pawns = [];
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
       const cell = g.board[r][c];
       if (cell && cell.c === O(s) && cell.t === 'p') pawns.push({ r, c });
     }
@@ -268,7 +269,7 @@
       // try to fall back two, then one — no destruction, no captures
       for (const dist of [2, 1]) {
         const nr = p.r + back * dist, nc = p.c;
-        if (nr < 0 || nr > 7 || g.board[nr][nc]) continue;
+        if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][nc]) continue;
         Fx.relocate(g, p.r, p.c, nr, nc, {});
         moved++;
         break;
@@ -303,11 +304,11 @@
   def(280, 'Howling Gale', 1, 'Wild', 'storm', 'Blow every enemy piece one square back toward their own side.', 'The wind has your back.', (g, s) => {
     const dir = s === 'w' ? -1 : 1; // push enemy back = toward their own back rank (up for black)
     let moved = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
       const cell = g.board[r][c];
       if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
       const nr = r + dir;
-      if (nr >= 0 && nr < 8 && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
     }
     return moved ? ['The gale shoves ' + moved + ' enemy piece' + (moved > 1 ? 's' : '') + ' backward.'] : ['The wind meets a wall.'];
   });
@@ -339,7 +340,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = b.r + dr, c = b.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const sp = rnd(spots);
     if (!sp) return [];
@@ -372,7 +373,7 @@
     const p = pawns[0];
     if (!p) return [];
     const r = p.r + fwd(s);
-    if (r < 0 || r > 7 || g.board[r][p.c]) return ['The pawn is too full to move.'];
+    if (r < 0 || r >= Fx.bd(g) || g.board[r][p.c]) return ['The pawn is too full to move.'];
     Fx.relocate(g, p.r, p.c, r, p.c, {});
     return ['Your vanguard pawn darts forward.'];
   });
@@ -395,7 +396,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = prey.r + dr, c = prey.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const sp = rnd(spots);
     if (sp) Fx.relocate(g, b.r, b.c, sp.r, sp.c, {});
@@ -442,14 +443,14 @@
   def(294, 'Bite of the Old Wolf', 2, 'Wild', 'paw', 'Your most advanced beast bites the enemy directly in front of it (destroyed).', 'One clean bite.', (g, s) => {
     const b = troopOwn(g, s).sort((a, b2) => (s === 'w' ? a.r - b2.r : b2.r - a.r))[0];
     const front = b ? { r: b.r + fwd(s), c: b.c } : null;
-    if (front && front.r >= 0 && front.r < 8 && g.board[front.r] && g.board[front.r][front.c] && g.board[front.r][front.c].c === O(s) && g.board[front.r][front.c].t !== 'k') {
+    if (front && front.r >= 0 && front.r < Fx.bd(g) && g.board[front.r] && g.board[front.r][front.c] && g.board[front.r][front.c].c === O(s) && g.board[front.r][front.c].t !== 'k') {
       Fx.removeAt(g, front.r, front.c, {});
       return ['Your ' + MD.pieceName(b.cell.t) + ' rips out the throat of the enemy ' + MD.pieceName(g.board[front.r][front.c] && g.board[front.r][front.c].t || 'piece') + '!'];
     }
     const pawn = rnd(own(g, s).filter(q => q.cell.t === 'p'));
     if (!pawn) return [];
     const fr = pawn.r + fwd(s);
-    if (fr >= 0 && fr < 8 && g.board[fr] && g.board[fr][pawn.c] && g.board[fr][pawn.c].c === O(s)) {
+    if (fr >= 0 && fr < Fx.bd(g) && g.board[fr] && g.board[fr][pawn.c] && g.board[fr][pawn.c].c === O(s)) {
       Fx.removeAt(g, fr, pawn.c, {});
       return ['A cornered wolf-pawn takes a bite out of the enemy!'];
     }
@@ -473,7 +474,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s)) targets.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c] && g.board[r][c].c === O(s)) targets.push({ r, c });
     }
     const n = Fx.statusOn(g, targets, 'f', 1, 'freeze');
     return n ? ['The screech freezes the enemies crowding your king!'] : ['No enemy dares stand near your king.'];
@@ -542,7 +543,7 @@
     if (!p) return [];
     const lines = Fx.summonN(g, s, 'hydra', 1, { rows: [p.r] });
     const r = p.r + fwd(s);
-    if (r >= 0 && r < 8 && !g.board[r][p.c]) Fx.relocate(g, p.r, p.c, r, p.c, {});
+    if (r >= 0 && r < Fx.bd(g) && !g.board[r][p.c]) Fx.relocate(g, p.r, p.c, r, p.c, {});
     return lines.length ? lines.concat(['Your pawn rides the wave forward.']) : ['The wave breaks on the shore.'];
   });
 
@@ -554,7 +555,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const lines = [];
     for (const sp of Fx.uniqN(spots, 4)) { Fx.place(g, s, 'treant', sp.r, sp.c, {}); lines.push('A treant rises at ' + sn(sp.r, sp.c) + '.'); }

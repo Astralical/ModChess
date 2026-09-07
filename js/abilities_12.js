@@ -10,6 +10,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -63,7 +64,7 @@
     kill(g, p);
     const t = foes(g, s).filter(q => q.c === file);
     const n = Fx.statusOn(g, t, 'p', 1, 'poison');
-    return ['You sever your vanguard — ' + n + ' enemy on file ' + 'abcdefgh'[file] + ' is poisoned.'];
+    return ['You sever your vanguard — ' + n + ' enemy on file ' + 'abcdefghijkl'[file] + ' is poisoned.'];
   });
 
   def(511, 'Binding Vow: Surge', 3, 'clock', 'Sacrifice your most advanced pawn to seize an EXTRA move — and your next piece to move gains a shield.', 'Strength bought with a heartbeat.', (g, s) => {
@@ -138,9 +139,9 @@
     const p = advP(g, s)[0];
     if (!p) return [];
     const nr = p.r + (s === 'w' ? -1 : 1);
-    if (nr >= 0 && nr < 8 && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); }
-    const r2 = g.board[nr >= 0 && nr < 8 ? nr : p.r][p.c];
-    Fx.mod(r2, 's', 1); Fx.flash(g, nr >= 0 && nr < 8 ? nr : p.r, p.c, 'shield', '');
+    if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][p.c]) { Fx.relocate(g, p.r, p.c, nr, p.c, {}); }
+    const r2 = g.board[nr >= 0 && nr < Fx.bd(g) ? nr : p.r][p.c];
+    Fx.mod(r2, 's', 1); Fx.flash(g, nr >= 0 && nr < Fx.bd(g) ? nr : p.r, p.c, 'shield', '');
     return ['Cursed energy pushes your vanguard and wraps it in a ward.'];
   });
 
@@ -205,7 +206,7 @@
     const ep = rnd(en(g, s).filter(q => q.cell.t === 'p'));
     if (ep) {
       const nr = ep.r + (s === 'w' ? 1 : -1);
-      if (nr >= 0 && nr < 8 && !g.board[nr][ep.c]) { Fx.relocate(g, ep.r, ep.c, nr, ep.c, {}); lines.push('An enemy pawn is twisted and driven forward.'); }
+      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][ep.c]) { Fx.relocate(g, ep.r, ep.c, nr, ep.c, {}); lines.push('An enemy pawn is twisted and driven forward.'); }
     }
     return lines.length ? lines : ['The fingers hunger for a host.'];
   });
@@ -224,7 +225,7 @@
     let moved = 0;
     for (const q of foes(g, s).filter(x => x.r === p.r).sort((a, b) => (dir < 0 ? a.c - b.c : b.c - a.c))) {
       let nr = q.r + dir, nc = q.c;
-      if (nr < 0 || nr > 7 || g.board[nr][nc]) continue;
+      if (nr < 0 || nr >= Fx.bd(g) || g.board[nr][nc]) continue;
       Fx.relocate(g, q.r, q.c, nr, nc, {}); moved++;
     }
     return moved ? ['Cursed speech hurls ' + moved + ' enemy' + (moved > 1 ? 's' : '') + ' back.'] : ['The command is swallowed.'];
@@ -257,7 +258,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = k.r + dr, c = k.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) near.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) near.push({ r, c });
     }
     const q = rnd(near);
     if (!q) return ['No room to lure it.'];
@@ -478,7 +479,7 @@
       if (!g.board[q.r][q.c]) continue;
       const dr = Math.sign(k.r - q.r), dc = Math.sign(k.c - q.c);
       const nr = q.r + dr, nc = q.c + dc;
-      if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) { Fx.relocate(g, q.r, q.c, nr, nc, {}); moved++; }
+      if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, q.r, q.c, nr, nc, {}); moved++; }
     }
     return moved ? ['Blue pulls ' + moved + ' enemy' + (moved > 1 ? 's' : '') + ' toward your king.'] : ['The vortex finds no prey to drag.'];
   });

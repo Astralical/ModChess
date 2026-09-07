@@ -6,6 +6,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = Fx.opp;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -26,9 +27,9 @@
   });
 
   def(358, 'EMP Overload', 3, 'SciFi', 'bolt', 'Freeze every enemy piece on your two most crowded files — their circuits fry.', 'One pulse, total blackout.', (g, s) => {
-    const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+    const counts = Array.from({ length: Fx.bd(g) }, () => 0);
     for (const q of en(g, s)) counts[q.c]++;
-    const files = [0, 1, 2, 3, 4, 5, 6, 7].sort((a, b) => counts[b] - counts[a]).slice(0, 2);
+    const files = Array.from({ length: Fx.bd(g) }, (_, i) => i).sort((a, b) => counts[b] - counts[a]).slice(0, 2);
     const targets = en(g, s).filter(q => q.cell.t !== 'k' && files.includes(q.c));
     const n = Fx.statusOn(g, targets, 'f', 1, 'freeze');
     return n ? ['The EMP fries ' + n + ' enemy unit' + (n > 1 ? 's' : '') + ' on the crowded files!'] : ['No concentrated targets to fry.'];
@@ -69,7 +70,7 @@
     for (const rook of rooks) {
       for (const dc of [1, -1]) {
         let c = rook.c + dc;
-        while (c >= 0 && c < 8) {
+        while (c >= 0 && c < Fx.bd(g)) {
           if (g.board[rook.r][c]) { if (g.board[rook.r][c].c === O(s) && g.board[rook.r][c].t !== 'k') { Fx.removeAt(g, rook.r, c, {}); lines.push('A turret strikes ' + sn(rook.r, c) + '.'); } break; }
           c += dc;
         }
@@ -95,7 +96,7 @@
     const t = foes.slice().sort((a, b) => (Math.abs(a.r - q.r) + Math.abs(a.c - q.c)) - (Math.abs(b.r - q.r) + Math.abs(b.c - q.c))).pop();
     Fx.removeAt(g, t.r, t.c, {});
     const r = q.r + fwd(s);
-    if (r >= 0 && r < 8 && !g.board[r][q.c]) Fx.relocate(g, q.r, q.c, r, q.c, {});
+    if (r >= 0 && r < Fx.bd(g) && !g.board[r][q.c]) Fx.relocate(g, q.r, q.c, r, q.c, {});
     return ['The railgun deletes the distant ' + MD.pieceName(t.cell.t) + '!'];
   });
 
@@ -107,7 +108,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = t.r + dr, c = t.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
     }
     const d = rnd(spots);
     if (!d) return ['The servo binds — no space to roll.'];
@@ -185,12 +186,12 @@
     const dir = fwd(s);
     let r = rook.r + dir;
     const lines = [];
-    while (r >= 0 && r < 8) {
+    while (r >= 0 && r < Fx.bd(g)) {
       const cell = g.board[r] && g.board[r][rook.c];
       if (cell) {
         if (cell.c === O(s) && cell.t !== 'k') { Fx.removeAt(g, r, rook.c, {}); lines.push('The lance burns a hole through ' + sn(r, rook.c) + '.'); }
         const r2 = r + dir;
-        if (cell.c === O(s) && r2 >= 0 && r2 < 8 && g.board[r2] && g.board[r2][rook.c] && g.board[r2][rook.c].c === O(s)) { Fx.mod(g.board[r2][rook.c], 'f', 1); Fx.flash(g, r2, rook.c, 'freeze', ''); lines.push('The unit behind is flash-frozen.'); }
+        if (cell.c === O(s) && r2 >= 0 && r2 < Fx.bd(g) && g.board[r2] && g.board[r2][rook.c] && g.board[r2][rook.c].c === O(s)) { Fx.mod(g.board[r2][rook.c], 'f', 1); Fx.flash(g, r2, rook.c, 'freeze', ''); lines.push('The unit behind is flash-frozen.'); }
         break;
       }
       r += dir;
@@ -242,7 +243,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = t.r + dr, c = t.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
     }
     return ['The mine takes ' + gone + ' enemy unit' + (gone > 1 ? 's' : '') + '!'];
   });
@@ -294,7 +295,7 @@
     for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
       if (!dr && !dc) continue;
       const r = pawn.r + dr, c = pawn.c + dc;
-      if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
+      if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c] && g.board[r][c].c === O(s) && g.board[r][c].t !== 'k') { Fx.removeAt(g, r, c, {}); gone++; }
     }
     return ['The pawn detonates, taking ' + gone + ' enemy unit' + (gone === 1 ? '' : 's') + ' with it!'];
   });
@@ -343,7 +344,7 @@
     let moved = 0;
     for (const q of mine) {
       const r = q.r + fwd(s);
-      if (r >= 0 && r < 8 && !g.board[r][q.c]) { Fx.relocate(g, q.r, q.c, r, q.c, {}); moved++; }
+      if (r >= 0 && r < Fx.bd(g) && !g.board[r][q.c]) { Fx.relocate(g, q.r, q.c, r, q.c, {}); moved++; }
     }
     Fx.grantExtra(g, s, 1);
     const lines = moved ? ['Your vanguard advances on autopilot' + (moved > 1 ? ' — both units!' : '') + '.'] : ['Autopilot holds position.'];
@@ -356,7 +357,7 @@
     const m = minors[0];
     if (!m) return ['No minor piece to mount the beam on.'];
     const r = m.r + fwd(s);
-    if (r < 0 || r > 7) return ['The beam fires into empty space.'];
+    if (r < 0 || r >= Fx.bd(g)) return ['The beam fires into empty space.'];
     const cell = g.board[r] && g.board[r][m.c];
     if (!cell || cell.c !== O(s) || cell.t === 'k') return ['No target in the beam\'s path.'];
     Fx.removeAt(g, r, m.c, {});
@@ -397,7 +398,7 @@
     const t = foes.sort((a, b) => val(b.cell.t) - val(a.cell.t))[0];
     Fx.removeAt(g, t.r, t.c, {});
     const r2 = t.r + (t.cell && t.cell.c === 'w' ? -1 : 1);
-    if (r2 >= 0 && r2 < 8 && g.board[r2] && g.board[r2][t.c] && g.board[r2][t.c].c === O(s)) { Fx.mod(g.board[r2][t.c], 'f', 1); Fx.flash(g, r2, t.c, 'freeze', ''); }
+    if (r2 >= 0 && r2 < Fx.bd(g) && g.board[r2] && g.board[r2][t.c] && g.board[r2][t.c].c === O(s)) { Fx.mod(g.board[r2][t.c], 'f', 1); Fx.flash(g, r2, t.c, 'freeze', ''); }
     return ['The ion cannon vaporizes the center ' + MD.pieceName(t.cell.t) + '!'];
   });
 

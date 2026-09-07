@@ -2,6 +2,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = MD.Fx.opp, pick = MD.pick;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -29,7 +30,7 @@
         for (const c of files) {
           const empties = Fx.emptySq(g, r => r !== 0 && r !== 7 && !g.board[r] ? false : true);
           const spots = empties.filter(q => q.c === c);
-          for (const sp of spots.slice(0, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A loyalist pawn joins file ' + 'abcdefgh'[c] + '.'); }
+          for (const sp of spots.slice(0, 2)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A loyalist pawn joins file ' + 'abcdefghijkl'[c] + '.'); }
         }
         return lines;
       } },
@@ -231,7 +232,7 @@
       run: (g, s) => {
         const n = g.n || 8;
         const row = s === 'w' ? n - 4 : 3;
-        let pool = en(g, s).filter(q => q.r === row);
+        let pool = en(g, s).filter(q => q.cell.t !== 'k' && q.r === row);
         let t = Fx.rand(pool);
         let where = 'rank ' + (n - row);
         if (!t) {
@@ -480,7 +481,7 @@
         if (k) for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;
           const r = k.r + dr, c = k.c + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && g.board[r][c]) spared.push({ r, c });
+          if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && g.board[r][c]) spared.push({ r, c });
         }
         const targets = en(g, s).filter(q => q.cell.t !== 'k' && !spared.some(p => p.r === q.r && p.c === q.c));
         const n = Fx.statusOn(g, targets, 'f', 1, 'freeze');
@@ -498,7 +499,7 @@
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;
           const r = k.r + dr, c = k.c + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) near.push({ r, c });
+          if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) near.push({ r, c });
         }
         let sq = Fx.rand(near);
         if (!sq) {
@@ -558,7 +559,7 @@
       run: (g, s) => {
         // build a list of enemy pawns first so moves are stable
         const pawns = [];
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
           const cell = g.board[r][c];
           if (cell && cell.c !== s && cell.t === 'p') pawns.push({ r, c });
         }
@@ -569,7 +570,7 @@
           if (!cell) continue;               // could have moved already
           const back = cell.c === 'w' ? 1 : -1;
           const nr = p.r + back, nc = p.c;
-          if (nr >= 0 && nr < 8 && !g.board[nr][nc]) { Fx.relocate(g, p.r, p.c, nr, nc, {}); moved++; }
+          if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, p.r, p.c, nr, nc, {}); moved++; }
         }
         if (moved) return ['The enemy line falls back as one — ' + moved + ' pawn' + (moved > 1 ? 's flee' : ' flees') + '.'];
         // 2) nothing could retreat: the line surges FORWARD instead
@@ -578,7 +579,7 @@
           if (!cell) continue;
           const fwd = cell.c === 'w' ? -1 : 1;
           const nr = p.r + fwd, nc = p.c;
-          if (nr >= 0 && nr < 8 && !g.board[nr][nc]) { Fx.relocate(g, p.r, p.c, nr, nc, {}); moved++; }
+          if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, p.r, p.c, nr, nc, {}); moved++; }
         }
         return moved ? ['With nowhere to run, the enemy pawns surge forward!'] : ['The enemy pawns are frozen in place — not one stirs.'];
       } },
@@ -588,9 +589,9 @@
       flavor: 'Where they cluster, they fall.',
       target: 'auto',
       run: (g, s) => {
-        const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+        const counts = Array.from({ length: Fx.bd(g) }, () => 0);
         for (const q of en(g, s)) if (q.cell.t !== 'k') counts[q.c]++;
-        let best = 0; for (let c = 1; c < 8; c++) if (counts[c] > counts[best]) best = c;
+        let best = 0; for (let c = 1; c < Fx.bd(g); c++) if (counts[c] > counts[best]) best = c;
         const t = Fx.rand(en(g, s).filter(q => q.cell.t !== 'k' && q.c === best));
         if (!t) return [];
         Fx.removeAt(g, t.r, t.c, {});
@@ -605,12 +606,12 @@
         const k = E.findKing(g, s);
         if (!k) return [];
         let moved = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
           const cell = g.board[r][c];
           if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
           const dr = Math.sign(r - k.r), dc = Math.sign(c - k.c);
           const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
+          if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
         }
         return moved ? ['A wave of force pushes the enemy back!'] : [];
       } },
@@ -623,12 +624,12 @@
         const k = E.findKing(g, s);
         if (!k) return [];
         let moved = 0;
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
           const cell = g.board[r][c];
           if (!cell || cell.c !== s || cell.t === 'k') continue;
           const dr = Math.sign(k.r - r), dc = Math.sign(k.c - c);
           const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8 && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
+          if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
         }
         return moved ? ['Your army clusters around the king.'] : [];
       } },

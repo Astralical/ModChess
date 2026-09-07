@@ -2,6 +2,7 @@
 (function () {
   const root = (typeof window !== 'undefined' ? window : globalThis);
   const MD = root.MD;
+
   const E = MD.Engine, Fx = MD.Fx, O = MD.Fx.opp, pick = MD.pick;
   const en = (g, s) => Fx.enemy(g, s);
   const own = (g, s) => Fx.own(g, s);
@@ -45,7 +46,7 @@
         const k = E.findKing(g, s);
         if (!k) return [];
         const sq = [[-1, 0], [0, 1], [1, 0], [0, -1]].map(([dr, dc]) => ({ r: k.r + dr, c: k.c + dc }))
-          .filter(q => q.r >= 0 && q.r < 8 && q.c >= 0 && q.c < 8);
+          .filter(q => q.r >= 0 && q.r < Fx.bd(g) && q.c >= 0 && q.c < Fx.bd(g));
         if (sq.length < 2) return [];
         const cells = sq.map(q => g.board[q.r][q.c]);
         for (let i = 0; i < sq.length; i++) {
@@ -67,7 +68,7 @@
         const q = pick(g, s, sq, 'emptyAny');
         if (!q) return [];
         const gone = [];
-        for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
           const cell = g.board[r][c];
           if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
           if (Math.max(Math.abs(r - q.r), Math.abs(c - q.c)) === 2) { Fx.removeAt(g, r, c, {}); gone.push(cell); }
@@ -83,10 +84,10 @@
         const foe = O(s);
         const fromCount = {};
         for (const m of E.legalMoves(g, foe)) {
-          const key = m.r0 * 8 + m.c0;
+          const key = m.r0 * Fx.bd(g) + m.c0;
           fromCount[key] = (fromCount[key] || 0) + 1;
         }
-        const scored = en(g, s).filter(q => q.cell.t !== 'k').map(q => ({ q, n: fromCount[q.r * 8 + q.c] || 0 }))
+        const scored = en(g, s).filter(q => q.cell.t !== 'k').map(q => ({ q, n: fromCount[q.r * Fx.bd(g) + q.c] || 0 }))
           .sort((a, b) => a.n - b.n);
         if (!scored.length) return [];
         Fx.removeAt(g, scored[0].q.r, scored[0].q.c, {});
@@ -99,8 +100,8 @@
       target: 'auto',
       run: (g, s) => {
         const foe = O(s);
-        const legalSet = new Set(E.legalMoves(g, foe).map(m => m.r0 * 8 + m.c0));
-        const pinned = en(g, s).filter(q => !legalSet.has(q.r * 8 + q.c) && q.cell.t !== 'k');
+        const legalSet = new Set(E.legalMoves(g, foe).map(m => m.r0 * Fx.bd(g) + m.c0));
+        const pinned = en(g, s).filter(q => !legalSet.has(q.r * Fx.bd(g) + q.c) && q.cell.t !== 'k');
         const t = Fx.rand(pinned.length ? pinned : en(g, s).filter(q => q.cell.t !== 'k'));
         if (!t) return [];
         Fx.removeAt(g, t.r, t.c, {});
@@ -325,7 +326,7 @@
         if (!k) return [];
         const dir = s === 'w' ? -1 : 1;
         let r = k.r + dir;
-        while (r >= 0 && r < 8) {
+        while (r >= 0 && r < Fx.bd(g)) {
           const cell = g.board[r][k.c];
           if (cell) {
             // the beam cannot touch the enemy king — regicide is not a spell
@@ -348,7 +349,7 @@
         const col = big.c;
         const hit = en(g, s).filter(q => q.c === col && q.cell.t !== 'k');
         for (const q of hit) Fx.removeAt(g, q.r, q.c, {});
-        return hit.length ? ['Cannon fire clears file ' + 'abcdefgh'[col] + '.']
+        return hit.length ? ['Cannon fire clears file ' + 'abcdefghijkl'[col] + '.']
           : ['The cannon finds only the enemy king — it holds the line.'];
       } },
 
@@ -370,12 +371,12 @@
       flavor: 'Concentrate force. Break the line.',
       target: 'auto',
       run: (g, s) => {
-        const counts = [0, 0, 0, 0, 0, 0, 0, 0];
+        const counts = Array.from({ length: Fx.bd(g) }, () => 0);
         for (const q of own(g, s)) counts[q.c]++;
-        let best = 0; for (let c = 1; c < 8; c++) if (counts[c] > counts[best]) best = c;
+        let best = 0; for (let c = 1; c < Fx.bd(g); c++) if (counts[c] > counts[best]) best = c;
         const hit = en(g, s).filter(q => q.cell.t !== 'k' && q.c === best);
         for (const q of hit) Fx.removeAt(g, q.r, q.c, {});
-        return hit.length ? ['Overwhelming force erases file ' + 'abcdefgh'[best] + '.'] : [];
+        return hit.length ? ['Overwhelming force erases file ' + 'abcdefghijkl'[best] + '.'] : [];
       } },
 
     { id: 129, name: 'Rook Lift', icon: '🏗️', rarity: 2, cat: 'Chaos',
@@ -453,7 +454,7 @@
         const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (dir === -1 ? a.r - b.r : b.r - a.r));
         for (const q of pawns) {
           const nr = q.r + dir;
-          if (nr < 0 || nr > 7) continue;
+          if (nr < 0 || nr >= Fx.bd(g)) continue;
           if (!g.board[nr][q.c]) { Fx.relocate(g, q.r, q.c, nr, q.c, {}); moved++; }
         }
         return moved ? ['A wall of pawns surges forward!'] : ['The pawns are held in place.'];
@@ -465,7 +466,7 @@
       target: 'auto',
       run: (g, s) => {
         let moved = 0;
-        for (let rr = 0; rr < 8; rr++) for (let c = 0; c < 8; c++) {
+        for (let rr = 0; rr < Fx.bd(g); rr++) for (let c = 0; c < Fx.bd(g); c++) {
           const cell = g.board[rr][c];
           if (!cell) continue;
           const dr = cell.c === 'w' ? -1 : 1;
@@ -570,7 +571,7 @@
         const lead = pawns[0];
         if (!lead) return [];
         const nr = lead.r + (s === 'w' ? -1 : 1);
-        if (nr < 0 || nr > 7) return [];
+        if (nr < 0 || nr >= Fx.bd(g)) return [];
         if (g.board[nr][lead.c]) return ['The thorns find no room to grow.'];
         Fx.place(g, s, 'p', nr, lead.c, {});
         return ['A thorny pawn sprouts at ' + sn(nr, lead.c) + '.'];
@@ -615,7 +616,7 @@
         for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
           if (!dr && !dc) continue;
           const r = q.r + dr, c = q.c + dc;
-          if (r >= 0 && r < 8 && c >= 0 && c < 8 && !g.board[r][c]) spots.push({ r, c });
+          if (r >= 0 && r < Fx.bd(g) && c >= 0 && c < Fx.bd(g) && !g.board[r][c]) spots.push({ r, c });
         }
         const lines = [];
         for (const sp of spots.slice(0, 3)) { Fx.place(g, s, 'p', sp.r, sp.c, {}); lines.push('A standing stone pawn rises beside the queen.'); }
