@@ -323,28 +323,33 @@
       } },
 
     { id: 34, name: 'Rearguard', icon: '🏰', rarity: 2, cat: 'Chaos',
-      desc: 'Swap any two of your pieces.',
+      desc: 'Pick TWO of your pieces (one at a time) and swap their squares.',
       flavor: 'The war room rearranges the board.',
-      target: 'ownAny',
-      run: (g, s, sq) => {
-        const a = pick(g, s, sq, 'ownAny');
-        const b = Fx.rand(own(g, s).filter(q => !(q.r === a.r && q.c === a.c)));
-        if (!a || !b) return [];
+      target: 'ownAny', twoPick: true,
+      run: (g, s, sel) => {
+        const ownList = own(g, s);
+        const a = sel && sel.a ? { r: sel.a.r, c: sel.a.c } : Fx.rand(ownList);
+        const rest = ownList.filter(q => !a || q.r !== a.r || q.c !== a.c);
+        const b = sel && sel.b ? { r: sel.b.r, c: sel.b.c } : Fx.rand(rest);
+        if (!a || !b || (a.r === b.r && a.c === b.c)) return ['The drill needs two different pieces.'];
+        if (!g.board[a.r] || !g.board[a.r][a.c] || !g.board[b.r] || !g.board[b.r][b.c]) return [];
         Fx.swapSq(g, a, b);
-        return ['Your pieces trade places in a practiced drill.'];
+        return ['Your two chosen pieces trade places in a practiced drill.'];
       } },
 
     { id: 35, name: 'Body Swap', icon: '🔁', rarity: 3, cat: 'Chaos',
-      desc: 'Choose ANY two pieces on the board and swap their squares.',
+      desc: 'Pick ANY two pieces on the board (one at a time) and swap their squares.',
       flavor: 'You are me. I am... a rook?',
-      target: 'anyPiece',
-      run: (g, s, sq) => {
-        const a = pick(g, s, sq, 'anyPiece');
-        const pool = Fx.squares(g, () => true).filter(q => !(q.r === a.r && q.c === a.c));
-        const b = Fx.rand(pool);
-        if (!a || !b) return [];
+      target: 'anyPiece', twoPick: true,
+      run: (g, s, sel) => {
+        const all = Fx.squares(g, () => true);
+        const a = sel && sel.a ? { r: sel.a.r, c: sel.a.c } : Fx.rand(all);
+        const rest = all.filter(q => !a || q.r !== a.r || q.c !== a.c);
+        const b = sel && sel.b ? { r: sel.b.r, c: sel.b.c } : Fx.rand(rest);
+        if (!a || !b || (a.r === b.r && a.c === b.c)) return ['The body swap needs two souls.'];
+        if (!g.board[a.r] || !g.board[a.r][a.c] || !g.board[b.r] || !g.board[b.r][b.c]) return [];
         Fx.swapSq(g, a, b);
-        return ['Two souls traded bodies across the board!'];
+        return ['Your two chosen pieces trade bodies across the board!'];
       } },
 
     { id: 36, name: 'Great Swap', icon: '♻️', rarity: 4, cat: 'Chaos',

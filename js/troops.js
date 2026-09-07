@@ -69,7 +69,26 @@
     //   straight. No trait, pure duelist — a rare "clean" summon.
     samurai:   { name: 'Samurai',      icon: '⚔️', letter: 'Q', value: 760,  leap: KNIGHT, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]] },
     // Siren: a sea-witch — at the end of its owner's turn it POISONS an adjacent foe.
-    siren:     { name: 'Siren',        icon: '🧜‍♀️', letter: 'y', value: 900,  leap: WAZIR, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], aura: 'poison' }
+    siren:     { name: 'Siren',        icon: '🧜‍♀️', letter: 'y', value: 900,  leap: WAZIR, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], aura: 'poison' },
+
+    // ================= THEME TROOPS =================
+    // — Jujutsu Kaisen: cursed spirits & shikigami —
+    divinedog: { name: 'Divine Dog',   icon: '🐕', letter: 'D', value: 720,  leap: KNIGHT, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]] },
+    nue:       { name: 'Nue',          icon: '🦅', letter: 'N', value: 880,  leap: KNIGHT, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4]] },
+    mahoraga:  { name: 'Mahoraga',     icon: '⚙️', letter: 'M', value: 1500, leap: CAMEL.concat(DABBABA), slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]] },
+    // — Wuxia heroes: sword immortals & mystic beasts —
+    jianke:    { name: 'Sword Immortal', icon: '🗡️', letter: 'J', value: 900, leap: FERZ, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]] },
+    qilin:     { name: 'Qilin',        icon: '🦌', letter: 'Q', value: 1000, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3],[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], regen: true },
+    yasha:     { name: 'Yasha',        icon: '👹', letter: 'Y', value: 800,  leap: DABBABA.concat(FERZ), onDeath: 'split' },
+    // — Ocean: monsters of the abyss —
+    seaserpent:{ name: 'Sea Serpent',  icon: '🐍', letter: 'S', value: 1050, leap: CAMEL, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]] },
+    leviathan: { name: 'Leviathan',    icon: '🐋', letter: 'L', value: 1500, leap: CAMEL, slide: ALL8 },
+    coralqueen:{ name: 'Coral Queen',  icon: '🪸', letter: 'C', value: 1100, leap: WAZIR, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], aura: 'freeze' },
+    // — World War II: iron engines of war —
+    siegetank: { name: 'Siege Tank',   icon: '🛡️', letter: 'T', value: 1000, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4]], onDeath: 'burst' },
+    zeppelin:  { name: 'War Zeppelin', icon: '🎈', letter: 'Z', value: 1150, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], recruit: 2 },
+    howitzer:  { name: 'Howitzer',     icon: '💣', letter: 'H', value: 880,  leap: CAMEL, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]] },
+    infantry:  { name: 'Rifleman',     icon: '🎖️', letter: 'I', value: 260,  leap: WAZIR }
   };
 
   MD.TROOPS = T;

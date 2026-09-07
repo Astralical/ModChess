@@ -143,3 +143,7 @@ body.theme-dark .an-board .an-sq.light{ background:#b7b9c0 } body.theme-dark .an
 .bm.warn{ color:#ffd08a; border-color:rgba(255,190,80,.4) }
 .bm.info{ color:#bcd2ff; border-color:rgba(120,170,255,.4) }
 .bm.neutral{ color:#e6e9ef }
+
+/* hazard terrain markers (trap squares laid by abilities) */
+.hazmark{ position:absolute; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:6; opacity:.75 }
+.hazmark svg{ width:46%; height:46%; color:#ff9d5c; filter:drop-shadow(0 0 3px rgba(255,90,20,.6)) }

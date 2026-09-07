@@ -198,6 +198,7 @@
       Game.pendingAbility = ab;
       Game.pickingIdx = h.cards.indexOf(ab);
       Game.targetMode = true;
+      Game.pickA = null;                       // two-piece spells start fresh
       Game.targetList = Fx.targetList(Game.g, side, ab.target);
       UI.render();
       return;
@@ -207,12 +208,28 @@
 
   Game.pickTarget = function (r, c) {
     if (Game.pendingAbility && Game.pickingIdx >= 0) {
+      const ab = Game.pendingAbility;
       const ok = (Game.targetList || []).some(q => q.r === r && q.c === c);
       if (!ok) {
         UI.toast('Pick a highlighted square for this spell.', 'sys');
         return;
       }
-      Game.castAbility(Game.pendingAbility, { r, c });
+      if (ab.twoPick) {
+        // first square selected — wait for the second
+        if (!Game.pickA) {
+          Game.pickA = { r, c };
+          UI.toast('First piece chosen — now pick the SECOND piece to swap.', 'sys');
+          UI.render();
+          return;
+        }
+        if (Game.pickA.r === r && Game.pickA.c === c) {
+          UI.toast('Pick two different pieces.', 'sys');
+          return;
+        }
+        Game.castAbility(ab, { a: Game.pickA, b: { r, c } });
+        return;
+      }
+      Game.castAbility(ab, { r, c });
     }
   };
 
@@ -236,6 +253,7 @@
     Game.pendingAbility = null;
     Game.targetMode = false;
     Game.targetList = [];
+    Game.pickA = null;
     Game.sel = null;
     // log & announce
     MD.playSfx('cast');
@@ -341,6 +359,11 @@
     if (E.inCheck(Game.g, opp(mover))) MD.playSfx('check');
     const san = Game.g.lastMove ? Game.g.lastMove.san : '';
     logColor(Game.g, mover, (sideOf(mover) + ': ' + san));
+    // hidden hazards that sprang as this move landed
+    if (Game.g.hazLog && Game.g.hazLog.length) {
+      Game.g.hazLog.forEach(t => addLog(Game.g, t, 'bad', 'target'));
+      Game.g.hazLog = [];
+    }
     Game.sel = null;
     UI.render();
     Game.resolveAfterMove(mover);

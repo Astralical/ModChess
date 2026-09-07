@@ -46,12 +46,15 @@
   };
 
   // draw `n` abilities that can actually be CAST right now for `side`
-  // (targeted spells are only dealt when a valid target exists).
+  // (targeted spells are only dealt when enough valid targets exist).
   MD.drawPlayable = function (g, side, n) {
     const Fx = MD.Fx;
-    const playable = MD.ABILITIES.filter(a =>
-      !MD.needsTarget(a) || (Fx && Fx.targetList(g, side, a.target).length > 0)
-    );
+    const playable = MD.ABILITIES.filter(a => {
+      if (!MD.needsTarget(a)) return true;
+      if (!Fx) return false;
+      const need = a.twoPick ? 2 : 1;
+      return Fx.targetList(g, side, a.target).length >= need;
+    });
     const pool = playable.slice();
     const out = [];
     while (out.length < n && pool.length) {
@@ -66,6 +69,20 @@
   // Returns { lines, marks } and sets g.lastCast.
   MD.cast = function (g, ab, side, targetSq) {
     g.fxevents = [];
+    // Two-piece spells always receive {a,b}. If only one (or none) was picked
+    // (e.g. a bot auto-cast), fill the second square sensibly at random.
+    if (ab && ab.twoPick) {
+      const Fx = MD.Fx;
+      let a = targetSq && targetSq.a ? targetSq.a : (targetSq && !targetSq.b ? targetSq : null);
+      let b = targetSq && targetSq.b ? targetSq.b : null;
+      if (!a) a = Fx.autoTarget(g, side, ab.target);
+      const pool = Fx.targetList(g, side, ab.target).filter(q => !(a && q.r === a.r && q.c === a.c));
+      if (!b) b = pool.length ? Fx.rand(pool) : a;
+      targetSq = {
+        a: a ? { r: a.r, c: a.c } : null,
+        b: b ? { r: b.r, c: b.c } : null
+      };
+    }
     let lines = [];
     let error = false;
     try {

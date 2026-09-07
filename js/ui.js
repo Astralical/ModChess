@@ -263,6 +263,10 @@
         const cell = g.board[q.r][q.c];
         addHL(q.r, q.c, 'target' + (cell ? ' target-can' : '') + (cell ? ' capture' : ''), true);
       }
+      // two-piece spells: show the already-chosen first square
+      if (MD.Game.pendingAbility && MD.Game.pendingAbility.twoPick && MD.Game.pickA) {
+        addHL(MD.Game.pickA.r, MD.Game.pickA.c, 'selected target-first', true);
+      }
     }
 
     // pieces
@@ -309,6 +313,23 @@
             destEl.style.transform = 'translate(' + t.x + 'px,' + t.y + 'px)';
           });
         });
+      }
+    }
+    // hidden hazard terrain markers
+    if (g.haz) {
+      for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const hz = g.haz[r] && g.haz[r][c];
+        if (!hz) continue;
+        const icon = hz.kind === 'trap' ? 'target' : hz.kind === 'poison' ? 'skull' : hz.kind === 'freeze' ? 'ice' : hz.kind === 'ward' ? 'shieldup' : 'fire';
+        const d = document.createElement('div');
+        d.className = 'hazmark';
+        d.innerHTML = MD.iconHTML(icon);
+        const pos = px(r, c);
+        d.style.left = pos.x + 'px';
+        d.style.top = pos.y + 'px';
+        d.style.width = sq + 'px';
+        d.style.height = sq + 'px';
+        pieceLayer.appendChild(d);
       }
     }
   }
@@ -547,7 +568,10 @@
         note.textContent = G.phase === 'move' ? 'Make your move.' : '';
         hand.forEach((a, i) => zone.appendChild(makeCard(a, true, G.hand.usedId === a.id)));
       } else {
-        note.textContent = G.pickingIdx >= 0 ? 'Pick a highlighted square on the board' :
+        const twoPickNote = G.pendingAbility && G.pendingAbility.twoPick
+          ? (G.pickA ? 'Now pick the SECOND piece on the board.' : 'Pick the FIRST piece, then a second.')
+          : 'Pick a highlighted square on the board';
+        note.textContent = G.pickingIdx >= 0 ? twoPickNote :
           (mode === 'chaos' ? 'Fate is casting a spell for you…' : 'Click a card to cast it, then move.');
         hand.forEach((a, i) => zone.appendChild(makeCard(a, false, false, G.pickingIdx === i)));
       }

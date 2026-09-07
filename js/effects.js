@@ -542,6 +542,25 @@
   // enemy must discard — not used; instead 'cursed' = they draw fewer. Kept as flavor-only guard.
   Fx.clearEp = g => { g.ep = null; };
 
+  /* ---- hazard / terrain squares (engine-backed) ---- */
+  Fx.hazardAt = (g, r, c, kind, name) => E.setHaz(g, r, c, kind, name || kind);
+  // lay `n` hidden hazards on random EMPTY squares (optionally restricted rows)
+  Fx.layHazards = function (g, kind, n, opts) {
+    opts = opts || {};
+    const empt = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+      if (g.board[r][c]) continue;
+      if (E.hazAt(g, r, c)) continue;
+      if (opts.rows && !opts.rows.includes(r)) continue;
+      empt.push({ r, c });
+    }
+    const picks = Fx.uniqN(empt, n);
+    picks.forEach(q => E.setHaz(g, q.r, q.c, kind, opts.name || kind));
+    return picks.length;
+  };
+  Fx.hazardKinds = ['poison', 'freeze', 'trap', 'ward', 'ember'];
+  Fx.clearAllHaz = function (g) { if (g.haz) for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) g.haz[r][c] = null; };
+
   // evaluate raw material balance for side (for bot/effects that use it)
   Fx.material = (g, side) => {
     let v = 0;

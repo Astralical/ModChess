@@ -129,11 +129,11 @@
     return ['Wildfire consumes the ' + MD.pieceName(pick.cell.t) + ' and ' + grew + ' thorn pawns rise from the ash.'];
   });
 
-  def(266, 'Thunderclap', 2, 'Wild', 'storm', 'Destroy a random enemy piece on the same rank or file as your most advanced pawn.', 'The sky answers the vanguard.', (g, s) => {
+  def(266, 'Thunderclap', 2, 'Wild', 'storm', 'Destroy a random enemy piece (never the king) on the same rank or file as your most advanced pawn.', 'The sky answers the vanguard.', (g, s) => {
     const pawns = own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r));
     const lead = pawns[0];
     if (!lead) return [];
-    const targets = en(g, s).filter(q => q.r === lead.r || q.c === lead.c);
+    const targets = en(g, s).filter(q => q.cell.t !== 'k' && (q.r === lead.r || q.c === lead.c));
     const t = rnd(targets);
     if (!t) return [];
     Fx.removeAt(g, t.r, t.c, {});

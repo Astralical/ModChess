@@ -113,6 +113,7 @@
       capt: { w: [], b: [] }, lost: { w: [], b: [] }, hist: [], lastMove: null,
       extra: { w: 0, b: 0 }, extraCycle: { w: false, b: false },
       anyTroop: false,
+      haz: (function () { const a = []; for (let r = 0; r < 8; r++) a.push([null, null, null, null, null, null, null, null]); return a; })(),
       over: false, result: null, reason: null, winner: null,
       silence: { w: false, b: false }, warded: { w: false, b: false },
       skipTurn: { w: false, b: false }, lowHand: { w: false, b: false },
@@ -131,6 +132,51 @@
   E.clone = clone;
 
   E.at = (g, r, c) => (r >= 0 && r < 8 && c >= 0 && c < 8) ? g.board[r][c] : null;
+
+  /* ---- hazard / terrain squares ----
+     g.haz[r][c] = null | { kind, name }  — a hidden trap on the square.
+     When a piece MOVES onto a hazard it springs once (and is consumed).
+     kinds: poison|freeze|trap|ward|ember */
+  function hazInit(g) { if (!g.haz) { g.haz = []; for (let r = 0; r < 8; r++) g.haz.push([null, null, null, null, null, null, null, null]); } return g.haz; }
+  E.setHaz = function (g, r, c, kind, name) {
+    if (r < 0 || r > 7 || c < 0 || c > 7) return false;
+    const h = hazInit(g);
+    if (h[r][c]) return false; // one hazard per square
+    h[r][c] = { kind, name: name || kind };
+    return true;
+  };
+  E.clearHaz = function (g, r, c) { if (g.haz && g.haz[r]) g.haz[r][c] = null; };
+  E.hazAt = (g, r, c) => (g.haz && g.haz[r] && g.haz[r][c]) || null;
+  E.hazList = function (g) {
+    hazInit(g);
+    const out = [];
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (g.haz[r][c]) out.push({ r, c, haz: g.haz[r][c] });
+    return out;
+  };
+  function springHazard(g, r, c, cell) {
+    const h = (g.haz && g.haz[r] && g.haz[r][c]) || null;
+    if (!h || !cell) return null;
+    g.haz[r][c] = null;
+    const b = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+    let text = '';
+    if (h.kind === 'poison') { b.p = 1; text = 'A ' + h.name + ' poisons the piece that stepped on it!'; }
+    else if (h.kind === 'freeze') { b.f = Math.max(b.f || 0, 1); text = 'A ' + h.name + ' freezes the piece that stepped on it!'; }
+    else if (h.kind === 'ward') { b.s = Math.max(b.s || 0, 1); b.p = 0; b.f = 0; text = 'A ' + h.name + ' wards the piece that stepped on it.'; }
+    else if (h.kind === 'ember') { b.p = 1; if (b.s > 0) b.s = 0; text = 'A ' + h.name + ' sears through the piece that stepped on it (shield lost, poison!).'; }
+    else if (h.kind === 'trap') {
+      if (cell.t !== 'k') {
+        revokeLeave(g, r, c, cell);
+        g.board[r][c] = null;
+        text = 'A ' + h.name + ' TRAPS and destroys the piece that stepped on it!';
+      } else text = 'A ' + h.name + ' snaps shut on the king — but the crown holds.';
+    }
+    if (!(g.fxevents)) g.fxevents = [];
+    g.fxevents.push({ r, c, kind: h.kind === 'trap' ? 'destroy' : 'fx', text });
+    if (!g.hazLog) g.hazLog = [];
+    if (text) g.hazLog.push(text);
+    return text;
+  }
+  E.springHazard = springHazard;
 
   function findKing(g, color) {
     for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
@@ -435,6 +481,12 @@
     g.half = pawnOrCapture ? 0 : g.half + 1;
     if (color === 'b') g.full++;
     g.plies++;
+
+    // hidden hazards spring when a piece moves onto them
+    if (g.haz && g.haz[mv.r1] && g.haz[mv.r1][mv.c1]) {
+      const stepper = b[mv.r1][mv.c1];
+      if (stepper) springHazard(g, mv.r1, mv.c1, stepper);
+    }
 
     if (!opts.silent) {
       g.lastMove = {
