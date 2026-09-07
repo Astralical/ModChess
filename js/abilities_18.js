@@ -51,9 +51,9 @@
     shell(g, s, q.r, q.c, 1, 1);
     return ['A harassing shell is on its way to ' + sq(q.r, q.c) + '.'];
   });
-  def(733, 'Battery Volley', 2, 'War', 'storm', 'Fire THREE shells at random empty squares of the enemy\'s half.', 'One battery, three tubes.', (g, s) => {
+  def(733, 'Battery Volley', 2, 'War', 'storm', 'Fire TWO shells at random empty squares of the enemy\'s half.', 'One battery, three tubes.', (g, s) => {
     let n = 0;
-    for (let i = 0; i < 3; i++) { const q = rand(enemyEmpties(g, s)); if (q && shell(g, s, q.r, q.c, 2, 1)) n++; }
+    for (let i = 0; i < 2; i++) { const q = rand(enemyEmpties(g, s)); if (q && shell(g, s, q.r, q.c, 2, 1)) n++; }
     return n ? [n + ' shells are inbound.'] : ['No room for a volley.'];
   });
   def(734, 'Ranging Round', 1, 'War', 'target', 'Fire a probing shell at the enemy\'s strongest piece (one-turn fuse, tight blast).', 'Find the range.', (g, s) => {
@@ -62,10 +62,10 @@
     shell(g, s, q.r, q.c, 1, 1);
     return ['Ranging fire at the ' + pname(q.cell.t) + '.'];
   });
-  def(735, 'Heavy Shell', 3, 'War', 'storm', 'Fire a heavy shell at an enemy piece — a WIDE blast (radius 2) after two of your turns.', 'Big tube, bigger boom.', (g, s) => {
+  def(735, 'Heavy Shell', 3, 'War', 'storm', 'Fire a heavy shell at an enemy piece — a tight blast (radius 1) after two of your turns.', 'Big tube, bigger boom.', (g, s) => {
     const q = rand(enemyPieces(g, s).filter(x => x.cell.t !== 'k'));
     if (!q) return ['No target for the heavy tube.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['A heavy shell zeroes on ' + sq(q.r, q.c) + '.'];
   });
   def(736, 'Siege of the Throne', 4, 'Kingship', 'fire', 'Bombard the enemy KING\'s position — a shell lands next to the throne after one of your turns.', 'All this, for one crown.', (g, s) => {
@@ -105,24 +105,24 @@
   });
 
   // --- delayed high-fuse "time on target" barrages ---
-  def(741, 'Time on Target', 3, 'War', 'clock', 'Every tube fires at once: one shell at each of THREE enemy pieces, all landing together in two turns.', 'Synchronise watches.', (g, s) => {
-    const picks = enemyPieces(g, s).filter(x => x.cell.t !== 'k').sort(() => Math.random() - 0.5).slice(0, 3);
+  def(741, 'Time on Target', 3, 'War', 'clock', 'Every tube fires at once: one shell at each of TWO enemy pieces, all landing together in two turns.', 'Synchronise watches.', (g, s) => {
+    const picks = enemyPieces(g, s).filter(x => x.cell.t !== 'k').sort(() => Math.random() - 0.5).slice(0, 2);
     picks.forEach(q => shell(g, s, q.r, q.c, 2, 1));
     return picks.length ? ['Time on target — ' + picks.length + ' shells in flight.'] : [];
   });
-  def(742, 'Deep Strike', 3, 'War', 'void', 'Fire a slow, devastating shell into the enemy\'s BACK RANK (three-turn fuse, radius 2).', 'Arcing over the horizon.', (g, s) => {
+  def(742, 'Deep Strike', 3, 'War', 'void', 'Fire a slow, devastating shell into the enemy\'s BACK RANK (three-turn fuse, radius 1).', 'Arcing over the horizon.', (g, s) => {
     const n = N(g);
     const rows = s === 'w' ? [0, 1] : [n - 1, n - 2];
     const empt = [];
     for (const r of rows) for (let c = 0; c < n; c++) if (!g.board[r][c]) empt.push({ r, c });
     const q = rand(empt);
     if (!q) return ['Their back ranks are packed — no clean drop zone.'];
-    shell(g, s, q.r, q.c, 3, 2);
+    shell(g, s, q.r, q.c, 3, 1);
     return ['A deep strike is away toward ' + sq(q.r, q.c) + ' — three turns.'];
   });
-  def(743, 'Rolling Thunder', 4, 'War', 'storm', 'Call for a grand barrage: FOUR shells across the enemy half, radius 2, two-turn fuse.', 'The sky turns to iron.', (g, s) => {
+  def(743, 'Rolling Thunder', 4, 'War', 'storm', 'Call for a grand barrage: TWO shells across the enemy half, radius 1, two-turn fuse.', 'The sky turns to iron.', (g, s) => {
     let n = 0;
-    for (let i = 0; i < 4; i++) { const q = rand(enemyEmpties(g, s)); if (q && shell(g, s, q.r, q.c, 2, 2)) n++; }
+    for (let i = 0; i < 2; i++) { const q = rand(enemyEmpties(g, s)); if (q && shell(g, s, q.r, q.c, 2, 2)) n++; }
     return n ? ['Rolling thunder — ' + n + ' heavy shells inbound.'] : [];
   });
   def(744, 'Loitering Round', 2, 'War', 'clock', 'Fire a shell that waits: it lands after THREE of your turns.', 'Patience is a fuse.', (g, s) => {
@@ -138,7 +138,7 @@
     for (const r of enemyHalf(g, s)) for (const c of cols) if (!g.board[r][c]) empt.push({ r, c });
     const q = rand(empt);
     if (!q) return ['The junction is crowded.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['Fire for effect on the centre junction.'];
   });
 
@@ -157,10 +157,10 @@
     shell(g, s, q.r, q.c, 1, 1);
     return ['A trench-mortar shell on a pawn column.'];
   });
-  def(748, 'Fire Mission', 2, 'War', 'storm', 'Call coordinates on a random enemy MINOR or MAJOR — two-turn fuse, wide burst.', 'Coordinates: their army.', (g, s) => {
+  def(748, 'Fire Mission', 2, 'War', 'storm', 'Call coordinates on a random enemy MINOR or MAJOR — two-turn fuse, tight burst.', 'Coordinates: their army.', (g, s) => {
     const q = rand(enemyPieces(g, s).filter(x => x.cell.t !== 'p' && x.cell.t !== 'k'));
     if (!q) return ['No armoured targets in view.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['Fire mission on the enemy ' + pname(q.cell.t) + '.'];
   });
   def(749, 'Shock Barrage', 3, 'War', 'storm', 'Two shells bracket the enemy KING — one either side — landing in two turns.', 'Box him in with steel.', (g, s) => {
@@ -174,7 +174,7 @@
   def(750, 'Danger Close', 4, 'War', 'fire', 'Bombard your OWN most-advanced pawn\'s square — an enormous blast that may hit friend and foe alike.', 'Hold nothing back.', (g, s) => {
     const pawn = Fx.own(g, s).filter(q => q.cell.t === 'p').sort((a, b) => a.r - b.r)[0];
     if (!pawn) return ['No forward observers to support.'];
-    shell(g, s, pawn.r, pawn.c, 1, 2);
+    shell(g, s, pawn.r, pawn.c, 1, 1);
     return ['Danger close — a massive shell on ' + sq(pawn.r, pawn.c) + '!'];
   });
 
@@ -186,7 +186,7 @@
     let best = 0, bc = Math.floor(n / 2);
     for (const c in freq) if (freq[c] > best) { best = freq[c]; bc = +c; }
     const rows = enemyHalf(g, s);
-    shell(g, s, rows[Math.floor(Math.random() * rows.length)], bc, 2, 2);
+    shell(g, s, rows[Math.floor(Math.random() * rows.length)], bc, 2, 1);
     return ['Fire mission on file ' + E.FILES[bc] + '.'];
   });
   def(752, 'Rank Cleaner', 2, 'War', 'target', 'Fire at the enemy RANK that holds the most pieces (two-turn fuse).', 'Mow the row.', (g, s) => {
@@ -197,7 +197,7 @@
     for (const r in freq) if (freq[r] > best) { best = freq[r]; br = +r; }
     let c = Math.floor(n / 2);
     for (let cc = 0; cc < n; cc++) if (!g.board[br][cc]) { c = cc; break; }
-    shell(g, s, br, c, 2, 2);
+    shell(g, s, br, c, 2, 1);
     return ['Fire on the crowded rank ' + (N(g) - br) + '.'];
   });
   def(753, 'Counter-Cavalry', 1, 'War', 'target', 'A quick shell at the enemy KNIGHT most threatening your king (one-turn fuse).', 'Horses hate artillery.', (g, s) => {
@@ -237,13 +237,13 @@
     for (const r of rows) for (let c = 0; c < n; c++) if (!g.board[r][c]) empt.push({ r, c });
     const q = rand(empt);
     if (!q) return ['No clean launch lane.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['The trebuchet releases — two turns to impact.'];
   });
-  def(758, 'Orbital Strike', 4, 'SciFi', 'void', 'Call down from orbit: a devastating blast on the enemy\'s strongest cluster, radius 3, three-turn burn-in.', 'Stand by. The sky is about to fall.', (g, s) => {
+  def(758, 'Orbital Strike', 4, 'SciFi', 'void', 'Call down from orbit: a devastating blast on the enemy\'s strongest cluster, radius 2, three-turn burn-in.', 'Stand by. The sky is about to fall.', (g, s) => {
     const q = enemyPieces(g, s).filter(x => x.cell.t !== 'k').sort((a, b) => E.val(b.cell.t) - E.val(a.cell.t))[0];
     if (!q) return ['Orbital telemetry lost.'];
-    shell(g, s, q.r, q.c, 3, 3);
+    shell(g, s, q.r, q.c, 3, 2);
     return ['Orbital strike locked — impact in three turns.'];
   });
   def(759, 'Railgun Lance', 3, 'SciFi', 'boltring', 'A hypervelocity round — one-turn flight, radius 1, but it punches clean through a line first.', 'Too fast to dodge.', (g, s) => {
@@ -252,16 +252,16 @@
     shell(g, s, q.r, q.c, 1, 1);
     return ['A railgun round is away — it lands this turn.'];
   });
-  def(760, 'Cluster Munition', 3, 'War', 'storm', 'A cluster shell bursts into three mini-blasts around its impact square — radius 2, two-turn fuse.', 'One shell, many strikes.', (g, s) => {
+  def(760, 'Cluster Munition', 3, 'War', 'storm', 'A cluster shell bursts into three mini-blasts around its impact square — radius 1, two-turn fuse.', 'One shell, many strikes.', (g, s) => {
     const q = rand(enemyEmpties(g, s));
     if (!q) return ['No room to cluster.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['A cluster munition is inbound.'];
   });
-  def(761, 'Thermobaric Round', 4, 'War', 'fire', 'A fuel-air shell — radius 2 and it strips shields in the blast zone when it lands.', 'The air itself burns.', (g, s) => {
+  def(761, 'Thermobaric Round', 4, 'War', 'fire', 'A fuel-air shell — radius 1 and it strips shields in the blast zone when it lands.', 'The air itself burns.', (g, s) => {
     const q = rand(enemyEmpties(g, s));
     if (!q) return ['No target zone.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['A thermobaric round is away.'];
   });
   def(762, 'White Phosphor', 2, 'War', 'fire', 'A burning shell that leaves POISON in the air after it lands (one-turn fuse).', 'It keeps burning.', (g, s) => {
@@ -276,12 +276,12 @@
     shell(g, s, q.r, q.c, 2, 1);
     return ['Sound-ranging fire on ' + sq(q.r, q.c) + '.'];
   });
-  def(764, 'Falling Star', 4, 'Myth', 'star', 'A true falling star — a meteor shell strikes the square of the enemy piece that threatens your king most, radius 2, two-turn fuse.', 'Wish upon it. They won\'t.', (g, s) => {
+  def(764, 'Falling Star', 4, 'Myth', 'star', 'A true falling star — a meteor shell strikes the square of the enemy piece that threatens your king most, radius 1, two-turn fuse.', 'Wish upon it. They won\'t.', (g, s) => {
     const k = E.findKing(g, s); if (!k) return [];
     let t = null, bd = 1e9;
     enemyPieces(g, s).forEach(q => { if (q.cell.t === 'k') return; const d = Math.abs(q.r - k.r) + Math.abs(q.c - k.c); if (d < bd) { bd = d; t = q; } });
     if (!t) return ['No one threatens the throne.'];
-    shell(g, s, t.r, t.c, 2, 2);
+    shell(g, s, t.r, t.c, 2, 1);
     return ['A falling star is called down.'];
   });
   def(765, 'Thunderbolt Mortar', 2, 'Myth', 'storm', 'A crackling bolt-shell strikes the enemy\'s most advanced piece — one-turn fuse.', 'Zeus lends a tube.', (g, s) => {
@@ -293,7 +293,7 @@
   def(766, 'Salamander Furnace', 3, 'Myth', 'fire', 'A furnace-shell smoulders into the enemy lines — three-turn fuse, then a wide burning blast.', 'Forged in dragon-heat.', (g, s) => {
     const q = rand(enemyEmpties(g, s));
     if (!q) return ['No target for the furnace.'];
-    shell(g, s, q.r, q.c, 3, 2);
+    shell(g, s, q.r, q.c, 3, 1);
     return ['The furnace shell smoulders toward its target.'];
   });
   def(767, 'Giant\'s Toss', 2, 'Myth', 'bone', 'A giant lobs a boulder at the enemy\'s back line — two-turn flight, radius 2.', 'Boulders, not arrows.', (g, s) => {
@@ -303,7 +303,7 @@
     for (const r of rows) for (let c = 0; c < n; c++) if (!g.board[r][c]) empt.push({ r, c });
     const q = rand(empt);
     if (!q) return ['Nowhere for the giant to throw.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['The giant hurls a boulder.'];
   });
   def(768, 'Witch Fire Battery', 3, 'Myth', 'skull', 'Cursed fire-shells seek enemy sorcerers — shells on the two enemy pieces of highest value, two-turn fuse.', 'Burn the books.', (g, s) => {
@@ -311,11 +311,11 @@
     top.forEach(q => shell(g, s, q.r, q.c, 2, 1));
     return [top.length + ' cursed shells are in flight.'];
   });
-  def(769, 'Barrage of the Deep', 3, 'Ocean', 'drop', 'The fleet opens up: three naval shells walk the enemy\'s back ranks (two-turn fuse).', 'Broadsides at dawn.', (g, s) => {
+  def(769, 'Barrage of the Deep', 3, 'Ocean', 'drop', 'The fleet opens up: two naval shells walk the enemy\'s back ranks (two-turn fuse).', 'Broadsides at dawn.', (g, s) => {
     const n = N(g);
     const rows = s === 'w' ? [0, 1] : [n - 2, n - 1];
     let placed = 0;
-    for (let i = 0; i < 3; i++) { const c = Math.floor(Math.random() * n); const r = rows[Math.floor(Math.random() * rows.length)]; if (shell(g, s, r, c, 2, 1)) placed++; }
+    for (let i = 0; i < 2; i++) { const c = Math.floor(Math.random() * n); const r = rows[Math.floor(Math.random() * rows.length)]; if (shell(g, s, r, c, 2, 1)) placed++; }
     return [placed + ' naval shells are falling.'];
   });
   def(770, 'Coastal Gun', 2, 'Ocean', 'storm', 'A heavy coastal shell at the enemy piece nearest the edge — two-turn fuse, radius 2.', 'From the cliffs.', (g, s) => {
@@ -323,7 +323,7 @@
     const edge = enemyPieces(g, s).filter(x => x.cell.t !== 'k' && (x.c === 0 || x.c === n - 1 || x.r === 0 || x.r === n - 1));
     const q = rand(edge.length ? edge : enemyPieces(g, s).filter(x => x.cell.t !== 'k'));
     if (!q) return ['Nothing in the coastal zone.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['The coastal gun thunders.'];
   });
   def(771, 'Coral Cannon', 2, 'Ocean', 'leaf', 'The reef batteries fire a shrapnel shell at an enemy piece (one-turn fuse).', 'Even the reef is armed.', (g, s) => {
@@ -338,7 +338,7 @@
     shell(g, s, q.r, q.c, 1, 1);
     return ['A tide-mortar shell splashes down soon.'];
   });
-  def(773, 'Storm Call Battery', 3, 'Ocean', 'storm', 'Three storm-shells land in a line across the enemy half, radius 2, two-turn fuse.', 'Bring the whole weather.', (g, s) => {
+  def(773, 'Storm Call Battery', 3, 'Ocean', 'storm', 'Three storm-shells land in a line across the enemy half, radius 1, two-turn fuse.', 'Bring the whole weather.', (g, s) => {
     const n = N(g); const rows = enemyHalf(g, s); let placed = 0;
     const c0 = 1 + Math.floor(Math.random() * Math.max(1, n - 2));
     for (let dc = -1; dc <= 1; dc++) { const c = c0 + dc; if (c < 0 || c >= n) continue; const r = rows[Math.floor(Math.random() * rows.length)]; if (shell(g, s, r, c, 2, 2)) placed++; }
@@ -363,21 +363,21 @@
     shell(g, s, q.r, q.c, 1, 1);
     return ['Autocannon fire hoses down ' + sq(q.r, q.c) + '.'];
   });
-  def(777, 'Proximity Fuze', 3, 'SciFi', 'target', 'A shell that bursts as it arrives — it strikes the enemy square with a WIDE radius 2, two-turn fuse.', 'It finds the air near them.', (g, s) => {
+  def(777, 'Proximity Fuze', 3, 'SciFi', 'target', 'A shell that bursts as it arrives — it strikes the enemy square with a radius 1, two-turn fuse.', 'It finds the air near them.', (g, s) => {
     const q = rand(enemyPieces(g, s).filter(x => x.cell.t !== 'k'));
     if (!q) return ['No target to burst near.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['A proximity round is inbound.'];
   });
-  def(778, 'Howitzer Call', 2, 'War', 'fire', 'An infantry-support howitzer round on the enemy\'s most advanced cluster — two-turn fuse, radius 2.', 'Shake their front.', (g, s) => {
+  def(778, 'Howitzer Call', 2, 'War', 'fire', 'An infantry-support howitzer round on the enemy\'s most advanced cluster — two-turn fuse, radius 1.', 'Shake their front.', (g, s) => {
     const q = enemyPieces(g, s).filter(x => x.cell.t !== 'k').sort((a, b) => b.r - a.r)[0];
     if (!q) return ['Nothing to shake.'];
-    shell(g, s, q.r, q.c, 2, 2);
+    shell(g, s, q.r, q.c, 2, 1);
     return ['A howitzer round is on its way.'];
   });
-  def(779, 'Grand Battery', 4, 'War', 'storm', 'The whole arsenal fires: SIX shells across the enemy half, radius 2, all landing in two turns.', 'The guns do not stop.', (g, s) => {
+  def(779, 'Grand Battery', 4, 'War', 'storm', 'The whole arsenal fires: THREE shells across the enemy half, radius 1, all landing in two turns.', 'The guns do not stop.', (g, s) => {
     let placed = 0;
-    for (let i = 0; i < 6; i++) { const q = rand(enemyEmpties(g, s)); if (q && shell(g, s, q.r, q.c, 2, 2)) placed++; }
+    for (let i = 0; i < 3; i++) { const q = rand(enemyEmpties(g, s)); if (q && shell(g, s, q.r, q.c, 2, 2)) placed++; }
     return [placed + ' shells from the grand battery.'];
   });
 

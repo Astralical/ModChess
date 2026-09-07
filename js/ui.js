@@ -890,7 +890,7 @@
   const PEDIA_STATUS = [
     ['Frozen (f)', 'Cannot move. The countdown passes only at the end of its OWN turns.', 'ice'],
     ['Shielded (s)', 'Cannot be captured by normal captures for a number of the enemy\'s turns.', 'shield'],
-    ['Poisoned (p)', 'Detonates at the end of its own next turn, blasting every adjacent enemy (kings are safe).', 'skull'],
+    ['Poisoned (p)', 'Succumbs quietly at the end of its own next turn — it rots away (no blast). Kings shrug off venom.', 'skull'],
     ['Summon-sickness (z)', 'Newly summoned pieces cannot move until they have survived one of their owner\'s turns.', 'clock'],
     ['Petrified (st)', 'Sealed in stone: cannot move AND cannot be captured. Erodes at the end of its own turns.', 'lock'],
     ['Doomed (doom)', 'Marked for death — destroyed quietly at the end of its own next turn.', 'target'],

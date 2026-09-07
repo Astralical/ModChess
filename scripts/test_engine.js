@@ -116,7 +116,7 @@ g.board[4][4] = { c: 'b', t: 'p', b: { f: 0, s: 0, p: 1 } };
 g.board[3][5] = { c: 'w', t: 'n' };
 E.tickAfterMove(g, 'b');
 ok(g.board[4][4] === null, 'poisoned piece removed at end of owner turn');
-ok(g.board[3][5] === null, 'explosion destroyed adjacent enemy knight');
+ok(g.board[3][5] && g.board[3][5].t === 'n', 'poison rots quietly — adjacent knight survives (no chain blast)');
 
 // 11) custom troops move + give check
 ok(MD.TROOPS.imp && MD.TROOPS.warhorse && MD.TROOPS.phoenix, 'troop defs present');

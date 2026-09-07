@@ -425,7 +425,7 @@
     const events = E.tickAfterMove(g, mover);
     if (events.length) {
       for (const ev of events) {
-        if (ev.kind === 'poison') addLog(g, 'A poisoned piece detonates!', 'bad', '💥');
+        if (ev.kind === 'poison') addLog(g, (ev.text || 'A poisoned piece rots away.') , 'bad', 'skull');
         else if (ev.kind === 'grow') addLog(g, (ev.text || 'A troop grows into its adult form') + '.', 'sys', 'star');
         else if (ev.kind === 'aura') addLog(g, (ev.text || 'An aura pulses') + '.', 'w', 'spark');
         else if (ev.kind === 'regen') addLog(g, (ev.text || 'A troop regenerates') + '.', 'sys', 'heart');

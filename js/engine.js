@@ -867,26 +867,17 @@
   }
   E.evaluateEnd = evaluateEnd;
 
-  /* Poison explosion: poison counts down at end of owner's move-turn. */
+  /* Poison: a poisoned piece rots away quietly at the end of its owner's turn.
+     (It used to blast every adjacent enemy, which could chain-clear the board
+     and even fell kings — poison no longer has an area blast; kings are immune.)
+     Other on-death traits (e.g. troop `burst`) still explode on their own. */
   function explodeCell(g, r, c) {
     const cell = g.board[r][c];
-    if (!cell) return;
-    const lines = [];
+    if (!cell || cell.t === 'k') return [];
     E.noteFallen(g, cell);
     revokeLeave(g, r, c, cell);
     g.board[r][c] = null;
-    for (const [dr, dc] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]) {
-      const nr = r + dr, nc = c + dc;
-      if (nr < 0 || nr >= CUR || nc < 0 || nc >= CUR) continue;
-      const t = g.board[nr][nc];
-      if (t && t.c !== cell.c) {
-        lines.push({ r: nr, c: nc, kind: 'destroy' });
-        E.noteFallen(g, t);
-        revokeLeave(g, nr, nc, t);
-        g.board[nr][nc] = null;
-      }
-    }
-    return lines;
+    return [];
   }
   E.explodeCell = explodeCell;
 
@@ -1006,9 +997,13 @@
         }
         if (b.p > 0) {
           b.p = 0;
+          // kings are immune to venom — it burns off harmlessly
+          if (cell.t === 'k') {
+            events.push({ kind: 'poison', r, c, text: sideLabel(cell.c) + ' King shrugs off the venom.' });
+            continue;
+          }
           events.push({ kind: 'poison', r, c });
-          const boom = explodeCell(g, r, c);
-          if (boom) events.push(...boom);
+          explodeCell(g, r, c); // rots away quietly — no chain blast
           continue;
         }
         // recruit countdown — summoning sickness fades as the owner's turns pass

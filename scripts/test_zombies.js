@@ -76,5 +76,32 @@ ok(!!MD2.TROOPS.porcupine && !!MD2.TROOPS.scorpion && !!MD2.TROOPS.urchin && !!M
   ok(!threw && phase === 'move', 'null-hand (move-only bonus turn) does not crash bot flow');
 }
 
+// --- 7. poison rebalance: rots quietly (no chain blast), kings immune ---
+{
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[4][4] = { c: 'w', t: 'n', b: { f: 0, s: 0, p: 1 } };   // poisoned white knight
+  g.board[4][5] = { c: 'b', t: 'r' };                            // adjacent black rook
+  E.tickAfterMove(g, 'w');                                       // white's turn ends
+  ok(!g.board[4][4], 'poisoned knight rots away at end of its owner turn');
+  ok(g.board[4][5] && g.board[4][5].t === 'r', 'adjacent rook NOT destroyed by poison (no chain blast)');
+}
+{
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k', b: { f: 0, s: 0, p: 1 } };   // poisoned white king
+  E.tickAfterMove(g, 'w');
+  ok(!!E.hasKing(g, 'w') && !!g.board[7][0], 'king is immune to poison (shrugs it off)');
+}
+// --- 8. mortar radius nerf sanity (source-level): no radius-2/3 area shells
+//     remain in set 18 except Orbital Strike (kept fuse-3, radius 2). ---
+{
+  const src = fs.readFileSync(__dirname + '/../js/abilities_18.js', 'utf8');
+  const lines = src.split('\n');
+  const bad = lines.filter(l => /shell\(g, s, [^)]*, [123], [23]\);/.test(l) && !/, 3, 2\);/.test(l));
+  ok(bad.length === 0, 'no wide (radius 2/3) shell calls remain outside the kept Orbital Strike (found ' + bad.length + ')');
+}
+
 console.log('\npass=' + pass + ' fail=' + fail);
 process.exit(fail ? 1 : 0);
