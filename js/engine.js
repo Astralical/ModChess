@@ -175,7 +175,8 @@
   /* ---- ground ZONES ---- persistent squares a piece may stand on, that bite
      at the END of the standing piece's own turn.
      g.zone[r][c] = null | { kind, c? }   (c = owning side, for sanctuaries)
-     kinds: fire|thorns|mire|sanctum|rift */
+     kinds: fire|thorns|mire|sanctum|rift|fog.  FOG is passive: it hides
+     (see E.obscured) but never fires at turn-end. */
   function zoneInit(g) { if (!g.zone) { g.zone = []; for (let r = 0; r < 8; r++) g.zone.push([null, null, null, null, null, null, null, null]); } return g.zone; }
   E.setZone = function (g, r, c, kind, side) {
     if (r < 0 || r > 7 || c < 0 || c > 7) return false;
@@ -380,6 +381,22 @@
   E.isRecruit = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.z > 0);
   E.isShielded = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.s > 0);
   E.isPoisoned = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.p > 0);
+
+  /* ---- fog & veil (invisibility) ----
+     A piece is OBSCURED when it stands on a FOG zone OR carries a veil
+     (b.v > 0). An obscured piece can only be CAPTURED by an enemy piece on
+     an ADJACENT square — range strikes cannot find it in the mist. Spells
+     still pierce mist; only blades are blind. Veil counts down as its
+     owner's own turns pass. */
+  E.obscured = function (g, r, c) {
+    const cell = g.board[r] && g.board[r][c];
+    if (!cell) return false;
+    if (cell.b && cell.b.v > 0) return true;
+    const z = E.zoneAt(g, r, c);
+    return !!(z && z.kind === 'fog');
+  };
+  E.isVeiled = (g, r, c) => !!(g.board[r][c] && g.board[r][c].b && g.board[r][c].b.v > 0);
+  E.isFogSq = (g, r, c) => { const z = E.zoneAt(g, r, c); return !!(z && z.kind === 'fog'); };
 
   /* -------- pseudo-legal moves -------- */
   function genPseudo(g, color) {
@@ -631,6 +648,14 @@
         const dest = w.board[mv.r1][mv.c1];
         if (dest && dest.c !== color && dest.b && !dest.b.frail && (dest.b.s > 0 || dest.b.st > 0)) continue;
       }
+      // obscured pieces (fog / veil) can only be captured from an ADJACENT square
+      if (mv.capture && !mv.ep) {
+        const dest = w.board[mv.r1][mv.c1];
+        if (dest && dest.c !== color && E.obscured(w, mv.r1, mv.c1)) {
+          const adj = Math.abs(mv.r0 - mv.r1) <= 1 && Math.abs(mv.c0 - mv.c1) <= 1;
+          if (!adj) continue;
+        }
+      }
       const und = applyMove(w, mv, { silent: true });
       const k = findKing(w, color);
       const ok = k && !attacked(w, k.r, k.c, E.opp(color));
@@ -785,6 +810,7 @@
         // owner finished their turn
         if (b.f > 0) b.f--;
         if (b.st > 0) b.st--; // petrification erodes only as the owner's own turns pass
+        if (b.v > 0) b.v--;   // veil (mist/invisibility) thins as its owner's turns pass
         // a regenerating troop cleanses itself before poison can bite
         if (def && def.regen && (b.p > 0 || b.f > 0)) {
           b.p = 0; b.f = 0;
@@ -844,7 +870,7 @@
       // clean up when every counter is spent
       if (g.board[r][c] === cell) {
         const bb = cell.b;
-        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0) && !(bb.st > 0) && !(bb.doom > 0) && !bb.frail;
+        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0) && !(bb.st > 0) && !(bb.doom > 0) && !(bb.v > 0) && !bb.frail;
         if (spent) cell.b = undefined;
       }
     }

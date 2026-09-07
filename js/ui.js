@@ -294,7 +294,7 @@
       const cell = g.board[r][c];
       if (!cell) continue;
       const p = document.createElement('div');
-      p.className = 'piece ' + statusClass(cell);
+      p.className = 'piece ' + statusClass(cell) + (MD.Engine.obscured(g, r, c) ? ' veiled' : '');
       p.dataset.r = r; p.dataset.c = c;
       const img = cellImg(cell);
       if (img) p.appendChild(img);
@@ -307,6 +307,7 @@
         };
         if (cell.b.p > 0) addB('b-psn', 'skull');
         if (cell.b.f > 0) addB('b-frz', 'ice');
+        if (cell.b.v > 0) addB('b-vei', 'wind');
         if (cell.b.st > 0) addB('b-stn', 'lock');
         if (cell.b.doom > 0) addB('b-doom', 'target');
         if (cell.b.frail) addB('b-fra', 'sword');
@@ -356,8 +357,8 @@
     }
     // ground zones (persistent terrain effects)
     if (g.zone) {
-      const zicon = { fire: 'fire', thorns: 'leaf', mire: 'drop', sanctum: 'shieldup', rift: 'void' };
-      const zcls = { fire: 'z-fire', thorns: 'z-thorns', mire: 'z-mire', sanctum: 'z-sanctum', rift: 'z-rift' };
+      const zicon = { fire: 'fire', thorns: 'leaf', mire: 'drop', sanctum: 'shieldup', rift: 'void', fog: 'wind' };
+      const zcls = { fire: 'z-fire', thorns: 'z-thorns', mire: 'z-mire', sanctum: 'z-sanctum', rift: 'z-rift', fog: 'z-fog' };
       for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
         const zo = g.zone[r] && g.zone[r][c];
         if (!zo) continue;

@@ -181,3 +181,13 @@ body.theme-dark .an-board .an-sq.light{ background:#b7b9c0 } body.theme-dark .an
 .z-mire{ background:radial-gradient(120% 120% at 50% 60%, rgba(60,140,150,.6), rgba(15,60,75,.55)); color:#b7f4ff }
 .z-sanctum{ background:radial-gradient(120% 120% at 50% 50%, rgba(230,190,90,.5), rgba(140,100,20,.45)); color:#fff2c0 }
 .z-rift{ background:radial-gradient(120% 120% at 50% 50%, rgba(140,80,220,.55), rgba(60,20,110,.55)); color:#e2c8ff }
+
+/* fog zones & the veiled/invisible state — mist hides pieces from ranged blades */
+.z-fog{ background:
+  radial-gradient(120% 120% at 50% 55%, rgba(205,216,232,.6), rgba(130,145,170,.22) 60%, rgba(90,105,130,.12));
+  color:#eef3fb; box-shadow:inset 0 0 12px rgba(210,225,245,.35); }
+.z-fog::after{ content:''; position:absolute; left:12%; right:12%; top:30%; height:26%; border-radius:50%;
+  background:rgba(255,255,255,.28); filter:blur(3px) }
+.piece.veiled{ filter:blur(1.1px) saturate(.55); opacity:.8 }
+.piece.veiled .pbadge{ filter:none }
+.piece .b-vei{ color:#d9e7ff; background:rgba(52,86,138,.9) }

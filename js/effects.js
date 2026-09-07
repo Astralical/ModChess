@@ -582,6 +582,7 @@
   Fx.stoneOn = (g, list, n) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'st', 1, 'freeze'); // petrify/seal
   Fx.doomOn = (g, list, n) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'doom', 1, 'poison'); // death-mark
   Fx.frailOn = (g, list, n) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'frail', true, 'transform'); // armor-shred
+  Fx.veilOn = (g, list, n, turns) => Fx.statusOn(g, Fx.uniqN(list, n == null ? list.length : n), 'v', turns || 1, 'wind'); // mist/invisibility
   Fx.limitMove = function (g, side, type) { g.moveLimit = g.moveLimit || { w: null, b: null }; g.moveLimit[side] = type; };
   Fx.noCaptures = function (g, side) { g.noCap = g.noCap || { w: false, b: false }; g.noCap[side] = true; };
   Fx.zoneKind = g => E.zoneAt(g, 0, 0); // (deprecated marker) — use helpers below

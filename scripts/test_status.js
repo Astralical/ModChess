@@ -67,5 +67,32 @@ Fx.noCaptures(g, 'w');
 const quiet = E.legalMoves(g, 'w');
 ok(!quiet.some(m => m.capture), 'no-capture removes all capturing moves');
 
+// --- FOG & VEIL (obscured pieces can only be captured from an ADJACENT square) ---
+g = E.newGame(); clear(g);
+g.board[4][4] = { c: 'b', t: 'q', b: { f: 0, s: 0, p: 0, v: 2 } }; // veiled black queen
+g.board[4][0] = { c: 'w', t: 'r' };                              // far rook, same rank
+let wm = E.legalMoves(g, 'w');
+ok(!wm.some(m => m.r1 === 4 && m.c1 === 4), 'veiled piece cannot be captured from range');
+g.board[5][5] = { c: 'w', t: 'p' }; // adjacent white pawn attacks (4,4)
+wm = E.legalMoves(g, 'w');
+ok(wm.some(m => m.r1 === 4 && m.c1 === 4 && m.capture), 'an ADJACENT piece can capture a veiled enemy');
+// a knight (2,1 leap) is NOT adjacent -> still blocked
+g.board[6][6] = { c: 'w', t: 'n' };
+wm = E.legalMoves(g, 'w');
+ok(!wm.some(m => m.r1 === 4 && m.c1 === 4 && m.r0 === 6 && m.c0 === 6), 'a leaping knight cannot strike through the mist');
+// fog ZONE gives the same protection even without a veil status
+g = E.newGame(); clear(g);
+E.setZone(g, 4, 4, 'fog');
+g.board[4][4] = { c: 'b', t: 'q' };
+g.board[4][0] = { c: 'w', t: 'r' };
+wm = E.legalMoves(g, 'w');
+ok(!wm.some(m => m.r1 === 4 && m.c1 === 4), 'a piece standing in a fog zone cannot be captured from range');
+// veil counts down on the OWNER's own turn-ends then lifts
+g = E.newGame(); clear(g);
+g.board[4][4] = { c: 'b', t: 'q', b: { f: 0, s: 0, p: 0, v: 2 } };
+ok(E.obscured(g, 4, 4), 'veiled piece starts obscured');
+E.tickAfterMove(g, 'b'); E.tickAfterMove(g, 'b');
+ok(!E.obscured(g, 4, 4), 'veil lifts after two of the owner\'s turn-ends');
+
 console.log('pass=' + pass + ' fail=' + fail);
 process.exit(fail ? 1 : 0);
