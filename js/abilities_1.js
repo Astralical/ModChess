@@ -370,7 +370,7 @@
       run: (g, s) => Fx.poisonN(g, s, 1) },
 
     { id: 38, name: 'Doom', icon: '🔮', rarity: 4, cat: 'Curse',
-      desc: 'Mark the strongest enemy piece with a curse of death.',
+      desc: 'Mark the strongest enemy piece — and its weakest companion — with DOOM: each dies quietly at the end of its own next turn.',
       flavor: 'The oracle has spoken. Run.',
       target: 'auto',
       run: (g, s) => {
@@ -378,9 +378,16 @@
           .sort((a, b) => Fx.value(b.cell.t) - Fx.value(a.cell.t));
         const top = pool[0];
         if (!top) return [];
-        Fx.mod(top.cell, 'p', 1);
+        Fx.mod(top.cell, 'doom', 1);
         Fx.flash(g, top.r, top.c, 'poison', '');
-        return ['A death mark sears onto the enemy ' + MD.pieceName(top.cell.t) + '.'];
+        const lines = ['A death mark sears onto the enemy ' + MD.pieceName(top.cell.t) + ' — it has one turn to live.'];
+        const weak = pool[pool.length - 1];
+        if (weak && weak !== top) {
+          Fx.mod(weak.cell, 'doom', 1);
+          Fx.flash(g, weak.r, weak.c, 'poison', '');
+          lines.push('Doom also brushes the weakest: ' + MD.pieceName(weak.cell.t) + '.');
+        }
+        return lines;
       } },
 
     { id: 39, name: 'Chill', icon: '🧊', rarity: 1, cat: 'Status',

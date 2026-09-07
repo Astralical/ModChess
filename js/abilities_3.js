@@ -214,18 +214,18 @@
       } },
 
     { id: 117, name: 'Petrify', icon: '🪦', rarity: 2, cat: 'Status',
-      desc: 'Freeze a random enemy piece of your choosing value (any) — your pick.',
+      desc: 'Petrify an enemy piece of your choosing: it is sealed in stone — unable to move or be captured until one of its own turns passes.',
       flavor: 'Choose who becomes a statue.',
       target: 'enemyAny',
       run: (g, s, sq) => {
         const t = pick(g, s, sq, 'enemyAny');
         if (!t) return [];
-        Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', '');
-        return ['An enemy ' + MD.pieceName(t.cell.t) + ' is petrified for a turn.'];
+        Fx.mod(t.cell, 'st', 1); Fx.flash(g, t.r, t.c, 'freeze', '');
+        return ['An enemy ' + MD.pieceName(t.cell.t) + ' is petrified — a statue that cannot move or be captured.'];
       } },
 
     { id: 118, name: 'Crystal Coffin', icon: '💎', rarity: 3, cat: 'Status',
-      desc: 'Freeze the strongest enemy non-king piece for a turn.',
+      desc: 'Seal the strongest enemy non-king piece in crystal: it cannot move or be captured until one of its own turns passes.',
       flavor: 'A prison of perfect clarity.',
       target: 'auto',
       run: (g, s) => {
@@ -233,8 +233,8 @@
           .sort((a, b) => Fx.value(b.cell.t) - Fx.value(a.cell.t));
         const top = pool[0];
         if (!top) return [];
-        Fx.mod(top.cell, 'f', 1); Fx.flash(g, top.r, top.c, 'freeze', '');
-        return ['The enemy ' + MD.pieceName(top.cell.t) + ' is sealed in crystal.'];
+        Fx.mod(top.cell, 'st', 1); Fx.flash(g, top.r, top.c, 'freeze', '');
+        return ['The enemy ' + MD.pieceName(top.cell.t) + ' is sealed in crystal — immobile and un-capturable until its own turn passes.'];
       } },
 
     { id: 119, name: 'Frost Nova', icon: '🧊', rarity: 2, cat: 'Status',

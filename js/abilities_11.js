@@ -111,13 +111,13 @@
     return ['The oracle freezes the enemy\'s ' + MD.pieceName(star.cell.t) + '.'];
   });
 
-  def(466, 'Gorgon Shield', 1, 'Myth', 'eye', 'Shield your king and freeze the enemy piece nearest to it — the face of the shield.', 'Look at the shield, not the snake.', (g, s) => {
+  def(466, 'Gorgon Shield', 1, 'Myth', 'eye', 'Shield your king, and the gorgon face of the shield PETRIFIES the enemy piece nearest to it.', 'Look at the shield, not the snake.', (g, s) => {
     const k = E.findKing(g, s);
     if (!k) return [];
     Fx.mod(g.board[k.r][k.c], 's', 1); Fx.flash(g, k.r, k.c, 'shield', '');
     let best = null, bd = 99;
     for (const q of en(g, s)) if (q.cell.t !== 'k') { const d = Math.abs(q.r - k.r) + Math.abs(q.c - k.c); if (d < bd) { bd = d; best = q; } }
-    if (best) { Fx.mod(best.cell, 'f', 1); Fx.flash(g, best.r, best.c, 'freeze', ''); return ['Your king is warded and the nearest foe is petrified.']; }
+    if (best) { Fx.mod(best.cell, 'st', 1); Fx.flash(g, best.r, best.c, 'freeze', ''); return ['Your king is warded and the nearest foe is petrified.']; }
     return ['Your king is warded.'];
   });
 
