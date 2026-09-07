@@ -29,10 +29,11 @@
   const SIZES = [8, 10, 12];
   const valOf = t => E.val(t);
 
-  // --- economy: gold is scarce & hard-won ---
-  const goldVal = v => Math.max(3, Math.round(v / 30)); // p3 n11 b11 r17 q32 …
-  const spoilsOf = w => 12 + w * 6;                     // tiny spoils per wave
-  const chestOf = w => 25 + w * 12;                     // war-chest boon
+  // --- economy: gold is VERY scarce — a strong purchase (~200-300) is a
+  // 3-5 round investment. Captures pay a pittance; most income is spoils. ---
+  const goldVal = v => Math.max(1, Math.round(v / 100)); // p1 n3 b3 r5 q10 …
+  const spoilsOf = w => 8 + w * 6;                      // 14 .. (a bit per wave)
+  const chestOf = w => 18 + w * 8;                      // war-chest boon
 
   // --- encounter types ---
   //   host  : the classic horde (pawn swarms + support)
@@ -545,7 +546,7 @@
     // spoils of war — scarce, hard-won gold
     const bonus = spoilsOf(C.run.wave);
     C.run.gold += bonus;
-    if (C.run.encounter === 'boss') { C.run.gold += 40; LOG(g, 'A warlord siege broken — spoils of +' + (bonus + 40) + ' gold.', 'sys', 'coin'); }
+    if (C.run.encounter === 'boss') { C.run.gold += 25; LOG(g, 'A warlord siege broken — spoils of +' + (bonus + 25) + ' gold.', 'sys', 'coin'); }
     else LOG(g, 'Wave ' + C.run.wave + ' repelled — the realm pays ' + bonus + ' gold in spoils.', 'sys', 'coin');
     C.phase = 'reward';
     banner('The host is scattered!', 'good');
@@ -655,7 +656,7 @@
       run: () => {
         const r = Fx.revive(g, 'w', 1);
         if (r.length) { LOG(g, 'A fallen champion is ransomed back to the realm.', 'w', 'heart'); UI.toast('A fallen champion returns.', 'sys'); }
-        else { C.run.gold += 20; UI.toast('No ransom needed — +20 gold.', 'sys'); }
+        else { C.run.gold += 15; UI.toast('No ransom needed — +15 gold.', 'sys'); }
       }
     });
 
@@ -667,7 +668,7 @@
           const type = ['guardian', 'archmage', 'griffon', 'siren', 'samurai'][Math.floor(Math.random() * 5)];
           const q = findFree(g, backRanks, allCols);
           if (q) { placeRaw(g, 'w', type, q.r, q.c); LOG(g, 'The shrine grants a ' + MD.pieceName(type) + ' ally!', 'w', 'star'); UI.toast('The shrine grants a ' + MD.pieceName(type) + '!', 'sys'); }
-          else { C.run.gold += 60; UI.toast('The shrine grants 60 gold.', 'sys'); }
+          else { C.run.gold += 40; UI.toast('The shrine grants 40 gold.', 'sys'); }
         } else {
           const victim = units.filter(u => u.cell.t !== 'k').sort(() => Math.random() - 0.5)[0];
           if (victim) {
@@ -681,7 +682,7 @@
 
     // — gold purchases: pricey mercenaries & royal works —
     opts.push({
-      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 150,
+      name: 'Mercenary Captain', icon: 'sword', rarity: 3, cost: 250,
       desc: 'Hire a champion: a ' + MD.pieceName(hireType()) + ' joins your army.',
       run: () => {
         const q = findFree(g, backRanks, allCols);
@@ -690,8 +691,9 @@
         else UI.toast('No room to field the mercenary — gold refunded.', 'sys');
       }
     });
+    // — gold purchases: strong abilities, pricey — one every 3-5 rounds —
     opts.push({
-      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 90,
+      name: 'Royal Restoration', icon: 'heart', rarity: 3, cost: 200,
       desc: 'Field hospitals: cleanse your whole army, revive a fallen pawn, and shield your king.',
       run: () => {
         for (const p of listPieces(g, 'w')) if (p.cell.b && (p.cell.b.f > 0 || p.cell.b.p > 0)) { p.cell.b.f = 0; p.cell.b.p = 0; }
@@ -703,7 +705,7 @@
       }
     });
     opts.push({
-      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 220,
+      name: 'Forge of Legends', icon: 'fire', rarity: 4, cost: 300,
       desc: 'Promote your most advanced pawn to a QUEEN and shield your two most advanced pieces.',
       run: () => {
         const adv = advPawn();
