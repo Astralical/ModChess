@@ -88,7 +88,7 @@
     siegetank: { name: 'Siege Tank',   icon: '🛡️', letter: 'T', value: 1000, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4]], onDeath: 'burst', artillery: { range: 3, radius: 1, cd: 3 } },
     zeppelin:  { name: 'War Zeppelin', icon: '🎈', letter: 'Z', value: 1150, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], artillery: { range: 5, radius: 0, cd: 2 } },
     howitzer:  { name: 'Howitzer',     icon: '💣', letter: 'H', value: 880, leap: CAMEL, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], artillery: { range: 4, radius: 1, cd: 2 } },
-    infantry:  { name: 'Rifleman',     icon: '🎖️', letter: 'I', value: 260,  leap: WAZIR },
+    infantry:  { name: 'Rifleman',     icon: '🎖️', letter: 'I', value: 420, leap: WAZIR, artillery: { range: 2, radius: 0, cd: 1 } },
     // — counter troops: destroy them by capturing and you are COUNTERED —
     //   (data-driven: counter: true='kill' | 'poison' | 'freeze' | 'doom')
     porcupine: { name: 'Porcupine',   icon: '🦔', letter: 'P', value: 360, leap: WAZIR, counter: true },
@@ -126,7 +126,30 @@
     huangzhong: { name: 'Huang Zhong', icon: '🎯', letter: 'H', value: 900, leap: WAZIR, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], sworn: 'shu', artillery: { range: 5, radius: 0, cd: 1 } },
     ganning:  { name: 'Gan Ning',     icon: '🏴', letter: 'G', value: 940, leap: KNIGHT, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], sworn: 'wu', counter: 'poison' },
     diaochan: { name: 'Diao Chan',    icon: '🌙', letter: 'D', value: 820, leap: FERZ, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], aura: 'freeze' },
-    lubu:     { name: 'Lu Bu',        icon: '⚡', letter: 'B', value: 1600, leap: KNIGHT.concat(CAMEL), slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], onDeath: 'split' }
+    lubu:     { name: 'Lu Bu',        icon: '⚡', letter: 'B', value: 1600, leap: KNIGHT.concat(CAMEL), slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4]], onDeath: 'split' },
+    // — HEROES (set 21): legendary heroes from everywhere. Each is a Mythic summon
+    //   with its own UNIQUE banner trick (`hero:true`, engine dispatches def.hp at
+    //   the end of its owner's turn via MD.Heroes.ownTurn). Strong & rare.
+    alexander:{ name: 'Alexander the Great', icon: '🦁', letter: 'A', value: 1500, leap: KNIGHT, slide: [[1,0,6],[-1,0,6],[0,1,6],[0,-1,6]], hero: true, hp: 'alexander' },
+    caesar:   { name: 'Julius Caesar', icon: '🏛️', letter: 'C', value: 1350, leap: WAZIR, slide: [[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]], hero: true, hp: 'caesar' },
+    spartacus:{ name: 'Spartacus',    icon: '⛓️', letter: 'S', value: 1300, leap: CAMEL, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], hero: true, hp: 'spartacus' },
+    hannibal: { name: 'Hannibal Barca', icon: '🐘', letter: 'H', value: 1400, leap: FERZ, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], hero: true, hp: 'hannibal' },
+    genghis:  { name: 'Genghis Khan', icon: '🏹', letter: 'G', value: 1600, leap: KNIGHT, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4],[1,0,3],[-1,0,3]], hero: true, hp: 'genghis' },
+    napoleon: { name: 'Napoleon',     icon: '🎩', letter: 'N', value: 1350, leap: CAMEL, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]], hero: true, hp: 'napoleon' },
+    sunzu:    { name: 'Sun Tzu',      icon: '📜', letter: 'T', value: 1250, leap: FERZ, slide: [[1,1,4],[1,-1,4],[-1,1,4],[-1,-1,4],[1,0,2],[-1,0,2]], hero: true, hp: 'sunzu' },
+    leonidas: { name: 'Leonidas',     icon: '🛡️', letter: 'L', value: 1400, leap: WAZIR, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], hero: true, hp: 'leonidas' },
+    gilgamesh:{ name: 'Gilgamesh',    icon: '🗿', letter: 'G', value: 1550, leap: KNIGHT, slide: [[1,1,6],[1,-1,6],[-1,1,6],[-1,-1,6],[1,0,3],[-1,0,3]], hero: true, hp: 'gilgamesh' },
+    hercules: { name: 'Hercules',     icon: '💪', letter: 'H', value: 1600, leap: KNIGHT.concat(CAMEL), slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], hero: true, hp: 'hercules' },
+    odin:     { name: 'Odin',         icon: '🐦‍⬛', letter: 'O', value: 1700, leap: KNIGHT, slide: [[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5],[1,0,4],[-1,0,4]], hero: true, hp: 'odin' },
+    thor:     { name: 'Thor',         icon: '🔨', letter: 'R', value: 1650, leap: FERZ, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]], hero: true, hp: 'thor' },
+    sunwukong:{ name: 'Sun Wukong',   icon: '🐒', letter: 'W', value: 1500, leap: CAMEL.concat(DABBABA), slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], hero: true, hp: 'sunwukong' },
+    momotaro: { name: 'Momotaro',     icon: '🍑', letter: 'M', value: 1250, leap: WAZIR, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], hero: true, hp: 'momotaro' },
+    anansi:   { name: 'Anansi',       icon: '🕷️', letter: 'A', value: 1300, leap: FERZ, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2],[1,0,2],[-1,0,2]], hero: true, hp: 'anansi' },
+    robinhood:{ name: 'Robin Hood',   icon: '🎯', letter: 'R', value: 1350, leap: KNIGHT, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], hero: true, hp: 'robinhood' },
+    arthur:   { name: 'King Arthur',  icon: '⚔️', letter: 'K', value: 1550, leap: KNIGHT, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], hero: true, hp: 'arthur' },
+    beowulf:  { name: 'Beowulf',      icon: '🐻', letter: 'B', value: 1500, leap: CAMEL, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], hero: true, hp: 'beowulf' },
+    goku:     { name: 'Goku',         icon: '🟠', letter: 'K', value: 1650, leap: KNIGHT, slide: ALL8, hero: true, hp: 'goku' },
+    mulan:    { name: 'Mulan',        icon: '🌸', letter: 'M', value: 1300, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], hero: true, hp: 'mulan' }
   };
 
   MD.TROOPS = T;

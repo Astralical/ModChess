@@ -886,6 +886,7 @@
       tr.push('counter: ' + eff + ' when captured (kings safe)');
     }
     if (d.artillery) tr.push('artillery: fires on a ranged foe every ~' + ((d.artillery.cd || 1)) + ' own turn(s)');
+    if (d.hero) tr.push('LEGENDARY HERO — a unique banner trick (see the card that summons it)');
     if (d.sworn) {
       const fac = d.sworn === 'shu' ? 'Shu' : d.sworn === 'wei' ? 'Wei' : d.sworn === 'wu' ? 'Wu' : d.sworn;
       tr.push('sworn ' + fac + ': while adjacent to a same-faction ally at your turn\'s end, cleanses poison/frost and gains a shield');
@@ -998,15 +999,32 @@
   UI.bindBoard = function () {
     const board = $('#board');
     let down = null, dragging = false, ghost = null;
+    const clearDrag = () => {
+      down = null; dragging = false;
+      if (ghost) { ghost.remove(); ghost = null; }
+    };
+    const sqPx = () => {
+      // .dragpiece lives on <body> where the board's --sq is NOT inherited;
+      // read it explicitly so a ghost is always exactly one square big.
+      const cs = getComputedStyle(board);
+      const v = parseFloat(cs.getPropertyValue('--sq'));
+      return (v > 0 ? v : 60);
+    };
 
     board.addEventListener('pointerdown', e => {
       if (MD.Game.phase === 'over') return;
+      // right/middle clicks must never start a tap or drag (their native
+      // context menu can swallow the pointerup and leave a stuck ghost)
+      if (e.pointerType === 'mouse' && e.button !== 0) { clearDrag(); return; }
       if (e.target.closest('.hl, .coords, .piece-layer .fx-word')) { /* fine */ }
       const rc = toRc(e.clientX, e.clientY);
       if (rc.r === undefined) return;
       down = { x: e.clientX, y: e.clientY, rc };
       dragging = false;
     });
+
+    // a right-click (native context menu) must not leave an in-flight drag behind
+    board.addEventListener('contextmenu', e => { e.preventDefault(); clearDrag(); });
 
     window.addEventListener('pointermove', e => {
       if (!down) return;
@@ -1018,6 +1036,9 @@
           const img = cellImg(cell);
           ghost = document.createElement('div');
           ghost.className = 'dragpiece';
+          const sz = sqPx();
+          ghost.style.width = sz + 'px';
+          ghost.style.height = sz + 'px';
           ghost.appendChild(img);
           document.body.appendChild(ghost);
         }
@@ -1040,6 +1061,11 @@
       }
       down = null; dragging = false;
     });
+
+    // safety nets: cancel/abandoned gestures & window blur must release a stuck ghost
+    window.addEventListener('pointercancel', clearDrag);
+    window.addEventListener('blur', clearDrag);
+    window.addEventListener('pointerup', e => { if (e.pointerType === 'mouse' && e.button !== 0) clearDrag(); });
   };
 
   /* ---------- bind static UI controls ---------- */

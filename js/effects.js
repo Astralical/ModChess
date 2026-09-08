@@ -121,6 +121,7 @@
     const plan = E.spawnPlan ? E.spawnPlan(type) : { type, growTo: null, mature: 0 };
     const cell = { c: color, t: plan.type };
     if (E.isTroop(plan.type)) g.anyTroop = true;
+    if (E.isHero && E.isHero(plan.type)) g.anyHero = true;
     if (!opts.noStatus) {
       const st = { f: 0, s: 0, p: 0 };
       // summoning sickness: a fresh piece can't act until it survives its owner's turn

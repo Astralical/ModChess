@@ -154,6 +154,27 @@
   TROOP['huangzhong'] = TROOP['ranger'];
   TROOP['ganning'] = TROOP['seaserpent'];
   TROOP['guojia'] = TROOP['djinn'];
+  // HEROES (set 21) glyphs
+  TROOP['alexander'] = TROOP['samurai'];
+  TROOP['caesar'] = TROOP['guardian'];
+  TROOP['spartacus'] = TROOP['tiger'];
+  TROOP['hannibal'] = TROOP['griffon'];
+  TROOP['genghis'] = TROOP['ranger'];
+  TROOP['napoleon'] = TROOP['siegetank'];
+  TROOP['sunzu'] = TROOP['archmage'];
+  TROOP['leonidas'] = TROOP['warhorse'];
+  TROOP['gilgamesh'] = TROOP['golem'];
+  TROOP['hercules'] = TROOP['sphinx'];
+  TROOP['odin'] = TROOP['lich'];
+  TROOP['thor'] = TROOP['djinn'];
+  TROOP['sunwukong'] = TROOP['qilin'];
+  TROOP['momotaro'] = TROOP['divinedog'];
+  TROOP['anansi'] = TROOP['basilisk'];
+  TROOP['robinhood'] = TROOP['owlbear'];
+  TROOP['arthur'] = TROOP['jianke'];
+  TROOP['beowulf'] = TROOP['manticore'];
+  TROOP['goku'] = TROOP['unicorn'];
+  TROOP['mulan'] = TROOP['yasha'];
 
   // ======== build markup helpers ========
   function inner(key) { return B[key] || TROOP[key] || B.spark || ''; }
@@ -180,7 +201,7 @@
     Transform: 'rune', Chaos: 'chaos', Status: 'eye', Time: 'clock',
     Kingship: 'crown', Economy: 'coin', Luck: 'dice',
     Wild: 'leaf', Void: 'void', SciFi: 'boltring', Show: 'star', Myth: 'rune',
-    Jujutsu: 'rune', Wuxia: 'sword', Ocean: 'drop', War: 'target'
+    Jujutsu: 'rune', Wuxia: 'sword', Ocean: 'drop', War: 'target', Zombie: 'skull', 'Three Kingdoms': 'crown', Heroes: 'crown'
   };
   const KEYWORD = [
     [/fire|flame|burn|dragon'?s?|inciner|meteor|ragnarok|cannon|sunburst/i, 'fire'],

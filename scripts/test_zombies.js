@@ -2,11 +2,11 @@
 const fs = require('fs');
 globalThis.MD = {};
 const load = p => eval(fs.readFileSync(p, 'utf8'));
-['js/engine.js', 'js/troops.js', 'js/icons.js', 'js/effects.js', 'js/abilities_1.js', 'js/abilities_2.js',
+['js/engine.js', 'js/troops.js', 'js/icons.js', 'js/effects.js', 'js/heroes.js', 'js/abilities_1.js', 'js/abilities_2.js',
  'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js',
  'js/abilities_8.js', 'js/abilities_9.js', 'js/abilities_10.js', 'js/abilities_11.js',
  'js/abilities_12.js', 'js/abilities_13.js', 'js/abilities_14.js', 'js/abilities_15.js', 'js/abilities_16.js',
- 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_20.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
+ 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_20.js', 'js/abilities_21.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
 const MD2 = globalThis.MD, E = MD2.Engine;
 
 let pass = 0, fail = 0;
@@ -16,7 +16,7 @@ function clean(n) { const g = E.newGame(n); for (let r = 0; r < n; r++) for (let
 // --- 1. Outbreak set present (75 cards, ids 855-929, cat Zombie) ---
 const zombie = MD2.ABILITIES.filter(a => a.cat === 'Zombie');
 ok(zombie.length === 75, '75 Zombie cards registered (got ' + zombie.length + ')');
-ok(MD2.ABILITIES.length === 913, 'total pool 913');
+ok(MD2.ABILITIES.length === 933, 'total pool 933');
 ok(zombie.every(a => a.id >= 855 && a.id <= 929), 'zombie ids 855-929');
 ok(MD2.CATS.includes('Zombie'), 'Zombie category in CATS');
 
@@ -178,6 +178,28 @@ ok(!!MD2.TROOPS.porcupine && !!MD2.TROOPS.scorpion && !!MD2.TROOPS.urchin && !!M
   g.board[3][4] = { c: 'w', t: 'guanyu' };
   E.tickAfterMove(g, 'w');
   ok(!(g.board[3][3].b && g.board[3][3].b.s > 0), 'summon-sick Liu Bei NOT oath-shielded');
+}
+
+// --- 12. Heroes set (set 21): 20 Mythic cards, ids 1010-1029, cat 'Heroes' ---
+{
+  const hs = MD2.ABILITIES.filter(a => a.cat === 'Heroes');
+  ok(hs.length === 20, '20 Heroes cards registered (got ' + hs.length + ')');
+  ok(hs.every(a => a.id >= 1010 && a.id <= 1029), 'Heroes ids 1010-1029');
+  ok(hs.every(a => a.rarity === 5), 'every Hero card is Mythic (rarity 5)');
+  ok(MD2.CATS.includes('Heroes'), 'Heroes category in CATS');
+}
+// --- 13. hero troops exist, flagged hero:true, hp power wired in MD.Heroes ---
+{
+  const names = ['alexander', 'caesar', 'spartacus', 'hannibal', 'genghis', 'napoleon', 'sunzu', 'leonidas',
+    'gilgamesh', 'hercules', 'odin', 'thor', 'sunwukong', 'momotaro', 'anansi', 'robinhood',
+    'arthur', 'beowulf', 'goku', 'mulan'];
+  const missing = names.filter(t => !MD2.TROOPS[t]);
+  ok(missing.length === 0, 'all 20 hero troops registered (missing: ' + missing.join(',') + ')');
+  const nohero = names.filter(t => !MD2.TROOPS[t] || !MD2.TROOPS[t].hero || !MD2.TROOPS[t].hp);
+  ok(nohero.length === 0, 'all heroes flagged hero:true with an hp power');
+  const unkeyed = names.filter(t => !(MD2.Heroes && MD2.Heroes.powerList && MD2.Heroes.powerList.includes(MD2.TROOPS[t].hp)));
+  ok(unkeyed.length === 0, 'every hero hp key has a power implementation (missing: ' + unkeyed.join(',') + ')');
+  ok(names.every(t => E.isHero(t)), 'E.isHero true for every hero troop');
 }
 
 console.log('\npass=' + pass + ' fail=' + fail);

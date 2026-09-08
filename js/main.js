@@ -118,6 +118,11 @@
         const hits = MD.Engine.strike(Game.g, tgt.r, tgt.c, art.radius, color);
         bb.ac = art.cd || 2;
         addLog(Game.g, ((tdef.name || cell.t)) + ' fires at ' + E.sqName(tgt.r, tgt.c) + ' — ' + (hits ? (hits > 1 ? hits + ' pieces caught' : 'direct hit') : 'the shot is wide') + '!', 'bad', 'storm');
+        // show the shot landing (fx layer is re-painted synchronously at turn start)
+        if (MD.UI && MD.UI.fxWord && !(Game.g.over)) {
+          const tr = tgt.r, tc = tgt.c, hit = hits > 0;
+          setTimeout(() => { if (!Game.g.over && Game.g.board[tr] && Game.g.board[tr][tc]) MD.UI.fxWord(tr, tc, hit ? (hits > 1 ? '✸ ' + hits + ' HIT' : '✸ HIT') : '· MISS', hit ? 'fx-hit' : 'fx-miss'); }, 160);
+        }
       }
     }
     if (MD.Engine && MD.Engine.tickArtillery) MD.Engine.tickArtillery(Game.g, color);
@@ -399,6 +404,10 @@
       const cl = E.counterStrike(Game.g, move.r1, move.c1, victimCell);
       if (cl && cl.length) cl.forEach(t => addLog(Game.g, '⚡ ' + t, 'bad', 'skull'));
     }
+    // a legendary hero that captures grows in legend (conquest counters etc.)
+    if (wasCapture && Game.g.anyHero && MD.Heroes && MD.Heroes.onCapture) {
+      try { MD.Heroes.onCapture(Game.g, move.r1, move.c1, mover); } catch (e) { /* never crash a move */ }
+    }
     Game.lastAnimate = anim;
     MD.playSfx(wasCapture ? 'capture' : 'move');
     if (E.inCheck(Game.g, opp(mover))) MD.playSfx('check');
@@ -432,6 +441,7 @@
         else if (ev.kind === 'rattle') addLog(g, (ev.text || 'A dying troop leaves a mark') + '.', 'bad', 'skull');
         else if (ev.kind === 'doom') addLog(g, (ev.text || 'A doomed piece perishes') + '.', 'bad', 'target');
         else if (ev.kind === 'sworn') addLog(g, (ev.text || 'Sworn allies stand together.') , 'w', 'heart');
+        else if (ev.kind === 'hero') addLog(g, (ev.text || 'A legend stirs.') + '.', 'w', 'star');
         else if (ev.kind === 'zone') addLog(g, (ev.text || 'The ground reacts') + '.', 'sys', 'fire');
       }
     }

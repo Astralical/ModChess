@@ -35,6 +35,7 @@
   }
   E.troopDef = TROOP;
   E.isTroop = t => !!TROOP(t);
+  E.isHero = t => { const d = TROOP(t); return !!(d && d.hero); };
   E.troopLetter = t => { const d = TROOP(t); return d ? (d.letter || '?') : '?'; };
   E.val = t => (E.PIECE_VAL[t] || (TROOP(t) && TROOP(t).value) || 0);
 
@@ -143,7 +144,7 @@
       ep: null, half: 0, full: 1, plies: 0,
       capt: { w: [], b: [] }, lost: { w: [], b: [] }, hist: [], lastMove: null,
       extra: { w: 0, b: 0 }, extraCycle: { w: false, b: false },
-      anyTroop: false,
+      anyTroop: false, anyHero: false,
       haz: grid(), blocked: grid(), zone: grid(),
       moveLimit: { w: null, b: null }, noCap: { w: false, b: false },
       over: false, result: null, reason: null, winner: null,
@@ -1069,11 +1070,27 @@
           events.push({ kind: 'grow', r, c, text: (T[adult].name || adult) + ' has grown into its adult form' });
         }
       }
-      // clean up when every counter is spent
+      // clean up when every counter is spent (heroes keep their b object so their
+      // persistent power counters — labours, conquests, alt — survive between turns)
       if (g.board[r][c] === cell) {
         const bb = cell.b;
         const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0) && !(bb.st > 0) && !(bb.doom > 0) && !(bb.v > 0) && !bb.frail;
-        if (spent) cell.b = undefined;
+        if (spent && !(def && def.hero)) cell.b = undefined;
+      }
+    }
+    // LEGENDARY HERO powers resolve AFTER the whole status pass — poison, doom and
+    // growth have already bitten, so an ally is either dead or alive when a hero
+    // rallies it, and hero counters are never wiped mid-resolution.
+    if (root.MD && root.MD.Heroes && g.anyHero && T) {
+      for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
+        const cell = g.board[r][c];
+        if (!cell || cell.c !== mover) continue;
+        const defH = T[cell.t];
+        if (!defH || !defH.hero || !defH.hp) continue;
+        if (cell.b && cell.b.z > 0) continue; // still waking up
+        if (cell.b && cell.b.f > 0) continue; // frozen heroes cannot act
+        try { root.MD.Heroes.ownTurn(g, cell, r, c, defH, mover, events); }
+        catch (e) { /* a hero trick must never crash a turn */ }
       }
     }
     // ground zones bite anything left standing at the end of the mover's turn

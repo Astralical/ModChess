@@ -7,6 +7,9 @@
   --accent2:#81b64c;
   --radius:10px;
   --shadow:0 8px 24px rgba(0,0,0,.18);
+  /* default square size — the floating .dragpiece lives on <body> (outside the
+     .board subtree) and must be able to resolve --sq without a giant fallback */
+  --sq:64px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -368,6 +371,9 @@ body.theme-wood .board::after, body.theme-green .board::after{
   position:absolute;z-index:12;font-weight:800;font-size:16px;color:#fff;pointer-events:none;
   text-shadow:0 2px 6px rgba(0,0,0,.7);animation:fxWord 1s ease forwards;white-space:nowrap;
 }
+.fx-word.fx-hit{color:#ffd166}
+.fx-word.fx-miss{color:#cfd6de;font-size:13px}
+.fx-word.fx-heal{color:#81d49b}
 @keyframes fxWord{0%{opacity:0;transform:translateY(6px) scale(.6)}25%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0;transform:translateY(-26px)}}
 
 /* board square highlight for statuses shown on board turn */
