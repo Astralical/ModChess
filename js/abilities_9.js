@@ -133,7 +133,7 @@
     return ['Your vanguard is rebuilt as a shielded Golem mech!'];
   });
 
-  def(369, 'Static Field', 1, 'SciFi', 'bolt', 'Freeze every enemy piece adjacent to your queen.', 'Don\'t touch the rail.', (g, s) => {
+  def(369, 'Static Field', 2, 'SciFi', 'bolt', 'Freeze every enemy piece adjacent to your queen.', 'Don\'t touch the rail.', (g, s) => {
     const q = own(g, s).find(x => x.cell.t === 'q');
     if (!q) return [];
     const foes = en(g, s).filter(x => x.cell.t !== 'k' && Math.abs(x.r - q.r) <= 1 && Math.abs(x.c - q.c) <= 1);

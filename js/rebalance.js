@@ -69,7 +69,7 @@
     92: 4,  // Time Stop (enemy turn erased)
     93: 3,  // Haste (extra move + pawn surge)
     94: 2,  // Slow (freeze the two lead pieces)
-    95: 1,  // Foresight (restricted extra move) → Common
+    95: 2,  // Foresight (extra move) → Rare (an extra move is too strong as a Common)
     96: 4,  // Betrayal (steal the strongest piece) → Legendary
     102: 3, // Judgment (destroy the unprotected power piece)
     103: 2, // Kraken's Reach (steal the lead pawn) → Rare

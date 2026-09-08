@@ -471,7 +471,7 @@
     return lines.length ? lines : ['The forest has nothing to protect.'];
   });
 
-  def(296, 'Screech', 1, 'Wild', 'storm', 'Freeze every enemy piece adjacent to your king.', 'The piercing cry stops them cold.', (g, s) => {
+  def(296, 'Screech', 2, 'Wild', 'storm', 'Freeze every enemy piece adjacent to your king.', 'The piercing cry stops them cold.', (g, s) => {
     const k = E.findKing(g, s);
     if (!k) return [];
     const targets = [];

@@ -62,8 +62,8 @@
     for (let i = 0; i < ps.length; i++) { ps[i].cell.t = kinds[i]; Fx.flash(g, ps[i].r, ps[i].c, 'transform', ''); lines.push('A pawn reanimates into a ' + pname(kinds[i]) + '.'); }
     return lines.length ? lines : ['No pawns to reanimate.'];
   });
-  def(859, 'Rotten Tide', 2, 'Zombie', 'drop', 'Every enemy PAWN on the board becomes a husk under your command.', 'The horde turns your own pawns.', (g, s) => {
-    const targets = foes(g, s).filter(q => q.cell.t === 'p').sort(() => Math.random() - 0.5).slice(0, 6);
+  def(859, 'Rotten Tide', 2, 'Zombie', 'drop', 'Up to FOUR enemy PAWNs on the board become husks under your command.', 'The horde turns your own pawns.', (g, s) => {
+    const targets = foes(g, s).filter(q => q.cell.t === 'p').sort(() => Math.random() - 0.5).slice(0, 4);
     if (!targets.length) return ['No enemy pawns to corrupt.'];
     const lines = [];
     for (const q of targets) { q.cell.c = s; Fx.flash(g, q.r, q.c, 'transform', ''); lines.push('An enemy pawn joins your rotting horde.'); }
@@ -332,9 +332,10 @@
     const n = Fx.statusOn(g, targets, 'doom', 1, 'poison');
     return n ? ['The infection incubates — ' + n + ' poisoned enemy' + (n > 1 ? 's' : '') + ' are doomed.'] : ['Nothing is incubating.'];
   });
-  def(894, 'Pandemic', 4, 'Zombie', 'void', 'Poison EVERY enemy piece on the board.', 'There is no quarantine for the whole world.', (g, s) => {
-    const targets = foes(g, s);
-    const n = Fx.statusOn(g, targets, 'p', 1, 'poison');
+  def(894, 'Pandemic', 4, 'Zombie', 'void', 'The plague finds the vulnerable: poison UP TO FIVE random enemy pieces (kings are immune; the mightiest may escape).', 'There is no quarantine for the whole world.', (g, s) => {
+    const pool = foes(g, s);
+    const picks = Fx.uniqN(pool, Math.min(5, pool.length));
+    const n = Fx.statusOn(g, picks, 'p', 1, 'poison');
     return n ? ['Pandemic! ' + n + ' enemy' + (n > 1 ? 's are' : ' is') + ' infected.'] : ['The world is already empty.'];
   });
 
@@ -488,9 +489,9 @@
   });
 
   // ============ D. DOOMSDAY — finishers & last stands ============
-  def(915, 'The Final Plague', 5, 'Zombie', 'void', 'Destroy every enemy piece on the board that is worth more than a pawn, then your army is cleansed.', 'There is no cure for the end.', (g, s) => {
-    const targets = foes(g, s).filter(q => q.cell.t !== 'p');
-    if (!targets.length) return ['Only pawns remain — the plague passes them by.'];
+  def(915, 'The Final Plague', 5, 'Zombie', 'void', 'The final plague strikes the MIGHTY: destroy every enemy piece worth at least a rook, then your army is cleansed.', 'There is no cure for the end.', (g, s) => {
+    const targets = foes(g, s).filter(q => dead(q.cell.t) >= 500);
+    if (!targets.length) return ['Only lesser pieces remain — the plague passes them by.'];
     const lines = [];
     for (const q of targets) { Fx.removeAt(g, q.r, q.c, {}); lines.push('The plague takes the ' + pname(q.cell.t) + '.'); }
     for (const q of Fx.own(g, s)) if (q.cell.b) { q.cell.b.p = 0; q.cell.b.f = 0; }

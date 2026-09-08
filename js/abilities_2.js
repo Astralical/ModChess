@@ -22,10 +22,10 @@
       run: (g, s) => Fx.destroyN(g, s, 2, { only: 'p' }) },
 
     { id: 53, name: 'Cull the Weak', icon: '⚖️', rarity: 2, cat: 'Attack',
-      desc: 'Destroy every enemy pawn.',
+      desc: 'Destroy up to FOUR random enemy pawns — the harvest has limits.',
       flavor: 'No pawn shall survive the harvest.',
       target: 'auto',
-      run: (g, s) => Fx.destroyAll(g, s, c => c.t === 'p') },
+      run: (g, s) => Fx.destroyN(g, s, 4, { only: 'p' }) },
 
     { id: 54, name: 'Shatter', icon: '💥', rarity: 3, cat: 'Attack',
       desc: 'Pick a square — every enemy piece adjacent (8 cells) is destroyed.',

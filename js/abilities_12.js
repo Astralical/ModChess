@@ -145,8 +145,8 @@
     return ['Cursed energy pushes your vanguard and wraps it in a ward.'];
   });
 
-  def(519, 'Idle Transfiguration', 3, 'rune', 'Reshape souls en masse: every enemy PAWN becomes a pawn of YOURS.', 'The shape of a soul is a suggestion.', (g, s) => {
-    const ps = en(g, s).filter(q => q.cell.t === 'p');
+  def(519, 'Idle Transfiguration', 3, 'rune', 'Reshape souls en masse: up to FOUR random enemy PAWNs become pawns of YOURS.', 'The shape of a soul is a suggestion.', (g, s) => {
+    const ps = en(g, s).filter(q => q.cell.t === 'p').sort(() => Math.random() - 0.5).slice(0, 4);
     if (!ps.length) return ['No souls to transfigure.'];
     const lines = [];
     for (const p of ps) { p.cell.c = s; Fx.flash(g, p.r, p.c, 'move', ''); lines.push('An enemy pawn is transfigured to your cause.'); }

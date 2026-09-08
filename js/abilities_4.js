@@ -686,14 +686,20 @@
       } },
 
     { id: 199, name: 'Ragnarok', icon: '🌋', rarity: 4, cat: 'Attack',
-      desc: 'Destroy every enemy piece except their king, at the cost of one of your own pieces.',
+      desc: 'The end takes the world, but the mightiest endure: destroy every enemy piece except their king and their STRONGEST survivor — the fire also claims your strongest piece.',
       flavor: 'The end of all things. Almost.',
       target: 'auto',
       run: (g, s) => {
-        const lines = Fx.destroyAll(g, s, c => c.t !== 'k');
-        const mine = own(g, s).filter(q => q.cell.t !== 'k');
-        const victim = Fx.rand(mine);
-        if (victim) { Fx.removeAt(g, victim.r, victim.c, {}); lines.push('The worldfire claims one of your own as fuel.'); }
+        const lines = [];
+        const enemies = en(g, s).filter(q => q.cell.t !== 'k');
+        const strong = enemies.slice().sort((a, b) => Fx.value(b.cell.t) - Fx.value(a.cell.t))[0];
+        for (const q of enemies) {
+          if (strong && q.r === strong.r && q.c === strong.c) continue; // one champion survives the fire
+          Fx.removeAt(g, q.r, q.c, {});
+          lines.push('The worldfire claims the enemy ' + (MD.pieceName ? MD.pieceName(q.cell.t) : q.cell.t) + '.');
+        }
+        const mine = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => Fx.value(b.cell.t) - Fx.value(a.cell.t))[0];
+        if (mine) { Fx.removeAt(g, mine.r, mine.c, {}); lines.push('The fire takes your own mightiest as fuel.'); }
         return lines.length ? lines : ['Ragnarok spares everyone.'];
       } },
 

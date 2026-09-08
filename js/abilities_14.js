@@ -358,7 +358,7 @@
     return moved ? ['Your vanguard stumps ' + moved + ' square' + (moved > 1 ? 's' : '') + ' forward.'] : ['The peglegged one is stuck.'];
   });
 
-  def(644, 'Glass Water', 1, 'clock', 'Perfectly calm seas: take an EXTRA move — but only if your king is not in check.', 'Not a ripple.', (g, s) => {
+  def(644, 'Glass Water', 2, 'clock', 'Perfectly calm seas: take an EXTRA move — but only if your king is not in check.', 'Not a ripple.', (g, s) => {
     if (E.inCheck(g, s)) return ['The water is too rough to sail.'];
     Fx.grantExtra(g, s, 1);
     return ['Glass-calm water — an extra move is yours.'];
