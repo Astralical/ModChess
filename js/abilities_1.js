@@ -176,7 +176,7 @@
       run: (g, s) => { Fx.grantExtra(g, s, 1); return ['Time bends to your will — move again!']; } },
 
     { id: 21, name: 'Second Wind', icon: '💨', rarity: 4, cat: 'Time',
-      desc: 'Trade one of your pieces? No — just move twice. Take an extra move.',
+      desc: 'Gasp a second wind: take an EXTRA MOVE this turn.',
       flavor: 'Just when they think you\'re done.',
       target: 'auto',
       run: (g, s) => { Fx.grantExtra(g, s, 1); return ['Your heart keeps beating. Move again!']; } },
@@ -249,7 +249,7 @@
       } },
 
     { id: 28, name: 'Frog Prince', icon: '🐸', rarity: 1, cat: 'Transform',
-      desc: 'One random friendly pawn becomes a knight (frog? no—prince).',
+      desc: 'A random friendly pawn is kissed awake — it becomes a KNIGHT, the prince it was all along.',
       flavor: 'A single kiss. A full charge.',
       target: 'auto',
       run: (g, s) => {

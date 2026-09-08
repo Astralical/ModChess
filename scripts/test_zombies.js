@@ -202,5 +202,19 @@ ok(!!MD2.TROOPS.porcupine && !!MD2.TROOPS.scorpion && !!MD2.TROOPS.urchin && !!M
   ok(names.every(t => E.isHero(t)), 'E.isHero true for every hero troop');
 }
 
+// --- 14. Wild wolf troop exists (Wolves Among Sheep / Wolf Pact use it) ---
+{
+  ok(!!MD2.TROOPS.wolf, 'Wolf troop registered');
+  const wolves = MD2.ABILITIES.filter(a => /Wolves Among Sheep|Wolf Pact/.test(a.name));
+  ok(wolves.length === 2, 'both wolf-named Wild abilities present');
+}
+
+// --- 15. no leaked meta/self-contradictory notes remain in any final description ---
+{
+  const bad = /[?] No|\? no|\bNo — |too cruel|actually,|\? There is no|\bno (wolf|bear|griffin|dragon|tiger|hydra) troop|No — /i;
+  const leaked = MD2.ABILITIES.filter(a => bad.test(a.desc || '')).map(a => a.id + ':' + a.name);
+  ok(leaked.length === 0, 'no leaked self-note descriptions remain (found ' + leaked.join(',') + ')');
+}
+
 console.log('\npass=' + pass + ' fail=' + fail);
 process.exit(fail ? 1 : 0);

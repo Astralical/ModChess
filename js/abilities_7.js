@@ -52,9 +52,9 @@
     return ['The wilds stay silent.'];
   });
 
-  def(258, 'Wolf Pact', 2, 'Wild', 'paw', 'Summon two Warhorses on empty squares, then both lunge one step toward the enemy.', 'They hunt in pairs.', (g, s) => {
-    const lines = Fx.summonN(g, s, 'warhorse', 2, { rows: s === 'w' ? [4, 5] : [2, 3] });
-    const got = troopOwn(g, s).slice(-2);
+  def(258, 'Wolf Pact', 2, 'Wild', 'paw', 'Summon two Wolves on empty squares, then both lunge one step toward the enemy.', 'They hunt in pairs.', (g, s) => {
+    const lines = Fx.summonN(g, s, 'wolf', 2, { rows: s === 'w' ? [4, 5] : [2, 3] });
+    const got = troopOwn(g, s).filter(q => q.cell.t === 'wolf').slice(-2);
     for (const h of got) {
       const r = h.r + fwd(s), c = h.c;
       if (r >= 0 && r < Fx.bd(g) && !g.board[r][c]) Fx.relocate(g, h.r, h.c, r, c, {});
@@ -285,13 +285,17 @@
     return n ? ['The marsh swallows ' + n + ' invader' + (n > 1 ? 's' : '') + ' on the center files!'] : ['The marsh is quiet.'];
   });
 
-  def(278, 'Wolves Among Sheep', 2, 'Wild', 'paw', 'A random enemy PAWN is replaced by YOUR Wolf? There is no wolf troop — so steal a random enemy pawn and summon a Warhorse beside your king.', 'Now you are the flock.', (g, s) => {
+  def(278, 'Wolves Among Sheep', 2, 'Wild', 'paw', 'A wolf slips into the flock: replace a random enemy PAWN with YOUR Wolf — it tears through the sheep.', 'Now you are the flock.', (g, s) => {
     const pawns = en(g, s).filter(q => q.cell.t === 'p');
     const t = rnd(pawns);
-    const lines = [];
-    if (t) { t.cell.c = s; Fx.flash(g, t.r, t.c, 'move', ''); Fx.clearEp(g); lines.push('You steal an enemy pawn at ' + sn(t.r, t.c) + '!'); }
-    lines.push(...Fx.summonN(g, s, 'warhorse', 1));
-    return lines.length ? lines : ['No flock to steal.'];
+    if (t) {
+      Fx.removeAt(g, t.r, t.c, {});
+      Fx.place(g, s, 'wolf', t.r, t.c, {});
+      return ['A Wolf hides among the sheep at ' + sn(t.r, t.c) + ' — the flock is yours now!'];
+    }
+    const rows = s === 'w' ? [4, 5, 6] : [1, 2, 3];
+    const lines = Fx.summonN(g, s, 'wolf', 1, { rows });
+    return lines.length ? ['No flock to raid — a lone Wolf pads onto the field.'].concat(lines) : ['The wilds are empty.'];
   });
 
   def(279, 'Thornmail', 2, 'Wild', 'leaf', 'Shield all your beasts. Any enemy that later captures one is immediately poisoned (mark your shielded beasts as thorned).', 'The hedge fights back.', (g, s) => {

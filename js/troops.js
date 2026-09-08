@@ -70,6 +70,9 @@
     samurai:   { name: 'Samurai',      icon: '⚔️', letter: 'Q', value: 760,  leap: KNIGHT, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]] },
     // Siren: a sea-witch — at the end of its owner's turn it POISONS an adjacent foe.
     siren:     { name: 'Siren',        icon: '🧜‍♀️', letter: 'y', value: 900,  leap: WAZIR, slide: [[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], aura: 'poison' },
+    // — WOLF: the old-woods stalker (Wild bestiary) — a fast sprinter that pounces
+    //   diagonally; slips straight up to three squares through the undergrowth.
+    wolf:      { name: 'Wolf',         icon: '🐺', letter: 'W', value: 620,  leap: DIAG, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]] },
 
     // ================= THEME TROOPS =================
     // — Jujutsu Kaisen: cursed spirits & shikigami —

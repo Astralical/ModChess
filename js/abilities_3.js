@@ -299,7 +299,7 @@
       } },
 
     { id: 123, name: 'Mana Surge', icon: '💠', rarity: 2, cat: 'Buff',
-      desc: 'Your next two pawn pushes... actually, promote a random pawn to bishop now.',
+      desc: 'Mana floods the humblest vessel — promote a random friendly pawn to a BISHOP at once.',
       flavor: 'The magic finds the humblest vessel.',
       target: 'auto',
       run: (g, s) => {

@@ -324,7 +324,7 @@
     return lines.length ? lines : ['Your star is safe from the spotlight\'s glare.'];
   });
 
-  def(433, 'Animal Act', 2, 'Show', 'paw', 'Summon a Warhorse and a Griffin? No — summon a Warhorse and make it bite: freeze the enemy nearest to it.', 'The trained beast performs.', (g, s) => {
+  def(433, 'Animal Act', 2, 'Show', 'paw', 'The ringmaster cracks the whip — summon a Warhorse, and it rears: the enemy nearest to it is frozen mid-act.', 'The trained beast performs.', (g, s) => {
     const lines = Fx.summonN(g, s, 'warhorse', 1);
     const got = own(g, s).filter(q => q.cell.t === 'warhorse').slice(-1)[0];
     if (got) {

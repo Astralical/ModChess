@@ -127,6 +127,8 @@
   TROOP['scorpion'] = TROOP['basilisk'];
   TROOP['urchin'] = TROOP['seaserpent'];
   TROOP['plaguebearer'] = TROOP['reaper'];
+  // wolf reuses the hound's lean silhouette (it stalks in packs)
+  TROOP['wolf'] = TROOP['divinedog'];
   // THE OUTBREAK / SCI-FI / VOID / SHOW glyphs
   TROOP['zombie'] = TROOP['gremlin'];
   TROOP['ghoul'] = TROOP['lich'];

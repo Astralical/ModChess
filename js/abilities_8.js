@@ -369,7 +369,7 @@
     return lines.length ? lines : ['The beams find no targets.'];
   });
 
-  def(340, 'Entropy Well', 3, 'Void', 'void', 'All enemy status effects (freeze/poison/shield) are REMOVED and instead applied randomly to your side? No — reverse: your frozen and poisoned pieces are healed, and their curses jump to random enemies.', 'Misfortune is conserved.', (g, s) => {
+  def(340, 'Entropy Well', 3, 'Void', 'void', 'Misfortune is conserved: heal ALL your frozen and poisoned pieces, and their curses leap to freeze up to three random enemies.', 'Misfortune is conserved.', (g, s) => {
     const cursedOwn = own(g, s).filter(q => q.cell.b && (q.cell.b.f > 0 || q.cell.b.p > 0));
     let healed = 0;
     const targets = [];
@@ -513,7 +513,7 @@
     return ['The cradle sun shields and urges your vanguard onward.'];
   });
 
-  def(353, 'Cosmic Dust', 1, 'Void', 'star', 'Freeze two random enemy pieces and downgrade your own most advanced pawn? No — downgrade a random enemy PAWN to nothing is too cruel: freeze two and shield one of your pawns.', 'Dust settles on the frozen.', (g, s) => {
+  def(353, 'Cosmic Dust', 1, 'Void', 'star', 'Cosmic dust settles: FREEZE two random enemy pieces and cradle one of your pawns in a shield.', 'Dust settles on the frozen.', (g, s) => {
     const lines = [];
     const n = Fx.statusOn(g, Fx.uniqN(en(g, s).filter(q => q.cell.t !== 'k'), 2), 'f', 1, 'freeze');
     if (n) lines.push('Cosmic dust settles on ' + n + ' enemy piece' + (n > 1 ? 's' : '') + '.');
