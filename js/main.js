@@ -78,6 +78,7 @@
     Game.pickingIdx = -1; Game.pendingAbility = null; Game.promoPending = null;
     Game.targetMode = false; Game.targetList = [];
     Game.lastAnimate = null;
+    Game._undo = []; Game.hint = null;
     UI.closeModal('menuModal');
     UI.closeModal('resultModal');
     UI.clearMsg();
@@ -99,6 +100,7 @@
   Game.startTurn = function (color) {
     if (Game.phase === 'over' || !Game.g || Game.g.over) return;
     Game.g.turn = color;
+    Game.hint = null; // a fresh turn — any stale suggestion no longer applies
     // ranged artillery: fire at distant enemies without moving (then cooldown)
     if (MD.Engine && MD.Engine.rangeCandidates && Game.g.anyTroop) {
       const T = MD.TROOPS || {};
@@ -195,8 +197,62 @@
     Game.hand = { for: color, cards, used: false, usedId: null };
     Game.phase = 'cards';
     UI.toast(mode === 'draft' ? 'Draft: pick 1 of 4, then move.' : mode === 'echo' ? 'Echo: your opponent got a copy of the last spell cast.' : 'Cast 1 spell, then move.', 'sys');
+    // snapshot the start of each human vs-computer turn so Undo can rewind a blunder
+    if (Game.cfg.botMode && color === Game.humanColor && !(root.MD.Campaign && root.MD.Campaign.active)) {
+      try { Game.pushUndo(); } catch (e) { /* snapshots are best-effort */ }
+    }
     Game.renderAndMaybeBot();
   };
+
+  /* ---------------- assist: undo + hint (vs computer) ---------------- */
+  Game.pushUndo = function () {
+    const g = Game.g; if (!g || g.over) return;
+    const hand = Game.hand;
+    const snap = {
+      g: (typeof structuredClone === 'function') ? structuredClone(g) : JSON.parse(JSON.stringify(g)),
+      handIds: hand ? (hand.cards || []).map(c => c.id) : [],
+      handUsed: hand ? !!hand.used : false,
+      handUsedId: hand ? (hand.usedId || null) : null
+    };
+    Game._undo = Game._undo || [];
+    Game._undo.push(snap);
+    if (Game._undo.length > 6) Game._undo.shift();
+  };
+  // Undo re-winds the last full round (your move + the bot's reply) back to the
+  // start of your previous turn, hand and all — so you can take it again.
+  Game.undoLast = function () {
+    const st = Game._undo || [];
+    if (st.length < 2) { if (UI.toast) UI.toast('Nothing to undo yet.', 'sys'); return false; }
+    st.pop(); // discard the start-of-current-turn snapshot
+    const snap = st[st.length - 1];
+    if (!snap) { return false; }
+    Game.g = snap.g;
+    Game.g.turn = Game.humanColor;
+    const cards = (snap.handIds || []).map(id => MD.abilityById(id)).filter(Boolean);
+    Game.hand = { for: Game.humanColor, cards, used: snap.handUsed, usedId: snap.handUsedId };
+    Game.phase = 'cards';
+    Game.sel = null; Game.premove = null; Game.legalCache = [];
+    Game.pickingIdx = -1; Game.pendingAbility = null; Game.promoPending = null;
+    Game.targetMode = false; Game.targetList = [];
+    Game.lastAnimate = null; Game.hint = null;
+    if (UI.clearMsg) UI.clearMsg();
+    UI.render();
+    if (UI.toast) UI.toast('Undo — take that turn again.', 'sys');
+    return true;
+  };
+  // Hint asks the same engine the bot uses for one good move for YOU.
+  Game.giveHint = function () {
+    const g = Game.g; if (!g || g.over || !Game.cfg || !Game.cfg.botMode) return;
+    if (g.turn !== Game.humanColor) return;
+    if (!MD.AI || !MD.AI.chooseMove) return;
+    const depth = Math.max(1, Math.min(2, (Game.cfg.diff | 0) || 2));
+    let mv = null;
+    try { mv = MD.AI.chooseMove(g, Game.humanColor, depth); } catch (e) { mv = null; }
+    if (!mv) { if (UI.toast) UI.toast('No useful move found.', 'sys'); return; }
+    Game.hint = { from: { r: mv.r0, c: mv.c0 }, to: { r: mv.r1, c: mv.c1 } };
+    UI.render();
+  };
+  Game.clearHint = function () { Game.hint = null; };
 
   // force-fire for Chaos mode (the spell is chosen for the player)
   Game.chaosFire = function (color) {
@@ -424,6 +480,7 @@
       Game.g.hazLog = [];
     }
     Game.sel = null;
+    Game.hint = null; // the hint was for the move you just made
     UI.render();
     Game.resolveAfterMove(mover);
   };

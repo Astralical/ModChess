@@ -361,7 +361,8 @@
         const k = E.findKing(g, s);
         if (!k) return [];
         const row = k.r;
-        const hit = en(g, s).filter(q => q.r === row);
+        // the lance never takes the throne — an enemy king sharing the rank is spared
+        const hit = en(g, s).filter(q => q.r === row && q.cell.t !== 'k');
         for (const q of hit) Fx.removeAt(g, q.r, q.c, {});
         return hit.length ? ['Your rank is swept clean of foes.'] : [];
       } },

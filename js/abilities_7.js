@@ -454,7 +454,7 @@
     const pawn = rnd(own(g, s).filter(q => q.cell.t === 'p'));
     if (!pawn) return [];
     const fr = pawn.r + fwd(s);
-    if (fr >= 0 && fr < Fx.bd(g) && g.board[fr] && g.board[fr][pawn.c] && g.board[fr][pawn.c].c === O(s)) {
+    if (fr >= 0 && fr < Fx.bd(g) && g.board[fr] && g.board[fr][pawn.c] && g.board[fr][pawn.c].c === O(s) && g.board[fr][pawn.c].t !== 'k') {
       Fx.removeAt(g, fr, pawn.c, {});
       return ['A cornered wolf-pawn takes a bite out of the enemy!'];
     }

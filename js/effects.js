@@ -542,16 +542,21 @@
   };
   Fx.kingTeleport = Fx.kingTeleport;
 
-  // conjure a "wall" of allied pawns on a given rank
+  // conjure a "wall" of allied pawns on a given rank (never breaks a king)
   Fx.wallOfPawns = (g, side, rank, cols) => {
     const lines = [];
     for (const c of cols) {
-      if (!g.board[rank][c]) place(g, side, 'p', rank, c, {});
-      else if (g.board[rank][c].c === opp(side)) {
+      const occ = (g.board[rank] && g.board[rank][c]) || null;
+      if (!occ) {
+        place(g, side, 'p', rank, c, {});
+        lines.push('A spectral pawn rises on ' + E.sqName(rank, c) + '.');
+      } else if (occ.c === opp(side) && occ.t !== 'k') {
         removeAt(g, rank, c, {});
         place(g, side, 'p', rank, c, {});
+        lines.push('A spectral pawn replaces an enemy on ' + E.sqName(rank, c) + '.');
       }
-      lines.push('A spectral pawn rises on ' + E.sqName(rank, c) + '.');
+      // an enemy (or own) king standing on the square is left untouched — the
+      // fortress rises around the throne, never over it
     }
     return lines;
   };

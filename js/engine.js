@@ -1093,6 +1093,34 @@
         catch (e) { /* a hero trick must never crash a turn */ }
       }
     }
+    // PACK synergy: creatures that hunt in packs (def.pack = same tag, e.g. Wolf)
+    // raise a shield-wall at the end of the owner's turn while a pack-mate stands
+    // beside them — wolves alone in the wild are exposed.
+    if (g.anyTroop && T) {
+      for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
+        const cell = g.board[r][c];
+        if (!cell || cell.c !== mover) continue;
+        const defP = T[cell.t];
+        if (!defP || !defP.pack) continue;
+        if (cell.b && (cell.b.z > 0 || cell.b.f > 0)) continue;
+        const b = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
+        if (b.s > 0) continue;
+        let mate = false;
+        for (let dr = -1; dr <= 1 && !mate; dr++) for (let dc = -1; dc <= 1 && !mate; dc++) {
+          if (!dr && !dc) continue;
+          const rr = r + dr, cc = c + dc;
+          if (rr < 0 || rr >= CUR || cc < 0 || cc >= CUR) continue;
+          const t2 = g.board[rr] && g.board[rr][cc];
+          if (!t2 || t2.c !== cell.c) continue;
+          const d2 = T[t2.t];
+          if (d2 && d2.pack === defP.pack) mate = true;
+        }
+        if (mate) {
+          b.s = 1;
+          events.push({ kind: 'sworn', r, c, text: sideLabel(cell.c) + ' ' + (defP.name || cell.t) + ' hunts beside its pack — shielded' });
+        }
+      }
+    }
     // ground zones bite anything left standing at the end of the mover's turn
     if (E.tickZones) { const zev = E.tickZones(g, mover); if (zev && zev.length) events.push(...zev); }
     // one-turn global restrictions expire once that side has moved

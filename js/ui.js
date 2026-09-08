@@ -10,7 +10,7 @@
   const clear = el => { while (el.firstChild) el.removeChild(el.firstChild); };
 
   /* ---------- settings (persisted) ---------- */
-  const DEFAULTS = { premove: true, autoQueen: true, legal: true, lastMove: true, autoCastle: true, sound: true, anim: true, theme: 'green', diff: 2, human: 'w', smode: 'classic', size: 8, items: false };
+  const DEFAULTS = { premove: true, autoQueen: true, legal: true, lastMove: true, autoCastle: true, sound: true, anim: true, theme: 'green', diff: 2, human: 'w', smode: 'classic', size: 8, items: false, bannedCat: [] };
   MD.Settings = Object.assign({}, DEFAULTS);
   try {
     const saved = JSON.parse(localStorage.getItem('modchess.settings') || '{}');
@@ -270,6 +270,12 @@
     if (prem) {
       addHL(prem.from.r, prem.from.c, 'premove');
       addHL(prem.to.r, prem.to.c, 'premove' + (isCapTarget(prem.to) ? ' capture' : ''));
+    }
+    // hint highlight (✦ Hint vs computer)
+    const hint = MD.Game.hint;
+    if (hint && hint.from && hint.to) {
+      addHL(hint.from.r, hint.from.c, 'hint-from');
+      addHL(hint.to.r, hint.to.c, 'hint-to' + (isCapTarget(hint.to) ? ' capture' : ''));
     }
     // ability target mode
     if (MD.Game.targetMode) {
@@ -826,13 +832,29 @@
   UI.renderSpellLog = renderSpellLog;
 
   /* ================= CODEX ================= */
-  function renderCodex(filterCat, filterRar) {
+  const codexState = { cat: 'All', rar: 0 };
+  function renderCodex() {
     const grid = $('#codexGrid');
     clear(grid);
-    $('#codexCount').textContent = '— ' + MD.ABILITIES.length + ' spells —';
-    let list = MD.ABILITIES;
-    if (filterCat && filterCat !== 'All') list = list.filter(a => a.cat === filterCat);
-    if (filterRar && filterRar !== 0) list = list.filter(a => a.rarity === filterRar);
+    let list = MD.ABILITIES.slice();
+    if (codexState.cat && codexState.cat !== 'All') list = list.filter(a => a.cat === codexState.cat);
+    if (codexState.rar && codexState.rar !== 0) list = list.filter(a => a.rarity === codexState.rar);
+    // free-text search across name / description / set / id
+    const q = ($('#codexSearch').value || '').trim().toLowerCase();
+    if (q) {
+      const nq = parseInt(q, 10);
+      list = list.filter(a => !isNaN(nq) && a.id === nq ||
+        (a.name || '').toLowerCase().indexOf(q) >= 0 ||
+        (a.desc || '').toLowerCase().indexOf(q) >= 0 ||
+        (a.cat || '').toLowerCase().indexOf(q) >= 0);
+    }
+    // sort
+    const sortBy = ($('#codexSort').value || 'id');
+    if (sortBy === 'name') list.sort((a, b) => (a.name || '').localeCompare(b.name || '') || a.id - b.id);
+    else if (sortBy === 'rarity') list.sort((a, b) => (b.rarity - a.rarity) || a.id - b.id);
+    else if (sortBy === 'cat') list.sort((a, b) => (a.cat || '').localeCompare(b.cat || '') || a.id - b.id);
+    else list.sort((a, b) => a.id - b.id);
+    $('#codexCount').textContent = '— ' + list.length + ' of ' + MD.ABILITIES.length + ' spells —';
     list.forEach(a => {
       const c = document.createElement('div');
       c.className = 'codex-card rarity-' + a.rarity;
@@ -887,6 +909,7 @@
     }
     if (d.artillery) tr.push('artillery: fires on a ranged foe every ~' + ((d.artillery.cd || 1)) + ' own turn(s)');
     if (d.hero) tr.push('LEGENDARY HERO — a unique banner trick (see the card that summons it)');
+    if (d.pack) tr.push('pack: while a pack-mate (same tag) stands beside it at your turn end, it gains a shield');
     if (d.sworn) {
       const fac = d.sworn === 'shu' ? 'Shu' : d.sworn === 'wei' ? 'Wei' : d.sworn === 'wu' ? 'Wu' : d.sworn;
       tr.push('sworn ' + fac + ': while adjacent to a same-faction ally at your turn\'s end, cleanses poison/frost and gains a shield');
@@ -1079,10 +1102,11 @@
     $('#btnPlay').addEventListener('click', () => MD.Game.showMenu());
     $('#btnSettings').addEventListener('click', () => { syncSettingsUI(); UI.openModal('settingsModal'); });
     $('#btnCodex').addEventListener('click', () => {
-      UI.renderCodex('All', 0);
+      codexState.cat = 'All'; codexState.rar = 0;
+      const search = $('#codexSearch'); if (search) search.value = '';
+      const sortEl = $('#codexSort'); if (sortEl) sortEl.value = 'id';
       const f = $('#codexFilter');
       clear(f);
-      const state = { cat: 'All', rar: 0 };
       const rebuild = () => {
         clear(f);
         const mk = (label, val, isRar, active) => {
@@ -1090,19 +1114,22 @@
           b.className = 'chip' + (active ? ' selected' : '');
           b.textContent = label;
           b.addEventListener('click', () => {
-            if (isRar) state.rar = val; else state.cat = val;
-            UI.renderCodex(state.cat, state.rar);
+            if (isRar) codexState.rar = val; else codexState.cat = val;
+            renderCodex();
             rebuild();
           });
           return b;
         };
-        f.appendChild(mk('All cats', 'All', false, state.cat === 'All'));
-        MD.CATS.forEach(c => f.appendChild(mk(c, c, false, state.cat === c)));
+        f.appendChild(mk('All cats', 'All', false, codexState.cat === 'All'));
+        MD.CATS.forEach(c => f.appendChild(mk(c, c, false, codexState.cat === c)));
         const sep = document.createElement('span'); sep.style.width = '10px'; f.appendChild(sep);
-        f.appendChild(mk('Any rarity', 0, true, state.rar === 0));
-        [1, 2, 3, 4, 5].forEach(r => f.appendChild(mk('★'.repeat(r), r, true, state.rar === r)));
+        f.appendChild(mk('Any rarity', 0, true, codexState.rar === 0));
+        [1, 2, 3, 4, 5].forEach(r => f.appendChild(mk('★'.repeat(r), r, true, codexState.rar === r)));
       };
       rebuild();
+      if (search && !search.dataset.cxBound) { search.addEventListener('input', renderCodex); search.dataset.cxBound = '1'; }
+      if (sortEl && !sortEl.dataset.cxBound) { sortEl.addEventListener('change', renderCodex); sortEl.dataset.cxBound = '1'; }
+      renderCodex();
       UI.openModal('codexModal');
     });
     $('#btnPedia').addEventListener('click', () => { UI.renderPedia('pieces'); UI.openModal('pediaModal'); });
@@ -1129,9 +1156,46 @@
     $('#tabLog').addEventListener('click', () => showTab('log'));
     $('#tabSpells').addEventListener('click', () => showTab('spells'));
     $('#btnSkipAbility').addEventListener('click', () => MD.Game.skipAbility());
+    $('#btnUndo').addEventListener('click', () => { if (MD.Game.undoLast) MD.Game.undoLast(); });
+    $('#btnHint').addEventListener('click', () => { if (MD.Game.giveHint) MD.Game.giveHint(); });
     $('#btnRematch').addEventListener('click', () => { UI.closeModal('resultModal'); MD.Game.rematch(); });
     $('#btnResultMenu').addEventListener('click', () => { UI.closeModal('resultModal'); MD.Game.showMenu(); });
   };
+
+  // show/hide the vs-computer assist buttons (Undo / Hint) at the right moments
+  UI.refreshAssist = function () {
+    const undo = $('#btnUndo'), hint = $('#btnHint');
+    if (!undo || !hint) return;
+    const cfg = MD.Game && MD.Game.cfg;
+    const g = MD.Game && MD.Game.g;
+    const can = !!(cfg && cfg.botMode && g && !g.over &&
+      !(MD.Campaign && MD.Campaign.active) &&
+      MD.Game.humanColor === g.turn && (MD.Game.phase === 'cards' || MD.Game.phase === 'move') &&
+      !(MD.Game.cfg.mode === 'chaos'));
+    undo.style.display = hint.style.display = can ? '' : 'none';
+    undo.disabled = can ? (MD.Game._undo || []).length < 2 : true;
+  };
+
+  // whole-set ban list: toggle ability categories you never want dealt to you
+  function buildBanUI() {
+    const seg = $('#banSeg'); if (!seg) return;
+    clear(seg);
+    const banned = MD.Settings.bannedCat || (MD.Settings.bannedCat = []);
+    (MD.CATS || []).forEach(cat => {
+      const b = document.createElement('button');
+      const on = banned.indexOf(cat) >= 0;
+      b.className = 'seg-btn' + (on ? ' selected banned' : '');
+      b.textContent = cat;
+      b.title = on ? 'Currently excluded — click to allow ' + cat : 'Exclude all ' + cat + ' spells from the pool';
+      b.addEventListener('click', () => {
+        const i = banned.indexOf(cat);
+        if (i >= 0) banned.splice(i, 1); else banned.push(cat);
+        persist();
+        buildBanUI();
+      });
+      seg.appendChild(b);
+    });
+  }
 
   /* settings sync */
   function syncSettingsUI() {
@@ -1143,6 +1207,7 @@
     $('#setSound').checked = MD.Settings.sound;
     $('#setAnim').checked = MD.Settings.anim;
     document.querySelectorAll('#themeSeg .seg-btn').forEach(b => b.classList.toggle('selected', b.dataset.theme === MD.Settings.theme));
+    buildBanUI();
   }
   function bindSettings() {
     $('#setPremove').addEventListener('change', e => { MD.Settings.premove = e.target.checked; persist(); });
@@ -1165,6 +1230,7 @@
     renderLogs();
     renderSpellLog();
     boardRefresh();
+    UI.refreshAssist();
   };
 
   UI.init = function () {

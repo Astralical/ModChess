@@ -46,11 +46,21 @@
     return out;
   };
 
+  // categories the player chose to keep OUT of their dealt pool (Settings.bannedCat)
+  MD.bannedCats = function () {
+    try {
+      const S = (typeof window !== 'undefined' ? window : globalThis).MD && MD.Settings;
+      return (S && Array.isArray(S.bannedCat)) ? S.bannedCat : [];
+    } catch (e) { return []; }
+  };
+
   // draw `n` abilities that can actually be CAST right now for `side`
   // (targeted spells are only dealt when enough valid targets exist).
   MD.drawPlayable = function (g, side, n) {
     const Fx = MD.Fx;
+    const banned = MD.bannedCats();
     const playable = MD.ABILITIES.filter(a => {
+      if (banned.indexOf(a.cat) >= 0) return false; // whole sets can be excluded
       if (!MD.needsTarget(a)) return true;
       if (!Fx) return false;
       const need = a.twoPick ? 2 : 1;

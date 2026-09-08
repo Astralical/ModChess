@@ -114,6 +114,8 @@
       </div>
       <div class="az-controls">
         <button class="az-skip" id="btnSkipAbility" style="display:none">Skip ability → move</button>
+        <button class="az-skip" id="btnUndo" style="display:none" title="Undo your last move (vs computer)">↶ Undo</button>
+        <button class="az-skip" id="btnHint" style="display:none" title="Show a suggested move (vs computer)">✦ Hint</button>
         <div class="az-note" id="azNote"></div>
       </div>
     </div>
@@ -211,6 +213,13 @@
       <label class="set-row check"><input type="checkbox" id="setSound" checked><span>Sound effects</span></label>
       <label class="set-row check"><input type="checkbox" id="setAnim" checked><span>Animations</span></label>
     </div>
+    <div class="set-group">
+      <h3>Ability pool</h3>
+      <div class="set-row col">
+        <span>Exclude whole sets from the dealt pool (tap to toggle):</span>
+        <div class="seg wrap" id="banSeg"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -219,6 +228,15 @@
   <div class="modal-inner codex">
     <div class="modal-close" data-close="codexModal">✕</div>
     <h2>Ability Codex <span class="codex-count" id="codexCount"></span></h2>
+    <div class="codex-tools">
+      <input id="codexSearch" class="codex-search" type="search" placeholder="Search name / text / set / #id…" autocomplete="off">
+      <select id="codexSort" class="codex-sort" aria-label="Sort codex">
+        <option value="id">Sort: ID</option>
+        <option value="name">Sort: Name</option>
+        <option value="rarity">Sort: Rarity</option>
+        <option value="cat">Sort: Set</option>
+      </select>
+    </div>
     <div class="codex-filter" id="codexFilter"></div>
     <div class="codex-grid" id="codexGrid"></div>
   </div>

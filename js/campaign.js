@@ -116,31 +116,33 @@
   // re-deploy the surviving defenders into a fresh formation (no spawn-camping)
   function redeploy(g) {
     const n = (g.n | 0) || 8;
-    const units = listPieces(g, 'w');
     const free = (r, c) => r >= 0 && r < n && c >= 0 && c < n && !g.board[r][c] && !E.isTerrain(g, r, c);
+    const units = listPieces(g, 'w');
+    // clear every defender off the board first, then redeploy them safely
+    for (const u of units) if (g.board[u.r]) g.board[u.r][u.c] = null;
     const king = units.find(u => u.cell.t === 'k');
     const rest = units.filter(u => u !== king).sort(() => Math.random() - 0.5);
-    const clearCell = u => { g.board[u.r][u.c] = null; };
-    // king safely on the home centre (or nearest free back square)
     const Kc = n >> 1;
+    const firstFree = () => { for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free(r, c)) return { r, c }; return null; };
+    // 1) the Throne always lands first — nothing may ever overwrite it
+    if (king) {
+      const sq = free(n - 1, Kc) ? { r: n - 1, c: Kc } : firstFree();
+      if (sq) g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
+    }
+    // 2) the rest of the army fills the remaining free squares (never on the king)
     let si = 0;
     const spots = [];
     for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free(r, c)) spots.push({ r, c });
-    const sqAt = (r, c) => spots.find(s => s.r === r && s.c === c) || spots[si++];
-    if (king) {
-      clearCell(king);
-      const sq = (free(n - 1, Kc) ? { r: n - 1, c: Kc } : spots[0]) || { r: n - 2, c: Kc };
-      if (sq) g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
-    }
-    // refill spot list after the king is placed
-    const back = [];
-    for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free(r, c)) back.push({ r, c });
-    const anyFree = back.slice();
+    const anyFree = spots.slice();
     for (const u of rest) {
-      clearCell(u);
-      let sq = back[si++];
+      let sq = spots[si++];
       if (!sq) sq = anyFree.length ? anyFree[Math.floor(Math.random() * anyFree.length)] : null;
       if (sq && free(sq.r, sq.c)) g.board[sq.r][sq.c] = { c: 'w', t: u.cell.t };
+    }
+    // 3) absolute guarantee: if the king was somehow lost, restore it at home
+    if (!listPieces(g, 'w').some(p => p.cell.t === 'k')) {
+      const sq = free(n - 1, Kc) ? { r: n - 1, c: Kc } : firstFree();
+      if (sq) g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
     }
     g.anyTroop = listPieces(g, 'w').some(p => E.isTroop(p.cell.t));
   }
@@ -155,23 +157,30 @@
     g.board = emptyBoard(n);
     g.haz = emptyBoard(n); g.blocked = emptyBoard(n); g.zone = emptyBoard(n);
     g.anyTroop = false;
-    const free2 = (r, c) => !g.board[r][c];
+    const free2 = (r, c) => r >= 0 && r < n && c >= 0 && c < n && !g.board[r][c] && !(E.isTerrain && E.isTerrain(g, r, c));
     const Kc = n >> 1;
+    const firstFree = () => { for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free2(r, c)) return { r, c }; return null; };
+    // 1) the Throne first — reserve its home square so the shuffled army can
+    //    never overwrite the king (the old code lost the king ~half of the time)
+    if (types.indexOf('k') >= 0) {
+      const sq = free2(n - 1, Kc) ? { r: n - 1, c: Kc } : firstFree();
+      if (sq) { g.board[sq.r][sq.c] = { c: 'w', t: 'k' }; g.anyTroop = true; }
+    }
+    // 2) remaining units fill free squares bottom-up, skipping the king's square
+    const others = types.filter(t => t !== 'k').sort(() => Math.random() - 0.5);
+    let si = 0;
     const spots = [];
     for (let r = n - 1; r >= 0; r--) for (let c = 0; c < n; c++) if (free2(r, c)) spots.push({ r, c });
-    let si = 0;
-    const place = t => {
-      const sq = (t === 'k' && free2(n - 1, Kc)) ? { r: n - 1, c: Kc } : spots[si++];
-      if (!sq) return;
-      g.board[sq.r][sq.c] = { c: 'w', t };
-      if (E.isTroop(t)) g.anyTroop = true;
-    };
-    const kIdx = types.indexOf('k');
-    const ordered = [];
-    if (kIdx >= 0) ordered.push('k');
-    for (const t of types) if (t !== 'k') ordered.push(t);
-    for (const t of ordered.sort(() => Math.random() - 0.5)) place(t);
-    if (!ordered.length) { g.board[n - 1][Kc] = { c: 'w', t: 'k' }; }
+    for (const t of others) {
+      let sq = spots[si++];
+      if (!sq) sq = firstFree();
+      if (sq && free2(sq.r, sq.c)) { g.board[sq.r][sq.c] = { c: 'w', t }; if (E.isTroop(t)) g.anyTroop = true; }
+    }
+    // 3) absolute guarantee the Throne still stands after the move
+    if (!listPieces(g, 'w').some(p => p.cell.t === 'k')) {
+      const sq = free2(n - 1, Kc) ? { r: n - 1, c: Kc } : firstFree();
+      if (sq) g.board[sq.r][sq.c] = { c: 'w', t: 'k' };
+    }
     C.run.size = n;
   }
 
@@ -302,10 +311,18 @@
     for (const p of listPieces(g, 'w')) delete p.cell.moved;
     C.tokens = C._nextTokens || 2; // boons can grant a 3rd move
     C._nextTokens = 0;
-    // If the defender has NO legal move at all the run is over (checkmate/stalemate)
-    if (E.legalMoves(g, 'w').length === 0) {
-      endRun(false, E.inCheck(g, 'w') ? 'Checkmate — the Throne is surrounded and your king cannot move.' : 'Stalemate — your army is cornered with no legal move.');
+    // Safety net first: if the Throne itself is gone the run is over (this must
+    // never masquerade as a "no legal move" stalemate).
+    if (!E.hasKing(g, 'w')) {
+      endRun(false, 'Your King was captured and the Throne has fallen.');
       return;
+    }
+    // Checkmate (in check AND nowhere to go) ends the run — the host closes in.
+    // A pure STALEMATE is NOT an instant loss in a siege: your garrison just holds
+    // the line, and you may still press ENEMY PHASE to let the host grind forward.
+    if (E.legalMoves(g, 'w').length === 0) {
+      if (E.inCheck(g, 'w')) { endRun(false, 'Checkmate — the Throne is surrounded and your king cannot move.'); return; }
+      banner('Your army is boxed in — hold the line, the host will come to you.', 'warn');
     }
     MD.Game.phase = 'move';
     MD.Game.sel = null; MD.Game.legalCache = [];

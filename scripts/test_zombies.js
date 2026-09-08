@@ -205,6 +205,7 @@ ok(!!MD2.TROOPS.porcupine && !!MD2.TROOPS.scorpion && !!MD2.TROOPS.urchin && !!M
 // --- 14. Wild wolf troop exists (Wolves Among Sheep / Wolf Pact use it) ---
 {
   ok(!!MD2.TROOPS.wolf, 'Wolf troop registered');
+  ok(MD2.TROOPS.wolf.pack === 'wolf', 'Wolf carries the pack tag (adjacent wolves shield each other)');
   const wolves = MD2.ABILITIES.filter(a => /Wolves Among Sheep|Wolf Pact/.test(a.name));
   ok(wolves.length === 2, 'both wolf-named Wild abilities present');
 }
@@ -214,6 +215,29 @@ ok(!!MD2.TROOPS.porcupine && !!MD2.TROOPS.scorpion && !!MD2.TROOPS.urchin && !!M
   const bad = /[?] No|\? no|\bNo — |too cruel|actually,|\? There is no|\bno (wolf|bear|griffin|dragon|tiger|hydra) troop|No — /i;
   const leaked = MD2.ABILITIES.filter(a => bad.test(a.desc || '')).map(a => a.id + ':' + a.name);
   ok(leaked.length === 0, 'no leaked self-note descriptions remain (found ' + leaked.join(',') + ')');
+}
+
+// --- 16. pack synergy: adjacent wolves shield each other at end of the owner turn ---
+{
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[3][3] = { c: 'w', t: 'wolf' };
+  g.board[3][4] = { c: 'w', t: 'wolf' };
+  g.anyTroop = true;
+  E.tickAfterMove(g, 'w');
+  ok(g.board[3][3].b && g.board[3][3].b.s > 0, 'wolf beside a pack-mate is shielded');
+  ok(g.board[3][4].b && g.board[3][4].b.s > 0, 'its pack-mate is shielded too');
+}
+{
+  const g = clean(8);
+  g.board[0][0] = { c: 'b', t: 'k' };
+  g.board[7][0] = { c: 'w', t: 'k' };
+  g.board[3][3] = { c: 'w', t: 'wolf' };
+  g.board[6][6] = { c: 'w', t: 'wolf' }; // far away
+  g.anyTroop = true;
+  E.tickAfterMove(g, 'w');
+  ok(!(g.board[3][3].b && g.board[3][3].b.s > 0), 'lone wolf (no adjacent pack-mate) is NOT shielded');
 }
 
 console.log('\npass=' + pass + ' fail=' + fail);

@@ -464,3 +464,27 @@ body.theme-wood .board::after, body.theme-green .board::after{
 
 #boardMsg.hidden,#burst{display:none}
 .hidden{display:none!important}
+
+/* codex search + sort */
+.codex-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.codex-search{flex:1;min-width:150px;padding:7px 12px;border-radius:8px;border:1px solid #3a3f49;background:#2a2e35;color:#e8e8ea;font-size:13px}
+.codex-search::placeholder{color:#6d7480}
+.codex-search:focus{outline:none;border-color:#81b64c}
+.codex-sort{padding:7px 8px;border-radius:8px;border:1px solid #3a3f49;background:#2a2e35;color:#e8e8ea;font-size:12.5px}
+
+/* ability-zone assist buttons (undo / hint) */
+.az-controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+#btnUndo,#btnHint{font-size:12px;padding:6px 10px;border-radius:16px}
+
+/* settings: full-width column row + wrapping set chips */
+.set-row.col{flex-direction:column;align-items:flex-start;gap:8px}
+.set-row.col>span{font-size:12.5px;color:#a7adb8;font-weight:600}
+.seg.wrap{flex-wrap:wrap;overflow:visible;border-radius:12px;padding:4px}
+.seg.wrap .seg-btn{border-radius:16px;margin:2px}
+.seg-btn.banned{background:#5a3338;color:#ff9d9d;text-decoration:line-through}
+
+/* board hint markers (✦ Hint vs computer) */
+.hl.hint-from{background:rgba(140,230,120,.5);box-shadow:inset 0 0 0 2px rgba(140,230,120,.95);border-radius:4px;animation:hintPulse 1.2s ease-in-out infinite}
+.hl.hint-to{background:rgba(140,230,120,.32)}
+.hl.hint-to.capture::after{content:'';position:absolute;inset:12%;border:3px solid rgba(140,230,120,.95);border-radius:50%}
+@keyframes hintPulse{0%,100%{box-shadow:inset 0 0 0 2px rgba(140,230,120,.95)}50%{box-shadow:inset 0 0 0 2px rgba(140,230,120,.4),0 0 14px rgba(140,230,120,.7)}}
