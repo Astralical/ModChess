@@ -28,9 +28,9 @@
   const A = [];
   const def = (id, name, rarity, icon, desc, flavor, run) => A.push({ id, name, rarity, cat: 'War', icon, desc, flavor, target: 'auto', run });
 
-  def(657, 'Siege Tank', 3, 'boltring', 'Heavy armor rolls up: summon a Siege Tank — when it is destroyed it explodes, blasting adjacent enemies.', 'Steel and treads and fire.', (g, s) => summon(g, s, 'siegetank', 1, s === 'w' ? [4, 5] : [2, 3]));
+  def(657, 'Siege Tank', 3, 'boltring', 'Heavy armor rolls up: summon a Siege Tank — it shells enemies up to three squares away with a blast, and explodes if it is ever destroyed.', 'Steel and treads and fire.', (g, s) => summon(g, s, 'siegetank', 1, s === 'w' ? [4, 5] : [2, 3]));
 
-  def(658, 'War Zeppelin', 4, 'wind', 'The sky goes to war: summon a War Zeppelin — it takes a moment to arm but then roams like a knight.', 'The shadow passes overhead.', (g, s) => summon(g, s, 'zeppelin', 1));
+  def(658, 'War Zeppelin', 4, 'wind', 'The sky goes to war: summon a War Zeppelin — it drifts like a slow knight while its guns rake the ground up to five squares away.', 'The shadow passes overhead.', (g, s) => summon(g, s, 'zeppelin', 1));
 
   def(659, 'Howitzer Battery', 2, 'fire', 'Batteries in the hills: summon a Howitzer, then shell a random enemy minor piece (destroy it).', 'Fire for effect.', (g, s) => {
     const lines = summon(g, s, 'howitzer', 1, s === 'w' ? [4, 5, 6] : [1, 2, 3]);

@@ -336,7 +336,7 @@
     const pool = foes(g, s);
     const picks = Fx.uniqN(pool, Math.min(5, pool.length));
     const n = Fx.statusOn(g, picks, 'p', 1, 'poison');
-    return n ? ['Pandemic! ' + n + ' enemy' + (n > 1 ? 's are' : ' is') + ' infected.'] : ['The world is already empty.'];
+    return n ? ['Pandemic! ' + n + ' enem' + (n > 1 ? 'ies are' : 'y is') + ' infected.'] : ['The world is already empty.'];
   });
 
   // ============ C. BIOHAZARD GROUND — zones, waste & war engines ============

@@ -260,7 +260,7 @@
       if (MD.Game.phase === 'cards' || MD.Game.phase === 'move') {
         for (const m of MD.Game.legalCache || []) {
           if (m.r0 === sel.r && m.c0 === sel.c) {
-            addHL(m.r1, m.c1, (m.capture ? 'dot capture' : 'dot'), true);
+            addHL(m.r1, m.c1, (m.shot ? 'dot shot' : (m.capture ? 'dot capture' : 'dot')), true);
           }
         }
       }
@@ -907,7 +907,11 @@
       const eff = d.counter === true ? 'destroys its capturer' : d.counter === 'poison' ? 'poisons its capturer' : d.counter === 'freeze' ? 'freezes its capturer' : d.counter === 'doom' ? 'dooms its capturer' : 'counterattacks its capturer';
       tr.push('counter: ' + eff + ' when captured (kings safe)');
     }
-    if (d.artillery) tr.push('artillery: fires on a ranged foe every ~' + ((d.artillery.cd || 1)) + ' own turn(s)');
+    if (d.artillery) {
+      const rng = d.artillery.range || 0;
+      const rad = d.artillery.radius || 0;
+      tr.push('ranged: moves without capturing, and can SHOOT an enemy up to ' + rng + ' squares away on a clear line — it takes the square while staying put' + (rad ? ' (blast radius ' + rad + ')' : ''));
+    }
     if (d.hero) tr.push('LEGENDARY HERO — a unique banner trick (see the card that summons it)');
     if (d.pack) tr.push('pack: while a pack-mate (same tag) stands beside it at your turn end, it gains a shield');
     if (d.sworn) {
@@ -932,7 +936,7 @@
     ['Regenerate (trait)', 'A troop that cleanses its own poison and frost at the end of its owner\'s turn.', 'heart'],
     ['Aura (trait)', 'At the end of its owner\'s turn, freezes or poisons a random adjacent foe.', 'spark'],
     ['Counter (trait)', 'Punishes the piece that CAPTURES it — destroying, poisoning, freezing or dooming the attacker (kings stay safe).', 'sword'],
-    ['Artillery (trait)', 'Auto-fires a ranged shell at a distant enemy every few of its own turns — line-of-sight and cooldown depend on the troop.', 'fire'],
+    ['Ranged (trait)', 'A ranged troop moves like a piece but never captures by stepping. Instead it can SHOOT: on your turn, pick an enemy on a clear straight or diagonal within its range — it destroys the target ("takes the square") while staying in place. Line-of-sight and blast radius depend on the troop.', 'fire'],
     ['Sworn Oath (trait)', 'Three Kingdoms heroes (义) — a Shu/Wei/Wu hero standing next to a same-faction ally at the end of your turn is cleansed of poison/frost and shielded. Brothers watch each other\'s backs.', 'heart'],
     ['Growth (mature)', 'An egg or juvenile that transforms into its adult troop after a few of its owner\'s turns.', 'star']
   ];

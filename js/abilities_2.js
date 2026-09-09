@@ -130,7 +130,7 @@
         return t ? Fx.transformSq(g, [t], 'n', () => 'Your pawn is knighted!') : [];
       } },
 
-    { id: 64, name: 'Coronation', icon: '👸', rarity: 4, cat: 'Buff',
+    { id: 64, name: 'Coronation', icon: '👸', rarity: 3, cat: 'Buff',
       desc: 'Choose one of your pawns and crown it a queen.',
       flavor: 'Born in the dirt, dies on a throne.',
       target: 'ownPawn',

@@ -239,10 +239,15 @@
     return n ? ['The treasure fleet shields ' + n + ' defender' + (n > 1 ? 's' : '') + '.'] : ['The fleet sails empty.'];
   });
 
-  def(632, 'Ghost of the Flying Dutchman', 4, 'void', 'Doomed to sail forever: summon a Sea Serpent AND a Coral Queen.', 'Damned crew, immortal ship.', (g, s) => {
+  def(632, 'Ghost of the Flying Dutchman', 4, 'void', 'Doomed to sail forever: summon a Sea Serpent AND a Coral Queen — and the ghost crew FREEZES the enemy nearest your king.', 'Damned crew, immortal ship.', (g, s) => {
     const lines = [];
     lines.push(...summon(g, s, 'seaserpent', 1));
     lines.push(...summon(g, s, 'coralqueen', 1));
+    const k = E.findKing(g, s);
+    if (k) {
+      const near = Fx.enemy(g, s).filter(q => q.cell.t !== 'k').map(q => ({ q, d: Math.abs(q.r - k.r) + Math.abs(q.c - k.c) })).sort((a, b) => a.d - b.d)[0];
+      if (near) { Fx.mod(near.q.cell, 'f', 1); Fx.flash(g, near.q.r, near.q.c, 'freeze', ''); lines.push('The ghost crew freezes the nearest enemy.'); }
+    }
     return lines.length ? lines : ['The Dutchman sails past.'];
   });
 

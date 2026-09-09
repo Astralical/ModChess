@@ -554,7 +554,7 @@
     return lines;
   });
 
-  def(456, 'Encore of Kings', 4, 'Show', 'spark', 'If your king is still on its starting square, upgrade your two most advanced pawns to rooks AND shield them; otherwise take an extra move.', 'The show must go on.', (g, s) => {
+  def(456, 'Encore of Kings', 4, 'Show', 'spark', 'If your king is still on its starting square, upgrade your two most advanced pawns to ROOKS and shield them AND the king; otherwise take an EXTRA move and shield your most advanced piece.', 'The show must go on.', (g, s) => {
     const k = E.findKing(g, s);
     const home = k && k.r === Fx.backRow(g, s) && k.c === Fx.homeCol(g);
     if (home) {
@@ -562,10 +562,13 @@
       const lines = [];
       for (const p of pawns) { p.cell.t = 'r'; Fx.flash(g, p.r, p.c, 'transform', ''); lines.push('A vanguard pawn becomes a Rook.'); }
       Fx.statusOn(g, pawns, 's', 1, 'shield');
+      if (k) { Fx.mod(g.board[k.r][k.c], 's', 1); Fx.flash(g, k.r, k.c, 'shield', ''); }
       return lines.length ? lines.concat(['The royal encore is shielded.']) : ['No pawns for the encore.'];
     }
     Fx.grantExtra(g, s, 1);
-    return ['The king has left the stage — you take an extra move instead.'];
+    const adv = own(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? a.r - b.r : b.r - a.r))[0];
+    if (adv) { Fx.mod(adv.cell, 's', 1); Fx.flash(g, adv.r, adv.c, 'shield', ''); }
+    return ['The king has left the stage — extra move, and the vanguard takes a bow.'];
   });
 
   // — THE SHOW'S OWN PERFORMERS —

@@ -359,45 +359,14 @@
     return evs;
   };
 
-  /* ---- RANGED artillery troops: fire at range without moving ----
-     A troop with `artillery: {range, radius, cd}` (or legacy `range`) can
-     strike enemies on a clear straight/diagonal line within range. The owner
-     auto-fires at the start of their turn and then cools down `cd` own turns. */
-  E.rangeCandidates = function (g, r, c, range) {
-    const n = g.n || CUR;
-    const me = g.board[r] && g.board[r][c];
-    const out = [];
-    if (!me) return out;
-    const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-    for (const [dr, dc] of dirs) {
-      let rr = r + dr, cc = c + dc, d = 1;
-      while (rr >= 0 && rr < n && cc >= 0 && cc < n && d <= range) {
-        if (E.terrainAt && E.terrainAt(g, rr, cc)) break;
-        const cell = g.board[rr][cc];
-        if (cell) { if (cell.c !== me.c && cell.t !== 'k') out.push({ r: rr, c: cc, cell, d }); break; }
-        rr += dr; cc += dc; d++;
-      }
-    }
-    return out;
-  };
-  // immediate ranged strike (radius 0 = destroy the one target)
+  // immediate ranged strike (radius 0 = destroy the one target). Kept for
+  // abilities that fire an instant shell (e.g. the Zhuge Liang volley). A
+  // RANGED TROOP's shot is NOT this — it is a real move generated in genPseudo
+  // (mv.shot): pick an enemy on a clear line within `artillery.range`, it is
+  // destroyed, and the shooter stays put. See applyMove for the details.
   E.strike = function (g, r, c, radius, side) {
     const hits = engineBomb(g, r, c, Math.max(0, radius | 0 || 0), side);
     return hits.length;
-  };
-  // lower artillery cooldowns at the start of the owner's own turns
-  E.tickArtillery = function (g, side) {
-    const T = root.MD && root.MD.TROOPS;
-    if (!T || !g.anyTroop) return;
-    const n = g.n || CUR;
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== side) continue;
-      const d = T[cell.t];
-      if (!d || !(d.artillery || d.range)) continue;
-      const bb = cell.b || (cell.b = { f: 0, s: 0, p: 0 });
-      if ((bb.ac || 0) > 0) bb.ac--;
-    }
   };
 
   function findKing(g, color) {
@@ -535,6 +504,11 @@
       if (!cell || cell.c !== color) continue;
       const t = cell.t;
       const push = (nr, nc, flags) => moves.push(Object.assign({ r0: r, c0: c, r1: nr, c1: nc }, flags));
+      // a RANGED troop (artillery / legacy range) never captures by stepping:
+      // it moves to empty squares and takes enemy squares by shooting in place.
+      const troopDef = E.isTroop(t) ? (TROOP(t) || null) : null;
+      const rcfg = troopDef ? (troopDef.artillery || (troopDef.range != null ? { range: troopDef.range, radius: 0 } : null)) : null;
+      const ranged = !!rcfg;
 
       if (t === 'p') {
         const fwd = r + en;
@@ -569,7 +543,7 @@
           if (ter(nr, nc)) continue;
           const target = b[nr][nc];
           if (!target) push(nr, nc, {});
-          else if (target.c !== color) push(nr, nc, { capture: true });
+          else if (target.c !== color && !ranged) push(nr, nc, { capture: true });
         }
       }
       // troop & standard sliders
@@ -585,8 +559,27 @@
           if (ter(nr, nc)) break; // walls & rivers end the ray (cannot occupy)
           const target = b[nr][nc];
           if (!target) push(nr, nc, {});
-          else { if (target.c !== color) push(nr, nc, { capture: true }); break; }
+          else { if (target.c !== color && !ranged) push(nr, nc, { capture: true }); break; }
           nr += dr; nc += dc; k++;
+        }
+      }
+      // RANGED SHOT: instead of capturing by stepping, a ranged troop may
+      // SHOOT an enemy on any clear straight/diagonal within its range — the
+      // enemy is destroyed (the square is taken) and the shooter stays put.
+      if (ranged && rcfg.range) {
+        const rad = (rcfg.radius || 0) | 0;
+        const dirs8 = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+        for (const [dr, dc] of dirs8) {
+          let nr = r + dr, nc = c + dc, k = 1;
+          while (nr >= 0 && nr < n && nc >= 0 && nc < n && k <= rcfg.range) {
+            if (ter(nr, nc)) break; // walls & rivers block the shot
+            const tgt = b[nr][nc];
+            if (tgt) {
+              if (tgt.c !== color && tgt.t !== 'k') push(nr, nc, { shot: true, capture: true, radius: rad });
+              break; // the first piece stops the ray
+            }
+            nr += dr; nc += dc; k++;
+          }
         }
       }
       // castling (needs at least an 8-wide board)
@@ -657,6 +650,52 @@
       extra: Object.assign({}, g.extra), half: g.half, full: g.full,
       epPawn: null, rookMove: null
     };
+
+    // ---- RANGED SHOT: take the square from afar, the shooter never moves ----
+    if (mv.shot) {
+      const cap = { shotCells: [], lastT: null };
+      g.ep = null;
+      const n = g.n || CUR;
+      const take = (rr, cc, withRattle) => {
+        const tc = b[rr] && b[rr][cc];
+        if (!tc) return;
+        cap.shotCells.push({ r: rr, c: cc, cell: tc });
+        cap.lastT = tc.t;
+        g.capt[color].push({ t: tc.t, c: tc.c, at: { r: rr, c: cc }, b: tc.b || null });
+        (g.lost || (g.lost = { w: [], b: [] }))[tc.c] = g.lost[tc.c] || [];
+        g.lost[tc.c].push({ t: tc.t, c: tc.c, at: { r: rr, c: cc } });
+        revokeLeave(g, rr, cc, tc);
+        if (withRattle) deathRattle(g, rr, cc, tc);
+        b[rr][cc] = null;
+      };
+      take(mv.r1, mv.c1, true);
+      const rad = (mv.radius || 0) | 0;
+      if (rad > 0) {
+        for (let dr = -rad; dr <= rad; dr++) for (let dc = -rad; dc <= rad; dc++) {
+          if (!dr && !dc) continue;
+          const rr = mv.r1 + dr, cc = mv.c1 + dc;
+          if (rr < 0 || rr >= n || cc < 0 || cc >= n) continue;
+          const tc = b[rr][cc];
+          if (!tc || tc.c === color || tc.t === 'k') continue;
+          take(rr, cc, false);
+        }
+      }
+      undo.shotCells = cap.shotCells;
+      undo.toCell = cap.shotCells.length ? cap.shotCells[0].cell : undo.toCell;
+      g.half = 0; // a shot is always a capture
+      if (color === 'b') g.full++;
+      g.plies++;
+      if (!opts.silent) {
+        g.lastMove = {
+          from: { r: mv.r0, c: mv.c0 }, to: { r: mv.r1, c: mv.c1 },
+          piece: moving.t, color: color, promo: null,
+          castle: null, capture: true, shot: true,
+          capturedPiece: cap.lastT, san: sanText
+        };
+        g.hist.push(g.lastMove);
+      }
+      return undo;
+    }
 
     // --- en passant bookkeeping / pawn capture ---
     g.ep = null;
@@ -742,6 +781,13 @@
   function unapplyMove(g, undo) {
     const b = g.board;
     const mv = undo.mv;
+    // a ranged shot never relocated the shooter — just put the targets back
+    if (mv.shot) {
+      for (const sc of undo.shotCells || []) b[sc.r][sc.c] = sc.cell;
+      g.castle = undo.castle; g.ep = undo.ep; g.extra = undo.extra;
+      g.half = undo.half; g.full = undo.full; g.plies--;
+      return undo;
+    }
     // restore destination
     if (mv.castle) {
       b[mv.r0][mv.c0] = undo.fromCell;
@@ -811,6 +857,10 @@
     const color = moving.c;
     const name = E.sqName(mv.r1, mv.c1);
     if (mv.castle) return mv.castle === 'k' ? 'O-O' : 'O-O-O';
+    if (mv.shot) {
+      const ltr = PIECE_LETTER[moving.t] || (E.isTroop(moving.t) ? E.troopLetter(moving.t) : '');
+      return (ltr || '?') + '@' + name;
+    }
     let s = PIECE_LETTER[moving.t] || (E.isTroop(moving.t) ? E.troopLetter(moving.t) : '');
     if (moving.t === 'p' && mv.capture) s = E.sqName(mv.r0, mv.c0)[0];
     if (mv.capture) s += 'x';

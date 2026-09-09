@@ -102,10 +102,9 @@
     return ['You seize the enemy ' + MD.pieceName(t.cell.t) + ' and turn it to your school!'];
   });
 
-  def(567, 'Dugu Jiu Jian', 4, 'sword', 'A sword with no technique beats all swords: destroy the enemy\'s strongest piece — but if it is worth more than a rook, you only FREEZE it.', 'To defeat any sword, use none.', (g, s) => {
+  def(567, 'Dugu Jiu Jian', 4, 'sword', 'A sword with no technique beats all swords: destroy the enemy\'s strongest piece, whatever it is.', 'To defeat any sword, use none.', (g, s) => {
     const t = strong(g, s);
-    if (!t) return [];
-    if (val(t.cell.t) > 500) { Fx.mod(t.cell, 'f', 1); Fx.flash(g, t.r, t.c, 'freeze', ''); return ['Too mighty to cut — the swordless strike binds it instead.']; }
+    if (!t) return ['No foe worthy of the swordless strike.'];
     kill(g, t);
     return ['The peerless sword cuts down the enemy ' + MD.pieceName(t.cell.t) + '!'];
   });

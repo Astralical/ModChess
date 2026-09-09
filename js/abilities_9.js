@@ -496,7 +496,7 @@
     return ['Your ' + MD.pieceName(t.cell.t) + ' appears at ' + sn(d.r, d.c) + ', hidden in plain sight.'];
   });
 
-  def(405, 'Failsafe', 4, 'SciFi', 'clock', 'If any of your pieces are frozen or poisoned, purge them all — and take an extra move. Otherwise shield your king.', 'It never hurts to have a button.', (g, s) => {
+  def(405, 'Failsafe', 4, 'SciFi', 'clock', 'If any of your pieces are frozen or poisoned, purge them all — and take an extra move. Otherwise, ward your king AND freeze the enemy\'s most advanced piece.', 'It never hurts to have a button.', (g, s) => {
     const cursed = own(g, s).filter(q => q.cell.b && (q.cell.b.f > 0 || q.cell.b.p > 0));
     if (cursed.length) {
       for (const q of cursed) { q.cell.b.f = 0; q.cell.b.p = 0; if (q.cell.b.s <= 0) q.cell.b = undefined; }
@@ -504,7 +504,12 @@
       return ['The failsafe purges ' + cursed.length + ' glitch' + (cursed.length > 1 ? 'es' : '') + ' — move again!'];
     }
     const k = E.findKing(g, s);
-    if (k) { Fx.mod(g.board[k.r][k.c], 's', 1); Fx.flash(g, k.r, k.c, 'shield', ''); return ['No glitches — the failsafe wards your king instead.']; }
+    if (k) {
+      Fx.mod(g.board[k.r][k.c], 's', 1); Fx.flash(g, k.r, k.c, 'shield', '');
+      const lead = Fx.enemy(g, s).filter(q => q.cell.t !== 'k').sort((a, b) => (s === 'w' ? b.r - a.r : a.r - b.r))[0];
+      if (lead) { Fx.mod(lead.cell, 'f', 1); Fx.flash(g, lead.r, lead.c, 'freeze', ''); return ['No glitches — the failsafe wards your king and freezes the enemy vanguard.']; }
+      return ['No glitches — the failsafe wards your king instead.'];
+    }
     return [];
   });
 
