@@ -153,7 +153,28 @@
     arthur:   { name: 'King Arthur',  icon: '⚔️', letter: 'K', value: 1550, leap: KNIGHT, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], hero: true, hp: 'arthur' },
     beowulf:  { name: 'Beowulf',      icon: '🐻', letter: 'B', value: 1500, leap: CAMEL, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], hero: true, hp: 'beowulf' },
     goku:     { name: 'Goku',         icon: '🟠', letter: 'K', value: 1650, leap: KNIGHT, slide: ALL8, hero: true, hp: 'goku' },
-    mulan:    { name: 'Mulan',        icon: '🌸', letter: 'M', value: 1300, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], hero: true, hp: 'mulan' }
+    mulan:    { name: 'Mulan',         icon: '🌸', letter: 'M', value: 1300, leap: FERZ, slide: [[1,0,4],[-1,0,4],[0,1,4],[0,-1,4],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], hero: true, hp: 'mulan' },
+    // — TAROT: the sixteen Minor Arcana court cards (set 22). Each carries a
+    //   `suit` (wand=fire, cup=water, sword=air, pent=earth) so it always counts
+    //   as attuned for the suit passives in js/tarot.js — Wands scorch, Cups
+    //   mend, Swords ward, Pentacles guard their neighbours. Pages < Knights <
+    //   Queens < Kings.
+    wandpage:   { name: 'Wand Page',      letter: 'w', value: 330,  leap: FERZ, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], suit: 'wand' },
+    wandknight: { name: 'Wand Knight',    letter: 'q', value: 620,  leap: KNIGHT, slide: [[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], suit: 'wand' },
+    wandqueen:  { name: 'Wand Queen',     letter: 'Q', value: 880,  leap: FERZ, slide: [[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]], suit: 'wand' },
+    wandking:   { name: 'Wand King',      letter: 'K', value: 1050, leap: WAZIR, slide: [[1,1,5],[1,-1,5],[-1,1,5],[-1,-1,5]], suit: 'wand' },
+    cuppage:    { name: 'Cup Page',       letter: 'c', value: 350,  leap: WAZIR, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], suit: 'cup' },
+    cupknight:  { name: 'Cup Knight',     letter: 'j', value: 600,  leap: CAMEL, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], suit: 'cup' },
+    cupqueen:   { name: 'Cup Queen',      letter: 'C', value: 900,  leap: WAZIR, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]], suit: 'cup' },
+    cupking:    { name: 'Cup King',       letter: 'J', value: 1080, leap: FERZ, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]], suit: 'cup' },
+    swordpage:  { name: 'Sword Page',     letter: 's', value: 340,  leap: KNIGHT, suit: 'sword' },
+    swordknight:{ name: 'Sword Knight',   letter: 'k', value: 610,  leap: KNIGHT.concat(CAMEL), suit: 'sword' },
+    swordqueen: { name: 'Sword Queen',    letter: 'S', value: 890,  leap: ALL8, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], suit: 'sword' },
+    swordking:  { name: 'Sword King',     letter: 'y', value: 1060, leap: KNIGHT, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3],[1,1,3],[1,-1,3],[-1,1,3],[-1,-1,3]], suit: 'sword' },
+    pentpage:   { name: 'Pentacle Page',  letter: 'p', value: 370,  leap: WAZIR, slide: [[1,0,2],[-1,0,2],[0,1,2],[0,-1,2]], suit: 'pent' },
+    pentknight: { name: 'Pentacle Knight',letter: 'n', value: 640,  leap: DABBABA, slide: [[1,0,3],[-1,0,3],[0,1,3],[0,-1,3]], suit: 'pent' },
+    pentqueen:  { name: 'Pentacle Queen', letter: 'N', value: 920,  leap: FERZ, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5]], suit: 'pent' },
+    pentking:   { name: 'Pentacle King',  letter: 'b', value: 1120, leap: WAZIR, slide: [[1,0,5],[-1,0,5],[0,1,5],[0,-1,5],[1,1,2],[1,-1,2],[-1,1,2],[-1,-1,2]], suit: 'pent' }
   };
 
   MD.TROOPS = T;

@@ -328,6 +328,8 @@
         if (cell.b.st > 0) addB('b-stn', 'lock');
         if (cell.b.doom > 0) addB('b-doom', 'target');
         if (cell.b.frail) addB('b-fra', 'sword');
+        const suitNow = (cell.b.suit) || (troopOf(cell.t) && troopOf(cell.t).suit);
+        if (suitNow) addB('b-suit b-suit-' + suitNow, (MD.Tarot && MD.Tarot.suitIcon) ? MD.Tarot.suitIcon(suitNow) : 'gem');
         if (cell.b.z > 0) { const r = document.createElement('span'); r.className = 'pbadge b-rec'; r.innerHTML = MD.iconHTML('clock'); r.title = 'Newly summoned — cannot act until its owner\'s next turn'; p.appendChild(r); }
         if (cell.b.mature > 0 && cell.b.growTo) { const r = document.createElement('span'); r.className = 'pbadge b-grow'; r.innerHTML = MD.iconHTML('star'); r.title = 'Growing — will become ' + (MD.pieceName ? MD.pieceName(cell.b.growTo) : cell.b.growTo) + ' after ' + cell.b.mature + ' more move' + (cell.b.mature > 1 ? 's' : ''); p.appendChild(r); }
         if (cell.b.s > 0) addB('b-shd', 'shield');
@@ -369,6 +371,29 @@
         num.className = 'shell-n';
         num.textContent = sh.fuse;
         d.appendChild(ring); d.appendChild(num);
+        pieceLayer.appendChild(d);
+      }
+    }
+    // tarot prophecies — a rune marker (with a countdown when timed)
+    if (g.proph && g.proph.length) {
+      for (const pr of g.proph) {
+        const d = document.createElement('div');
+        d.className = 'prophmark';
+        const pos = px(pr.r, pr.c);
+        d.style.left = pos.x + 'px';
+        d.style.top = pos.y + 'px';
+        d.style.width = sq + 'px';
+        d.style.height = sq + 'px';
+        const ring = document.createElement('span');
+        ring.className = 'proph-ring';
+        ring.innerHTML = MD.iconHTML('eye');
+        d.appendChild(ring);
+        if (pr.trigger === 'turn') {
+          const num = document.createElement('span');
+          num.className = 'proph-n';
+          num.textContent = pr.turns;
+          d.appendChild(num);
+        }
         pieceLayer.appendChild(d);
       }
     }
@@ -913,6 +938,7 @@
       tr.push('ranged: moves without capturing, and can SHOOT an enemy up to ' + rng + ' squares away on a clear line — it takes the square while staying put' + (rad ? ' (blast radius ' + rad + ')' : ''));
     }
     if (d.hero) tr.push('LEGENDARY HERO — a unique banner trick (see the card that summons it)');
+    if (d.suit && MD.Tarot) tr.push('suit: always attuned to ' + MD.Tarot.suitLabel(d.suit) + ' (see the Tarot passives)');
     if (d.pack) tr.push('pack: while a pack-mate (same tag) stands beside it at your turn end, it gains a shield');
     if (d.sworn) {
       const fac = d.sworn === 'shu' ? 'Shu' : d.sworn === 'wei' ? 'Wei' : d.sworn === 'wu' ? 'Wu' : d.sworn;
@@ -938,7 +964,10 @@
     ['Counter (trait)', 'Punishes the piece that CAPTURES it — destroying, poisoning, freezing or dooming the attacker (kings stay safe).', 'sword'],
     ['Ranged (trait)', 'A ranged troop moves like a piece but never captures by stepping. Instead it can SHOOT: on your turn, pick an enemy on a clear straight or diagonal within its range — it destroys the target ("takes the square") while staying in place. Line-of-sight and blast radius depend on the troop.', 'fire'],
     ['Sworn Oath (trait)', 'Three Kingdoms heroes (义) — a Shu/Wei/Wu hero standing next to a same-faction ally at the end of your turn is cleansed of poison/frost and shielded. Brothers watch each other\'s backs.', 'heart'],
-    ['Growth (mature)', 'An egg or juvenile that transforms into its adult troop after a few of its owner\'s turns.', 'star']
+    ['Growth (mature)', 'An egg or juvenile that transforms into its adult troop after a few of its owner\'s turns.', 'star'],
+    ['Suit attunement (Tarot)', 'A piece attuned to Wands (fire), Cups (water), Swords (air) or Pentacles (earth) gains a passive at the end of its owner\'s turn — scorch a neighbour, mend itself, raise an airy ward or fortify an ally. Two or more of a suit are ALIGNED and empower that suit\'s cards.', 'gem'],
+    ['Prophecy (Tarot)', 'A delayed, CONDITIONAL fate laid on a square: it resolves after N of the caster\'s turns, or the moment a piece LEAVES or ENTERS the marked square. Watch for the rune marker.', 'eye'],
+    ['Arcana polarity (Tarot)', 'Every Tarot card resolves UPRIGHT or REVERSED — a coin flip decides unless a card forces it. Reversed outcomes are usually inverted or costlier.', 'dice']
   ];
   const PEDIA_ZONES = [
     ['Fire zone', 'Burns a piece standing there at the end of its own turn: poison + strip shield.', 'fire'],

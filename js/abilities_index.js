@@ -7,7 +7,7 @@
     .concat(MD.AB_1 || [], MD.AB_2 || [], MD.AB_3 || [], MD.AB_4 || [],
       MD.AB_5 || [], MD.AB_6 || [], MD.AB_7 || [], MD.AB_8 || [],
       MD.AB_9 || [], MD.AB_10 || [], MD.AB_11 || [], MD.AB_12 || [],
-      MD.AB_13 || [], MD.AB_14 || [], MD.AB_15 || [], MD.AB_16 || [], MD.AB_17 || [], MD.AB_18 || [], MD.AB_19 || [], MD.AB_20 || [], MD.AB_21 || []);
+      MD.AB_13 || [], MD.AB_14 || [], MD.AB_15 || [], MD.AB_16 || [], MD.AB_17 || [], MD.AB_18 || [], MD.AB_19 || [], MD.AB_20 || [], MD.AB_21 || [], MD.AB_22 || []);
 
   // dedupe + validate
   const seenIds = new Set(), seenNames = new Set();
@@ -32,7 +32,7 @@
     5: { label: 'Mythic', color: '#ff4d6d' }
   };
 
-  MD.CATS = ['Attack', 'Curse', 'Buff', 'Summon', 'Transform', 'Chaos', 'Status', 'Time', 'Kingship', 'Economy', 'Luck', 'Wild', 'Void', 'SciFi', 'Show', 'Myth', 'Jujutsu', 'Wuxia', 'Ocean', 'War', 'Zombie', 'Three Kingdoms', 'Heroes'];
+  MD.CATS = ['Attack', 'Curse', 'Buff', 'Summon', 'Transform', 'Chaos', 'Status', 'Time', 'Kingship', 'Economy', 'Luck', 'Wild', 'Void', 'SciFi', 'Show', 'Myth', 'Jujutsu', 'Wuxia', 'Ocean', 'War', 'Zombie', 'Three Kingdoms', 'Heroes', 'Tarot'];
 
   // distinct hand-size for bonus/reduced draws is handled in main.js via g.lowHand
 

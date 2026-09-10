@@ -14,7 +14,7 @@ function ok(c, n) { if (c) { pass++; console.log('  ✓', n); } else { fail++; c
 const T = M.TROOPS, G = M.TROOP_GLYPHS;
 const keys = Object.keys(T);
 
-ok(keys.length === 95, 'roster has 95 troops (got ' + keys.length + ')');
+ok(keys.length === 111, 'roster has 111 troops (got ' + keys.length + ')');
 
 let missing = [], notSelf = [], paw = [];
 const byMarkup = {};

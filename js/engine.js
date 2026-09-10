@@ -693,6 +693,7 @@
           capturedPiece: cap.lastT, san: sanText
         };
         g.hist.push(g.lastMove);
+        if (root.MD && root.MD.Tarot) { try { root.MD.Tarot.onMove(g, { r0: mv.r0, c0: mv.c0, r1: mv.r1, c1: mv.c1, color: color }); } catch (e) {} }
       }
       return undo;
     }
@@ -773,6 +774,7 @@
         san: sanText
       };
       g.hist.push(g.lastMove);
+      if (root.MD && root.MD.Tarot) { try { root.MD.Tarot.onMove(g, { r0: mv.r0, c0: mv.c0, r1: mv.r1, c1: mv.c1, color: color }); } catch (e) {} }
     }
     return undo;
   }
@@ -1016,6 +1018,12 @@
   // tick statuses after `mover` has completed their turn
   function tickAfterMove(g, mover) {
     const events = [];
+    // TAROT: suit-attunement passives + turn-based prophecies. Runs EARLY so a
+    // Cup can cleanse poison before it bites (exactly like a regenerating troop).
+    if (root.MD && root.MD.Tarot) {
+      try { const tev = root.MD.Tarot.ownTurn(g, mover, []); if (tev && tev.length) events.push(...tev); }
+      catch (e) { /* a suit passive must never crash a turn */ }
+    }
     const bList = [];
     const T0 = root.MD && root.MD.TROOPS;
     for (let r = 0; r < CUR; r++) for (let c = 0; c < CUR; c++) {
@@ -1124,7 +1132,7 @@
       // persistent power counters — labours, conquests, alt — survive between turns)
       if (g.board[r][c] === cell) {
         const bb = cell.b;
-        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0) && !(bb.st > 0) && !(bb.doom > 0) && !(bb.v > 0) && !bb.frail;
+        const spent = (bb.f || 0) <= 0 && (bb.s || 0) <= 0 && (bb.p || 0) <= 0 && !(bb.z > 0) && !(bb.mature > 0) && !(bb.st > 0) && !(bb.doom > 0) && !(bb.v > 0) && !bb.frail && !bb.suit;
         if (spent && !(def && def.hero)) cell.b = undefined;
       }
     }

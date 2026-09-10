@@ -186,6 +186,31 @@
     mulan: F('<path d="M12 2.6l1.6 3-1.6 11.4-1.6-11.4z"/><rect x="8.6" y="16" width="6.8" height="2.2" rx="1.1"/><rect x="11" y="18" width="2" height="4" rx="1"/><circle cx="5.4" cy="7.4" r="2.2"/><circle cx="2.6" cy="7.4" r="1.2"/><circle cx="8.2" cy="7.4" r="1.2"/><circle cx="5.4" cy="4.6" r="1.2"/><circle cx="5.4" cy="10.2" r="1.2"/>')
   });
 
+  /* ---- TAROT court glyphs: a suit emblem + rank pips (1 = Page, 2 = Knight,
+     3 = Queen, 4 = King). Wands = staff, Cups = chalice, Swords = blade,
+     Pentacles = pentacle-in-coin. Still vector, still emoji-free. ---- */
+  const pips = n => { const ys = [6, 9.5, 13, 16.5]; let s = ''; for (let i = 0; i < n; i++) s += '<circle cx="3" cy="' + ys[i] + '" r="1.1"/>'; return s; };
+  const WAND = '<rect x="11" y="2" width="2" height="19" rx="1"/><path d="M10.6 6C8.4 5.6 6.8 4.4 6.2 2.6c2.2.2 3.8 1.4 4.4 3zM13.4 6c2.2-.4 3.8-1.6 4.4-3.4-2.2.2-3.8 1.4-4.4 3z"/>';
+  const CUP = '<path d="M5.6 4h12.8l-1.6 6.2a4.8 4.8 0 0 1-9.6 0z"/><rect x="11" y="14.4" width="2" height="4.6" rx="1"/><rect x="7" y="18.8" width="10" height="2.4" rx="1.2"/>';
+  const SWORD = '<path d="M12 2l1.6 2.6v11.4h-3.2V4.6z"/><rect x="7" y="15.6" width="10" height="2" rx="1"/><rect x="11" y="17.4" width="2" height="4.4" rx="1"/>';
+  const PENT = '<circle cx="12.6" cy="10.6" r="7.8"/><path d="M12.6 5.4l5 3.7-1.9 5.9H9.5L7.6 9.1z"/>';
+  TROOP['wandpage'] = F(WAND + pips(1));
+  TROOP['wandknight'] = F(WAND + pips(2));
+  TROOP['wandqueen'] = F(WAND + pips(3));
+  TROOP['wandking'] = F(WAND + pips(4));
+  TROOP['cuppage'] = F(CUP + pips(1));
+  TROOP['cupknight'] = F(CUP + pips(2));
+  TROOP['cupqueen'] = F(CUP + pips(3));
+  TROOP['cupking'] = F(CUP + pips(4));
+  TROOP['swordpage'] = F(SWORD + pips(1));
+  TROOP['swordknight'] = F(SWORD + pips(2));
+  TROOP['swordqueen'] = F(SWORD + pips(3));
+  TROOP['swordking'] = F(SWORD + pips(4));
+  TROOP['pentpage'] = F(PENT + pips(1));
+  TROOP['pentknight'] = F(PENT + pips(2));
+  TROOP['pentqueen'] = F(PENT + pips(3));
+  TROOP['pentking'] = F(PENT + pips(4));
+
   // ======== build markup helpers ========
   function inner(key) { return B[key] || TROOP[key] || B.spark || ''; }
   function svgMarkup(key, cls, extra) {
@@ -211,7 +236,7 @@
     Transform: 'rune', Chaos: 'chaos', Status: 'eye', Time: 'clock',
     Kingship: 'crown', Economy: 'coin', Luck: 'dice',
     Wild: 'leaf', Void: 'void', SciFi: 'boltring', Show: 'star', Myth: 'rune',
-    Jujutsu: 'rune', Wuxia: 'sword', Ocean: 'drop', War: 'target', Zombie: 'skull', 'Three Kingdoms': 'crown', Heroes: 'crown'
+    Jujutsu: 'rune', Wuxia: 'sword', Ocean: 'drop', War: 'target', Zombie: 'skull', 'Three Kingdoms': 'crown', Heroes: 'crown', Tarot: 'gem'
   };
   const KEYWORD = [
     [/fire|flame|burn|dragon'?s?|inciner|meteor|ragnarok|cannon|sunburst/i, 'fire'],

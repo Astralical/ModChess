@@ -2,11 +2,11 @@
 const fs = require('fs');
 globalThis.MD = {};
 const load = p => eval(fs.readFileSync(p, 'utf8'));
-['js/engine.js', 'js/troops.js', 'js/icons.js', 'js/effects.js', 'js/heroes.js', 'js/abilities_1.js', 'js/abilities_2.js',
+['js/engine.js', 'js/troops.js', 'js/icons.js', 'js/effects.js', 'js/heroes.js', 'js/tarot.js', 'js/abilities_1.js', 'js/abilities_2.js',
  'js/abilities_3.js', 'js/abilities_4.js', 'js/abilities_5.js', 'js/abilities_6.js', 'js/abilities_7.js',
  'js/abilities_8.js', 'js/abilities_9.js', 'js/abilities_10.js', 'js/abilities_11.js',
  'js/abilities_12.js', 'js/abilities_13.js', 'js/abilities_14.js', 'js/abilities_15.js', 'js/abilities_16.js',
- 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_20.js', 'js/abilities_21.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
+ 'js/abilities_17.js', 'js/abilities_18.js', 'js/abilities_19.js', 'js/abilities_20.js', 'js/abilities_21.js', 'js/abilities_22.js', 'js/abilities_index.js', 'js/rebalance.js'].forEach(load);
 const MD2 = globalThis.MD, E = MD2.Engine;
 
 let pass = 0, fail = 0;
@@ -16,7 +16,7 @@ function clean(n) { const g = E.newGame(n); for (let r = 0; r < n; r++) for (let
 // --- 1. Outbreak set present (75 cards, ids 855-929, cat Zombie) ---
 const zombie = MD2.ABILITIES.filter(a => a.cat === 'Zombie');
 ok(zombie.length === 75, '75 Zombie cards registered (got ' + zombie.length + ')');
-ok(MD2.ABILITIES.length === 933, 'total pool 933');
+ok(MD2.ABILITIES.length === 1011, 'total pool 1011');
 ok(zombie.every(a => a.id >= 855 && a.id <= 929), 'zombie ids 855-929');
 ok(MD2.CATS.includes('Zombie'), 'Zombie category in CATS');
 
