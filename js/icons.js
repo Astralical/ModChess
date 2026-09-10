@@ -71,7 +71,9 @@
   addLine('paw', p('M8 7a2.4 2.4 0 1 0 .2-4.8A2.4 2.4 0 0 0 8 7zM15.8 7a2.4 2.4 0 1 1 .2-4.8A2.4 2.4 0 0 1 15.8 7zM12 6a2.4 2.4 0 1 0 .2-4.8A2.4 2.4 0 0 0 12 6z') + p('M5 13a7 7 0 0 0 14 0c0-2-1-3-2-3.6-1.4-.8-3.4.2-5 .2s-3.6-1-5-.2C6 10 5 11 5 13z'));
 
   /* ==================== CUSTOM TROOP glyphs (filled) ==================== */
-  const F = shapes => `<g fill="currentColor">${shapes}</g>`;
+  // evenodd lets a glyph punch visible holes (eyes, mouths, emblems) inside a
+  // filled silhouette — without it every nested shape merges into a flat blob.
+  const F = shapes => `<g fill="currentColor" fill-rule="evenodd">${shapes}</g>`;
   // Head-and-neck style glyphs drawn in a ~24 box
   const TROOP = {
     imp: F(`<path d="M9 20l1.2-7a2.6 2.6 0 0 1 3.6 0L15 20c-1 .8-2 .8-3 .8s-2 0-3-.8z"/>` +
@@ -122,61 +124,67 @@
     howitzer: F(`<path d="M3 20h6l1-3 4-1 1-4-4 2-1-2-2 1-1-3 3-1 2-3-3 1V4l-1 3-4 2v3H3l-1 5 2 3z"/>`),
     infantry: F(`<path d="M12 2l3 2 1 4-3 1 3 2-1 3-3-1-3 1-1-3 3-2-3-1 1-4 3-2z"/><path d="M12 12v6M10 18h4M9 21l1-3M15 21l-1-3"/>`)
   };
-  // counter-troop glyphs reuse similar existing shapes
-  TROOP['porcupine'] = TROOP['turtle'];
-  TROOP['scorpion'] = TROOP['basilisk'];
-  TROOP['urchin'] = TROOP['seaserpent'];
-  TROOP['plaguebearer'] = TROOP['reaper'];
-  // wolf reuses the hound's lean silhouette (it stalks in packs)
-  TROOP['wolf'] = TROOP['divinedog'];
-  // THE OUTBREAK / SCI-FI / VOID / SHOW glyphs
-  TROOP['zombie'] = TROOP['gremlin'];
-  TROOP['ghoul'] = TROOP['lich'];
-  TROOP['bloater'] = TROOP['hydraling'];
-  TROOP['plaguehound'] = TROOP['divinedog'];
-  TROOP['necrolord'] = TROOP['reaper'];
-  TROOP['servodrone'] = TROOP['golem'];
-  TROOP['warbot'] = TROOP['guardian'];
-  TROOP['voidwisp'] = TROOP['djinn'];
-  TROOP['starspawn'] = TROOP['sphinx'];
-  TROOP['strongman'] = TROOP['samurai'];
-  TROOP['firebreather'] = TROOP['phoenix'];
-  // THREE KINGDOMS glyphs
-  TROOP['liubei'] = TROOP['samurai'];
-  TROOP['guanyu'] = TROOP['jianke'];
-  TROOP['zhangfei'] = TROOP['tiger'];
-  TROOP['caocao'] = TROOP['guardian'];
-  TROOP['sunquan'] = TROOP['qilin'];
-  TROOP['zhugeliang'] = TROOP['archmage'];
-  TROOP['zhouyu'] = TROOP['siren'];
-  TROOP['xiahoudun'] = TROOP['warhorse'];
-  TROOP['diaochan'] = TROOP['banshee'];
-  TROOP['lubu'] = TROOP['reaper'];
-  TROOP['taishici'] = TROOP['ranger'];
-  TROOP['huangzhong'] = TROOP['ranger'];
-  TROOP['ganning'] = TROOP['seaserpent'];
-  TROOP['guojia'] = TROOP['djinn'];
-  // HEROES (set 21) glyphs
-  TROOP['alexander'] = TROOP['samurai'];
-  TROOP['caesar'] = TROOP['guardian'];
-  TROOP['spartacus'] = TROOP['tiger'];
-  TROOP['hannibal'] = TROOP['griffon'];
-  TROOP['genghis'] = TROOP['ranger'];
-  TROOP['napoleon'] = TROOP['siegetank'];
-  TROOP['sunzu'] = TROOP['archmage'];
-  TROOP['leonidas'] = TROOP['warhorse'];
-  TROOP['gilgamesh'] = TROOP['golem'];
-  TROOP['hercules'] = TROOP['sphinx'];
-  TROOP['odin'] = TROOP['lich'];
-  TROOP['thor'] = TROOP['djinn'];
-  TROOP['sunwukong'] = TROOP['qilin'];
-  TROOP['momotaro'] = TROOP['divinedog'];
-  TROOP['anansi'] = TROOP['basilisk'];
-  TROOP['robinhood'] = TROOP['owlbear'];
-  TROOP['arthur'] = TROOP['jianke'];
-  TROOP['beowulf'] = TROOP['manticore'];
-  TROOP['goku'] = TROOP['unicorn'];
-  TROOP['mulan'] = TROOP['yasha'];
+  /* ---- Every troop owns a DISTINCT glyph — no two units share art ----
+     These used to alias a generic creature silhouette, which made whole sets
+     (heroes, Three Kingdoms, the outbreak) impossible to tell apart. Each is
+     now its own emblem/silhouette with punched-out eyes & details (evenodd).
+     All vector, no emojis. */
+  Object.assign(TROOP, {
+    // --- counter / outbreak troops ---
+    porcupine: F('<path d="M12 3.4l1.6 3.4h-3.2zM12 20.6l1.6-3.4h-3.2zM3.4 12l3.4 1.6v-3.2zM20.6 12l-3.4 1.6v-3.2zM5.6 5.6l3.6 1.6-2 2zM18.4 5.6l-3.6 1.6 2 2zM5.6 18.4l1.6-3.6 2 2zM18.4 18.4l-1.6-3.6-2 2z"/><circle cx="12" cy="12" r="5.4"/><circle cx="10" cy="11" r="1"/><circle cx="14" cy="11" r="1"/><circle cx="12" cy="14" r="1.2"/>'),
+    scorpion: F('<circle cx="12" cy="13.6" r="3.2"/><path d="M9.2 12.2 5.6 10l-2.6 1.8 2.2 1.6-2.6 1.2 2.2 1.8 3.4-1.2zM14.8 12.2 18.4 10l2.6 1.8-2.2 1.6 2.6 1.2-2.2 1.8-3.4-1.2z"/><circle cx="14.2" cy="11.4" r="1.2"/><circle cx="16" cy="9" r="1.1"/><circle cx="17.4" cy="6.4" r="1.1"/><path d="M18.2 5l2.6.8-2 1.8z"/><circle cx="12" cy="13.6" r="1"/>'),
+    urchin: F('<circle cx="12" cy="12" r="4.8"/><path d="M12 7.2l.9-3.6.9 3.6zM12 16.8l.9 3.6.9-3.6zM7.2 12l-3.6.9 3.6.9zM16.8 12l3.6.9-3.6.9zM8.6 8.6 6.2 6.2l3.1.4zM15.4 8.6l2.4-2.4-3.1.4zM8.6 15.4l-2.4 2.4 3.1-.4zM15.4 15.4l2.4 2.4-3.1-.4z"/><circle cx="12" cy="12" r="1.4"/>'),
+    plaguebearer: F('<path d="M13.4 3.6a5.4 5.4 0 0 1 2.4 10.2l-.4 7.6h-4.6l-.6-7.2a5.4 5.4 0 0 1 3.2-10.6z"/><path d="M11.4 10.6 2 13.2l9.4 2.6z"/><circle cx="14.4" cy="8" r="1.2"/>'),
+    zombie: F('<circle cx="9.4" cy="6" r="3.2"/><path d="M6.8 9.2h5.4l4.6 3.8-1.8 2-3.6-2.4v8.4h-3v-5.6l-3.6 3.8-2-1.8 4.2-4.8H6.8z"/><circle cx="8.6" cy="5.4" r=".9"/><circle cx="11" cy="5.4" r=".9"/>'),
+    ghoul: F('<path d="M5.4 21c-1.6-3.6-1.2-7.4.8-10.4l1.6 1V9.2l2 .6V6.6l2 1V6l1.8 1.6c3 2.8 3.6 6.8 2.2 10.6-2.6 1.6-7.4 1.8-10.4 2.8z"/><path d="M3.4 13.8 1.6 16l2.4.6zM6.6 21.4 5 23.4h3.2zM10.8 21.6 10.4 23.6l2.6-1.2z"/>'),
+    bloater: F('<circle cx="12" cy="12" r="8"/><path d="M7.4 8.6l3 1.8-2.2 2.4 3 2.4-1.2 1.2-3-2.6 2.2-2.4-2.6-1.6z"/><circle cx="15.2" cy="9.4" r="1.8"/><circle cx="9" cy="15.6" r="1.4"/>'),
+    plaguehound: F('<path d="M5 18.6 6 9.4l2-4.6 3 2.2 3-2.2 2 4.6 1 9.2-2.2 2.4-2-4.4-2.2 3.4-2-3.4-2 4.4z"/><circle cx="8.8" cy="11.6" r="1"/><circle cx="15.2" cy="11.6" r="1"/><path d="M10 16.4h4l-2 2z"/>'),
+    necrolord: F('<path d="M12 3.6c4.2 0 7.4 3 7.4 6.8 0 2-1 3.8-2.6 4.8l.6 6.2H7.4l.6-6.2C6.4 14.2 5.4 12.4 5.4 10.4c0-3.8 3.2-6.8 6.6-6.8z"/><path d="M4.4 6.6 1 3l3.4 1zM19.6 6.6 23 3l-3.4 1z"/><circle cx="9.6" cy="10.4" r="1.2"/><circle cx="14.4" cy="10.4" r="1.2"/><path d="M12 14.4l1.6 3h-3.2z"/>'),
+    // --- sci-fi / void / show ---
+    servodrone: F('<rect x="8.6" y="9.2" width="6.8" height="6" rx="1.4"/><rect x="1" y="4.6" width="6" height="2" rx="1"/><rect x="17" y="4.6" width="6" height="2" rx="1"/><circle cx="3.6" cy="8.2" r="1.8"/><circle cx="20.4" cy="8.2" r="1.8"/><rect x="4.4" y="6" width="4.6" height="1.6" rx=".8" transform="rotate(20 4.4 6)"/><rect x="15" y="13.4" width="4.6" height="1.6" rx=".8" transform="rotate(-20 15 13.4)"/><circle cx="12" cy="12.2" r="1.6"/>'),
+    warbot: F('<rect x="5" y="6.6" width="14" height="9.4" rx="2"/><rect x="1.6" y="9" width="3" height="3.4" rx="1"/><rect x="19.4" y="9" width="3" height="3.4" rx="1"/><rect x="10.6" y="2.4" width="2.8" height="4" rx="1"/><circle cx="9.4" cy="11" r="1.4"/><circle cx="14.6" cy="11" r="1.4"/><rect x="9" y="16" width="6" height="5" rx="1"/><rect x="10.6" y="18" width="2.8" height="3" rx="1"/>'),
+    voidwisp: F('<path d="M12 2.4c3.8 3.8 5.8 7 5.8 10.4 0 3.4-2.6 6.4-5.8 6.4s-5.8-3-5.8-6.4c0-3.4 2-6.6 5.8-10.4z"/><circle cx="10.4" cy="10.6" r="1.1"/><circle cx="13.6" cy="10.6" r="1.1"/><path d="M8.4 19.6l.6 2.6 1.6-2.2zM12 19.4l.6 3 1.6-2.8zM15.6 19.6l.6 2.6 1.6-2.2z"/>'),
+    starspawn: F('<path d="M12 2.6l2.4 6.2 6.6.4-5 4.4 1.6 6.6L12 16.8l-5.6 3.2L8 13.4l-5-4.4 6.6-.4z"/><circle cx="12" cy="11.4" r="2.6"/><circle cx="12" cy="11.4" r="1"/>'),
+    strongman: F('<rect x="2.4" y="5.4" width="19.2" height="2.4" rx="1.2"/><rect x="2" y="3" width="3.2" height="7" rx="1.2"/><rect x="6" y="3.4" width="3.2" height="6.2" rx="1.2"/><rect x="14.8" y="3.4" width="3.2" height="6.2" rx="1.2"/><rect x="18.8" y="3" width="3.2" height="7" rx="1.2"/><path d="M7.4 11.4c2.2-.6 4-.2 4.6 1.6.6-1.8 2.4-2.2 4.6-1.6l-1 3.2-1.8-1v9.4h-3.6v-9.4l-1.8 1z"/>'),
+    firebreather: F('<circle cx="9.6" cy="13" r="5.2"/><circle cx="8" cy="12" r="1"/><circle cx="11.2" cy="12" r="1"/><path d="M5.6 8.2 2.6 4l4.2 1zM13.6 8.2 16.6 4l-1 4.4z"/><path d="M14.4 12.2c1.6-.6 3.4-.2 4.6 1-1.2.8-3.2.8-4.6-.2z"/><path d="M15.6 14.6c2 .2 3.8 1.4 4.6 3-1.8.4-4-.6-5.2-1.8z"/><path d="M17.4 11c2.2.6 3.8 2 4.6 4-2.2 0-4.2-1.4-5-2.8z"/>'),
+    wolf: F('<path d="M4 20.4l1.6-9.2L4 4.4l4.2 3.2 3.8-2 3.8 2L20 4.4l-1.6 6.8 1.6 9.2-4.2-3.2-3.8 2.2-3.8-2.2z"/><circle cx="9.6" cy="12" r="1"/><circle cx="14.4" cy="12" r="1"/><path d="M10.4 16.4h3.2l-1.6 2.2z"/>'),
+    // --- Three Kingdoms ---
+    liubei: F('<path d="M4.6 20.6 9.6 4.2l2.2.6-4.6 16.4zM19.4 20.6 14.4 4.2l-2.2.6 4.6 16.4z"/><rect x="3.6" y="19.6" width="16.8" height="2.4" rx="1.2"/><circle cx="12" cy="10.6" r="1.6"/>'),
+    guanyu: F('<rect x="10.8" y="2.4" width="2.4" height="19.2" rx="1.2"/><path d="M13.2 2.6c3.4 1.2 5 4 4.6 7.6l-4.6-1.6z"/><path d="M11 2.6C7.6 3.8 6 6.6 6.4 10.2l4.6-1.6z"/><path d="M13.6 9.6l3.4 1-3.4 1zM10.4 9.6 7 10.6l3.4 1z"/>'),
+    zhangfei: F('<path d="M12 1.6 9.4 4.6l4 2.4-4 2.4 4 2.4-4 2.4 4 2.4-4 2.4 3 3 1.8-2-2.4-2 4-2.4-4-2.4 4-2.4-4-2.4 4-2.4-3.4-2.4z"/><rect x="11" y="18.6" width="2" height="4.4" rx="1"/>'),
+    zhugeliang: F('<path d="M12 20.4 3.6 9c3-2.4 6-3.6 8.4-3.6S17.4 6.6 20.4 9z"/><rect x="11" y="19" width="2" height="3.4" rx="1"/><circle cx="7.6" cy="12.6" r=".9"/><circle cx="12" cy="13.4" r=".9"/><circle cx="16.4" cy="12.6" r=".9"/>'),
+    caocao: F('<path d="M12 2.6c3.4 0 5.6 2.2 5.6 5.6v3.2H6.4V8.2C6.4 4.8 8.6 2.6 12 2.6z"/><path d="M6.6 9.4 2 6v5.4l4.6-1zM17.4 9.4 22 6v5.4l-4.6-1z"/><rect x="5.6" y="11.8" width="12.8" height="2.2" rx="1.1"/><circle cx="12" cy="3.8" r="1.1"/><path d="M8 6.2h8l-1 2.4H9z"/>'),
+    xiahoudun: F('<path d="M12 4.6c4 0 6.6 2.8 6.6 7 0 3.4-2.4 6.4-6.6 6.4S5.4 15 5.4 11.6c0-4.2 2.6-7 6.6-7z"/><path d="M5 9.4l11 3-1.2 2.6-10.4-3z"/><circle cx="15" cy="8.4" r="1.2"/><circle cx="9.6" cy="13.4" r="1.1"/><rect x="13" y="6" width="9" height="1.8" rx=".9" transform="rotate(-35 13 6)"/><path d="M21.6 3l2.2.4-.6 2.2z"/>'),
+    guojia: F('<path d="M6.4 13.6a4.4 4.4 0 0 1 1.2-8.4 5.6 5.6 0 0 1 10.4 1.6A4 4 0 0 1 19 13.6z"/><path d="M12.6 13.4l-3.4 5.6h3.2l-1 4.4 5-7.4h-3.2l1.2-2.6z"/>'),
+    sunquan: F('<path d="M3.4 19h17.2l-1.2-9-4 3-3.4-7-3.4 7-4-3z"/><path d="M4.6 9 1.4 4l4 1.2zM19.4 9l3.2-5-4 1.2z"/><circle cx="12" cy="13" r="1.4"/><path d="M9.4 16.4h5.2l-1 1.6h-3.2z"/>'),
+    zhouyu: F('<path d="M12 20.6 4 9.4c3-2.6 6-4 8-4s5 1.4 8 4z"/><path d="M12 2c.8 2-1 3.2-1 5a2.2 2.2 0 0 0 4.4.4c0-2.2-1.4-3.6-3.4-5.4z"/><rect x="11" y="19" width="2" height="3.4" rx="1"/><circle cx="8.4" cy="13" r=".9"/><circle cx="12" cy="13.8" r=".9"/><circle cx="15.6" cy="13" r=".9"/>'),
+    taishici: F('<path d="M7.6 2.6c5.6 2.6 5.6 16.2 0 18.8l-2-1.6c4.6-2.2 4.6-13.4 0-15.6z"/><rect x="7.4" y="3.4" width="1.4" height="17.2" rx=".7"/><rect x="7.4" y="11.2" width="14.6" height="1.6" rx=".8"/><path d="M20.4 10.6 23 12l-2.6 1.4z"/><circle cx="10" cy="12" r="1.2"/>'),
+    huangzhong: F('<circle cx="10" cy="13" r="7"/><circle cx="10" cy="13" r="4.2"/><circle cx="10" cy="13" r="1.6"/><rect x="9.4" y="12.4" width="13" height="1.4" rx=".7" transform="rotate(-45 10 13)"/><path d="M21.6 3.4 23.4 5.2l-3 3-1.8-1.8z"/>'),
+    ganning: F('<path d="M12 4.2a6.4 6.4 0 0 1 6.4 6.4v4.6l2 3.2H3.6l2-3.2V10.6A6.4 6.4 0 0 1 12 4.2z"/><rect x="11" y="2.2" width="2" height="2.4" rx="1"/><rect x="10.4" y="19.4" width="3.2" height="2.4" rx="1"/><circle cx="12" cy="13" r="1.6"/>'),
+    diaochan: F('<path d="M14.6 2.6a9.4 9.4 0 1 0 0 18.8 7.6 7.6 0 1 1 0-18.8z"/><path d="M18.4 6.4c2.4 1.6 3.2 4 2.6 6.6l-2.6-1.2c.6-1.8 0-3.6-1.6-4.6z"/><circle cx="17.4" cy="9.6" r="1"/>'),
+    lubu: F('<rect x="11" y="2.2" width="2.2" height="19.6" rx="1.1"/><path d="M13.2 2.4c3.6 1.4 5 4.4 4.4 8l-4.4-1.8z"/><path d="M10.8 2.4C7.2 3.8 5.8 6.8 6.4 10.4l4.4-1.8z"/><path d="M13.8 8.8 17.4 10l-3.6 1.2zM10.2 8.8 6.6 10l3.6 1.2z"/>'),
+    // --- Heroes ---
+    alexander: F('<path d="M12 2.2 5 5v6c0 5 3 8.6 7 11.8 4-3.2 7-6.8 7-11.8V5z"/><path d="M12 6.4l1.6 3.4 3.6.4-2.8 2.4.8 3.8L12 14.8l-3.2 1.6.8-3.8-2.8-2.4 3.6-.4z"/>'),
+    caesar: F('<path d="M12 21c-3.6 0-6.6-2-8-5.4 2.4.4 4 1.6 4.8 3.4zM12 21c3.6 0 6.6-2 8-5.4-2.4.4-4 1.6-4.8 3.4z"/><rect x="11.2" y="8" width="1.6" height="12" rx=".8"/><path d="M12 9.4C11 7.6 9.2 6.6 6.6 6.8c.6 2.2 2 3.6 4.2 4zM12 9.4c1-1.8 2.8-2.8 5.4-2.6-.6 2.2-2 3.6-4.2 4zM12 13.4c-1.2-1.6-3-2.4-5.6-2.2.8 2 2.2 3.2 4.4 3.4zM12 13.4c1.2-1.6 3-2.4 5.6-2.2-.8 2-2.2 3.2-4.4 3.4z"/>'),
+    spartacus: F('<circle cx="6" cy="12" r="3.4"/><circle cx="18" cy="12" r="3.4"/><circle cx="6" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/><path d="M8.6 10.4 11 9.6l.7 2-2.4.8zM15.4 13.6 13 14.4l-.7-2 2.4-.8z"/>'),
+    hannibal: F('<path d="M7 20.6c-1.6-2.6-2-6-1.2-9.4.8-3.4 3-6 6.6-6.6 4-.6 7.2 1.8 8 5.6.6 3 .2 6.6-.8 10.4h-2.4l.6-6.6c-1.2 1.6-3.2 2.6-5.6 2.6v4h-2.6v-4c-1.6-1.6-2.2-3.6-2-5.6l-2 9.6z"/><circle cx="13" cy="10" r="1.2"/><path d="M5.4 12.4 2 11.4l3-1.4zM20.4 12.6 23.6 11.6l-2.8-1.4z"/>'),
+    genghis: F('<path d="M3 3.4c4 .6 7.6 3 10 7.2l-2.2 2.2C9 9.4 6.2 7.4 3 6.6zM21 3.4c-4 .6-7.6 3-10 7.2l2.2 2.2C15 9.4 17.8 7.4 21 6.6z"/><rect x="3.6" y="18.6" width="16.8" height="2.4" rx="1.2"/>'),
+    napoleon: F('<path d="M2.6 12.6 12 4.4l9.4 8.2-4 2.6-5.4-3-5.4 3z"/><path d="M9.4 16.6c1.6 1.2 3.6 1.2 5.2 0l-.6 2.4h-4z"/>'),
+    sunzu: F('<path d="M5.6 3.4h12.8v17.2H5.6z"/><rect x="2.6" y="2.2" width="3.6" height="19.6" rx="1.8"/><rect x="17.8" y="2.2" width="3.6" height="19.6" rx="1.8"/><rect x="8" y="6.6" width="8" height="1.6" rx=".8"/><rect x="8" y="10" width="8" height="1.6" rx=".8"/><rect x="8" y="13.4" width="5" height="1.6" rx=".8"/>'),
+    leonidas: F('<path d="M12 2.4c4.6 0 7.6 3.4 7.6 8 0 3.4-.8 6.6-2 9.6h-3.2l.6-5.4c-1.6 1.6-4.4 1.6-6 0l.6 5.4H6.4c-1.2-3-2-6.2-2-9.6 0-4.6 3-8 7.6-8z"/><path d="M12 1.4c1.6 1.4 2.4 3 2.4 5l-2.4-1zM12 1.4c-1.6 1.4-2.4 3-2.4 5l2.4-1z"/><path d="M9 9h6v2.4H9z"/>'),
+    gilgamesh: F('<path d="M3.6 21V9.4L12 3l8.4 6.4V21h-3.2v-8.6L12 8.4l-5.2 4V21z"/><rect x="10.6" y="14.4" width="2.8" height="6.6" rx="1.4"/><rect x="6.4" y="11.4" width="2" height="9.6" rx="1"/><rect x="15.6" y="11.4" width="2" height="9.6" rx="1"/>'),
+    hercules: F('<path d="M8.6 21.4l3-8.6-2.4-3c-1.6-3 .2-6.6 3.4-7.8 3.2-1.2 6.6.8 7.2 4 .4 2.2-.6 4-2.6 5.2l-3.4 2-3 8.2z"/>'),
+    odin: F('<path d="M2.6 14.4c3.4-6.4 8.8-9.8 14.4-9.6-1.4 2.2-.6 3.8 2.2 4.4l-1.6 3.4c-1.4 3.2-4.6 5.4-8.6 6l-1.6 3.6-1.6-3.6-3.2-1z"/><circle cx="15.4" cy="9.6" r="1.1"/><path d="M21 8.6 23.4 7l-2 3z"/>'),
+    thor: F('<rect x="4.6" y="9.4" width="14.8" height="5.4" rx="1.4"/><rect x="9.6" y="14.4" width="4.8" height="7.4" rx="1.2"/><rect x="3.4" y="8.2" width="17.2" height="2" rx="1"/><path d="M8 6.6l1.6-3 1.6 2.2zM16 6.6l-1.6-3-1.6 2.2z"/>'),
+    sunwukong: F('<rect x="10.8" y="4" width="2.4" height="18" rx="1.2"/><rect x="8.6" y="19.4" width="6.8" height="2.4" rx="1.2"/><circle cx="12" cy="4" r="2.6"/><circle cx="12" cy="4" r="1"/><path d="M9.6 3.4 6.8 2l2.6 2.6zM14.4 3.4 17.2 2l-2.6 2.6z"/>'),
+    momotaro: F('<path d="M12 6c4.2 0 8 3.6 8 7.8S16.2 21.4 12 21.4 4 17.8 4 13.8 7.8 6 12 6z"/><path d="M12 6c0-2 1.2-4 3.4-5.2.4 2-1 4-3.4 5.2z"/><rect x="11" y="2.8" width="1.6" height="3.4" rx=".8"/><circle cx="12" cy="13" r="1.6"/>'),
+    anansi: F('<circle cx="12" cy="12.4" r="3.6"/><circle cx="12" cy="6.4" r="2.4"/><path d="M8.8 11.2 3.4 8l1 2.4 4.8 2.4zM15.2 11.2 20.6 8l-1 2.4-4.8 2.4zM8.4 13.6 2.6 13l1.6 2.2 4.6-.2zM15.6 13.6l5.8-.6-1.6 2.2-4.6-.2zM9.4 15.6 5 20.4l2.6-.6 3.4-3.6zM14.6 15.6 19 20.4l-2.6-.6-3.4-3.6z"/><circle cx="12" cy="12.4" r="1.2"/>'),
+    robinhood: F('<path d="M4 18.4c-.6-6.4 3.4-11.4 9-11.4 3.4 0 5.6 2 5.6 5l2.4.6-2.4 1.6c0 2.6-2.6 4.2-6.4 4.2z"/><path d="M17 8.6 22.4 3l-1 4.4 3 1-4 1.2z"/>'),
+    arthur: F('<path d="M12 2.4l1.6 3.4-1.6 9.2-1.6-9.2z"/><rect x="8.4" y="15.4" width="7.2" height="2.4" rx="1.2"/><rect x="11" y="17.4" width="2" height="2.6" rx="1"/><path d="M3.4 20.4c0-2 2-3.4 4.6-3.4h8c2.6 0 4.6 1.4 4.6 3.4s-2 3.2-4.6 3.2H8c-2.6 0-4.6-1.2-4.6-3.2z"/>'),
+    beowulf: F('<path d="M5.4 21.4c-.8-5.4 1-10.4 5-13.6l1.6 2.2c-3.2 2.8-4.6 6.8-4.2 11.4z"/><path d="M10.4 7.6 12.6 6l1 2.4-2 .8zM13.4 6.2 15.8 5l.8 2.4-2 .6zM16.6 5.4 19 4.6l.4 2.6-2 .2zM19.6 5.6 21.8 6l-.6 2.4-1.8-.6z"/><path d="M5 21.4 2.6 23l3 .6z"/>'),
+    goku: F('<circle cx="12" cy="12" r="8"/><path d="M12 6.2l1.4 3.2 3.4.2-2.6 2.2.8 3.4-3-1.8-3 1.8.8-3.4L7.2 9.6l3.4-.2z"/><circle cx="8.4" cy="16.4" r="1"/><circle cx="15.6" cy="16.4" r="1"/>'),
+    mulan: F('<path d="M12 2.6l1.6 3-1.6 11.4-1.6-11.4z"/><rect x="8.6" y="16" width="6.8" height="2.2" rx="1.1"/><rect x="11" y="18" width="2" height="4" rx="1"/><circle cx="5.4" cy="7.4" r="2.2"/><circle cx="2.6" cy="7.4" r="1.2"/><circle cx="8.2" cy="7.4" r="1.2"/><circle cx="5.4" cy="4.6" r="1.2"/><circle cx="5.4" cy="10.2" r="1.2"/>')
+  });
 
   // ======== build markup helpers ========
   function inner(key) { return B[key] || TROOP[key] || B.spark || ''; }
