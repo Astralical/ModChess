@@ -466,13 +466,8 @@
       flavor: 'War itself flows downhill.',
       target: 'auto',
       run: (g, s) => {
-        let moved = 0;
-        for (let rr = 0; rr < Fx.bd(g); rr++) for (let c = 0; c < Fx.bd(g); c++) {
-          const cell = g.board[rr][c];
-          if (!cell) continue;
-          const dr = cell.c === 'w' ? -1 : 1;
-          if (g.board[rr + dr] && !g.board[rr + dr][c]) { Fx.relocate(g, rr, c, rr + dr, c, {}); moved++; }
-        }
+        const all = Fx.squares(g, () => true).map(q => ({ r: q.r, c: q.c }));
+        const moved = Fx.shove(g, all, (r, c, cell) => ({ dr: cell.c === 'w' ? -1 : 1, dc: 0 }));
         return moved ? ['The whole board surges toward the enemy!'] : [];
       } },
 

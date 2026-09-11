@@ -163,16 +163,15 @@
   });
 
   def(269, 'Mudslide', 2, 'Wild', 'drop', 'Every enemy piece slides one step DOWN toward your side (like mud). Pieces already in your half are destroyed.', 'The whole hill gives way.', (g, s) => {
-    const n = g.n || 8;
     const dir = s === 'w' ? 1 : -1;
-    let moved = 0, crushed = 0;
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-      if (Fx.inOwnHalf(g, s, r)) { Fx.removeAt(g, r, c, {}); crushed++; continue; }
-      const nr = r + dir;
-      if (nr >= 0 && nr < n && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
+    const foes = Fx.enemy(g, s).filter(q => q.cell.t !== 'k');
+    let crushed = 0;
+    const slide = [];
+    for (const q of foes) {
+      if (Fx.inOwnHalf(g, s, q.r)) { Fx.removeAt(g, q.r, q.c, {}); crushed++; }
+      else slide.push({ r: q.r, c: q.c });
     }
+    const moved = Fx.shove(g, slide, { dr: dir, dc: 0 });
     const lines = [];
     if (crushed) lines.push('The mud swallows ' + crushed + ' enemy piece' + (crushed > 1 ? 's' : '') + ' on your side!');
     if (moved) lines.push(moved + ' enemy piece' + (moved > 1 ? 's' : '') + ' slide' + (moved > 1 ? '' : 's') + ' downhill.');
@@ -306,14 +305,9 @@
   });
 
   def(280, 'Howling Gale', 1, 'Wild', 'storm', 'Blow every enemy piece one square back toward their own side.', 'The wind has your back.', (g, s) => {
-    const dir = s === 'w' ? -1 : 1; // push enemy back = toward their own back rank (up for black)
-    let moved = 0;
-    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-      const nr = r + dir;
-      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
-    }
+    const dir = s === 'w' ? -1 : 1; // the enemy's own side is the rank away from the caster
+    const foes = Fx.enemy(g, s).filter(q => q.cell.t !== 'k').map(q => ({ r: q.r, c: q.c }));
+    const moved = Fx.shove(g, foes, { dr: dir, dc: 0 });
     return moved ? ['The gale shoves ' + moved + ' enemy piece' + (moved > 1 ? 's' : '') + ' backward.'] : ['The wind meets a wall.'];
   });
 

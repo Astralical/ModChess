@@ -211,15 +211,8 @@
       flavor: 'They cannot resist the pull.',
       target: 'auto',
       run: (g, s) => {
-        const n = g.n || 8;
-        let moved = 0;
-        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-          const cell = g.board[r][c];
-          if (!cell || cell.c !== O(s)) continue;
-          const dr = Fx.towardMidRow(g, r);
-          const dc = Fx.towardMidCol(g, c);
-          if ((dr || dc) && !g.board[r + dr][c + dc]) { Fx.relocate(g, r, c, r + dr, c + dc, {}); moved++; }
-        }
+        const foes = Fx.enemy(g, s).map(q => ({ r: q.r, c: q.c }));
+        const moved = Fx.shove(g, foes, (r, c) => ({ dr: Fx.towardMidRow(g, r), dc: Fx.towardMidCol(g, c) }));
         return moved ? ['The enemy is dragged inward.'] : [];
       } },
 

@@ -167,13 +167,9 @@
 
   // 93 Haste  → extra move AND your whole front line rushes forward
   R[93] = (g, s) => {
-    let moved = 0;
     const dr = s === 'w' ? -1 : 1;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== s || cell.t !== 'p') continue;
-      if (g.board[r + dr] && !g.board[r + dr][c]) { Fx.relocate(g, r, c, r + dr, c, {}); moved++; }
-    }
+    const ps = Fx.own(g, s).filter(q => q.cell.t === 'p').map(q => ({ r: q.r, c: q.c }));
+    const moved = Fx.shove ? Fx.shove(g, ps, { dr: dr, dc: 0 }) : 0;
     Fx.grantExtra(g, s, 1);
     const lines = ['Haste! Your army surges — move again!'];
     if (moved) lines.unshift('Your pawns surge forward — ' + moved + (moved > 1 ? ' advance!' : ' advances!'));

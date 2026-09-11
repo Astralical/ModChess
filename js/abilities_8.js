@@ -58,13 +58,8 @@
 
   def(310, 'Redshift', 2, 'Void', 'star', 'Every enemy piece slides one square toward the far edge (their own side is retreating away from you).', 'The universe is expanding — away from you.', (g, s) => {
     const dir = s === 'w' ? -1 : 1;
-    let moved = 0;
-    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-      const nr = r + dir;
-      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
-    }
+    const foes = Fx.enemy(g, s).filter(q => q.cell.t !== 'k').map(q => ({ r: q.r, c: q.c }));
+    const moved = Fx.shove(g, foes, { dr: dir, dc: 0 });
     return moved ? ['The enemy recedes as the cosmos expands.'] : ['The universe holds its ground.'];
   });
 
@@ -121,12 +116,22 @@
     }
     if (near.length < 2) return [];
     const ord = near.slice(0, 4);
+    // rotate every piece to the NEXT position in the ring of 8 neighbours —
+    // a true one-step clockwise turn (a 90° rotation would fling a diagonal
+    // neighbour two squares across the king).
+    const ring = [[-1, -1], [-1, 0], [-1, 1], [0, 1], [1, 1], [1, 0], [1, -1], [0, -1]];
     const cells = ord.map(q => g.board[q.r][q.c]);
-    const back = ord.map(q => ({ r: k.r + (q.c - k.c), c: k.c - (q.r - k.r) }));
-    for (let i = 0; i < ord.length; i++) { g.board[ord[i].r][ord[i].c] = null; }
+    const dest = ord.map(q => {
+      const dr = q.r - k.r, dc = q.c - k.c;
+      let i = ring.findIndex(o => o[0] === dr && o[1] === dc);
+      if (i < 0) i = 0;
+      const nx = ring[(i + 1) % ring.length];
+      return { r: k.r + nx[0], c: k.c + nx[1] };
+    });
+    for (const q of ord) g.board[q.r][q.c] = null;
     let placed = 0;
     for (let i = 0; i < ord.length; i++) {
-      const t = back[i];
+      const t = dest[i];
       if (t.r >= 0 && t.r < Fx.bd(g) && t.c >= 0 && t.c < Fx.bd(g) && !g.board[t.r][t.c]) { g.board[t.r][t.c] = cells[i]; Fx.flash(g, t.r, t.c, 'move', ''); placed++; }
       else { g.board[ord[i].r][ord[i].c] = cells[i]; }
     }
@@ -285,13 +290,8 @@
 
   def(332, 'Solar Wind', 1, 'Void', 'star', 'Push every enemy pawn one square forward (toward you) — the wind blows them into your trap.', 'The gale herds them in.', (g, s) => {
     const dir = s === 'w' ? 1 : -1;
-    let moved = 0;
-    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== O(s) || cell.t !== 'p') continue;
-      const nr = r + dir;
-      if (nr >= 0 && nr < Fx.bd(g) && !g.board[nr][c]) { Fx.relocate(g, r, c, nr, c, {}); moved++; }
-    }
+    const pawns = Fx.enemy(g, s).filter(q => q.cell.t === 'p').map(q => ({ r: q.r, c: q.c }));
+    const moved = Fx.shove(g, pawns, { dr: dir, dc: 0 });
     return moved ? ['The solar wind drives enemy pawns forward.'] : ['The wind pushes against a wall.'];
   });
 
@@ -416,18 +416,21 @@
   });
 
   def(345, 'Singularity', 4, 'Void', 'void', 'Pull every piece (both sides) one square toward the center square d4/e5, then destroy any piece that cannot move.', 'All roads lead to the center.', (g, s) => {
+    const n = g.n || 8;
+    const mid = (n - 1) / 2;
     let moved = 0, crushed = 0;
-    for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.t === 'k') continue;
-      const dr = Math.sign(3.5 - r), dc = Math.sign(3.5 - c);
-      const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
-    }
-    // after the pull, destroy pieces sitting on the central four squares that are now overloaded
-    for (const [r, c] of [[3, 3], [3, 4], [4, 3], [4, 4]]) {
-      const cell = g.board[r] && g.board[r][c];
-      if (cell && cell.t !== 'k') { Fx.removeAt(g, r, c, {}); crushed++; }
+    const done = new Set();
+    const cells = Fx.squares(g, () => true).slice()
+      .sort((a, b) => (Math.abs(a.c - mid) - Math.abs(b.c - mid)) || (Math.abs(a.r - mid) - Math.abs(b.r - mid)) || (a.c - b.c) || (a.r - b.r));
+    for (const q of cells) {
+      const cell = g.board[q.r] && g.board[q.r][q.c];
+      if (!cell || cell.t === 'k' || done.has(cell)) continue;
+      done.add(cell);
+      const dr = Math.sign(mid - q.r), dc = Math.sign(mid - q.c);
+      if (!dr && !dc) continue; // already at the center — nothing pulls it
+      const nr = q.r + dr, nc = q.c + dc;
+      if (nr >= 0 && nr < n && nc >= 0 && nc < n && !g.board[nr][nc]) { Fx.relocate(g, q.r, q.c, nr, nc, {}); moved++; }
+      else { Fx.removeAt(g, q.r, q.c, {}); crushed++; } // blocked: the singularity devours it
     }
     const lines = [];
     if (moved) lines.push(moved + ' piece' + (moved > 1 ? 's' : '') + ' drawn toward the center.');

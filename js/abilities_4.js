@@ -605,14 +605,8 @@
       run: (g, s) => {
         const k = E.findKing(g, s);
         if (!k) return [];
-        let moved = 0;
-        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
-          const cell = g.board[r][c];
-          if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-          const dr = Math.sign(r - k.r), dc = Math.sign(c - k.c);
-          const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
-        }
+        const foes = Fx.enemy(g, s).filter(q => q.cell.t !== 'k').map(q => ({ r: q.r, c: q.c }));
+        const moved = Fx.shove(g, foes, (r, c) => ({ dr: Math.sign(r - k.r), dc: Math.sign(c - k.c) }));
         return moved ? ['A wave of force pushes the enemy back!'] : [];
       } },
 
@@ -623,14 +617,8 @@
       run: (g, s) => {
         const k = E.findKing(g, s);
         if (!k) return [];
-        let moved = 0;
-        for (let r = 0; r < Fx.bd(g); r++) for (let c = 0; c < Fx.bd(g); c++) {
-          const cell = g.board[r][c];
-          if (!cell || cell.c !== s || cell.t === 'k') continue;
-          const dr = Math.sign(k.r - r), dc = Math.sign(k.c - c);
-          const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < Fx.bd(g) && nc >= 0 && nc < Fx.bd(g) && !g.board[nr][nc]) { Fx.relocate(g, r, c, nr, nc, {}); moved++; }
-        }
+        const mineQ = Fx.own(g, s).filter(q => q.cell.t !== 'k').map(q => ({ r: q.r, c: q.c }));
+        const moved = Fx.shove(g, mineQ, (r, c) => ({ dr: Math.sign(k.r - r), dc: Math.sign(k.c - c) }));
         return moved ? ['Your army clusters around the king.'] : [];
       } },
 

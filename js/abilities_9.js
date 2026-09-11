@@ -465,13 +465,8 @@
   def(403, 'Warp Core Leak', 4, 'SciFi', 'void', 'Every enemy piece slides one square toward the CENTER files, and the center square they land on detonates.', 'Do not stand near the engine.', (g, s) => {
     const n = g.n || 8;
     const h = n >> 1;
-    let moved = 0;
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-      const cell = g.board[r][c];
-      if (!cell || cell.c !== O(s) || cell.t === 'k') continue;
-      const nc = c < h ? c + 1 : c - 1;
-      if (nc !== c && !g.board[r][nc]) { Fx.relocate(g, r, c, r, nc, {}); moved++; }
-    }
+    const foes = Fx.enemy(g, s).filter(q => q.cell.t !== 'k').map(q => ({ r: q.r, c: q.c }));
+    const moved = Fx.shove(g, foes, (r, c) => ({ dr: 0, dc: c < h ? 1 : -1 }));
     let gone = 0;
     for (let r = h - 1; r <= h; r++) for (let c = h - 1; c <= h; c++) {
       const cell = g.board[r] && g.board[r][c];

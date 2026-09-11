@@ -497,6 +497,60 @@
   };
   Fx.gravity = Fx.gravity;
 
+  // SHOVE — the SAFE way to push a set of pieces in a direction.
+  // BUG IT PREVENTS: an ability that scans the board (for r..for c) and
+  // relocates pieces inline will RE-VISIT a piece after it moves into a square
+  // the scan has not reached yet, so it slides many squares in one cast — and
+  // only for whichever colour moves in the scan's direction (the "black pawn
+  // shoved from 6 to 3 while white never moved" bug). This takes a SNAPSHOT of
+  // squares and moves each piece at most `steps` times, with a guard so a piece
+  // can never be processed twice (even if another shoves into its old square).
+  //   dir: {dr,dc} for every piece, or a function (r,c,cell) => {dr,dc} for
+  //        per-piece directions ("toward the center", "away from the king").
+  // Pieces are processed front-most-first so a line can follow into vacated
+  // squares; blocked pieces simply stay put.
+  Fx.shove = function (g, sqList, dir, opts) {
+    opts = opts || {};
+    const steps = Math.max(1, (opts.steps | 0) || 1);
+    const n = (g.n) || N();
+    const onB = (r, c) => r >= 0 && r < n && c >= 0 && c < n;
+    const items = (sqList || []).slice();
+    if (typeof dir !== 'function') {
+      const dr = (dir && dir.dr) || 0, dc = (dir && dir.dc) || 0;
+      if (dr > 0) items.sort((a, b) => b.r - a.r);
+      else if (dr < 0) items.sort((a, b) => a.r - b.r);
+      else if (dc > 0) items.sort((a, b) => b.c - a.c);
+      else if (dc < 0) items.sort((a, b) => a.c - b.c);
+    } else {
+      // per-piece direction (toward center / toward the king): process in a
+      // DETERMINISTIC, mirror-invariant order so both colours get the identical
+      // result (otherwise whichever colour the scan reached first wins the race
+      // for a contested square — an unfair, colour-dependent outcome).
+      const mid = (n - 1) / 2;
+      items.sort((a, b) => (Math.abs(a.c - mid) - Math.abs(b.c - mid))
+        || (Math.abs(a.r - mid) - Math.abs(b.r - mid))
+        || (a.c - b.c) || (a.r - b.r));
+    }
+    const done = new Set();
+    let moved = 0;
+    for (const q of items) {
+      const cell = g.board[q.r] && g.board[q.r][q.c];
+      if (!cell || done.has(cell)) continue;
+      done.add(cell);
+      let cr = q.r, cc = q.c, k = 0;
+      while (k < steps) {
+        let d = (typeof dir === 'function') ? dir(cr, cc, cell) : dir;
+        if (!d) break;
+        if (Array.isArray(d)) d = { dr: d[0], dc: d[1] };
+        const nr = cr + (d.dr || 0), nc = cc + (d.dc || 0);
+        if ((!(d.dr || d.dc)) || !onB(nr, nc) || g.board[nr][nc]) break;
+        Fx.relocate(g, cr, cc, nr, nc, {});
+        cr = nr; cc = nc; k++; moved++;
+      }
+    }
+    return moved;
+  };
+
   // rotate the entire board 180 (with mirror) — flavor: chaos
   Fx.mirrorBoard = (g) => {
     const n = N();

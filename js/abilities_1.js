@@ -141,15 +141,8 @@
       flavor: 'Physics was already the house rules.',
       target: 'auto',
       run: (g, s) => {
-        const n = g.n || 8;
-        let moved = 0;
-        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-          const cell = g.board[r][c];
-          if (!cell) continue;
-          const dr = Fx.towardMidRow(g, r);
-          const dc = Fx.towardMidCol(g, c);
-          if ((dr || dc) && !g.board[r + dr][c + dc]) { Fx.relocate(g, r, c, r + dr, c + dc, {}); moved++; }
-        }
+        const all = Fx.squares(g, () => true).map(q => ({ r: q.r, c: q.c }));
+        const moved = Fx.shove(g, all, (r, c) => ({ dr: Fx.towardMidRow(g, r), dc: Fx.towardMidCol(g, c) }));
         return moved ? ['The board lurches toward its core.'] : [];
       } },
 
@@ -158,14 +151,8 @@
       flavor: 'Up is down. Forward is back.',
       target: 'auto',
       run: (g, s) => {
-        const n = g.n || 8;
-        let moved = 0;
-        for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
-          const cell = g.board[r][c];
-          if (!cell) continue;
-          const dr = cell.t === 'p' ? (cell.c === 'w' ? -1 : 1) : (cell.c === 'w' ? 1 : -1);
-          if (g.board[r + dr] && !g.board[r + dr][c]) { Fx.relocate(g, r, c, r + dr, c, {}); moved++; }
-        }
+        const all = Fx.squares(g, () => true).map(q => ({ r: q.r, c: q.c }));
+        const moved = Fx.shove(g, all, (r, c, cell) => ({ dr: cell.t === 'p' ? (cell.c === 'w' ? -1 : 1) : (cell.c === 'w' ? 1 : -1), dc: 0 }));
         return moved ? ['The whole army shuffles on command.'] : [];
       } },
 
